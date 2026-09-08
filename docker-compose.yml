@@ -1,0 +1,17 @@
+# Local development database only. Run: docker compose up -d
+# Then point backend/.env's DATABASE_URL at it (see backend/.env.example).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: balasuriya_group
+    ports:
+      - "5432:5432"
+    volumes:
+      - bg_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  bg_postgres_data:
