@@ -1,37 +1,166 @@
+import { motion } from "framer-motion";
+import { Building2, Code2, Plane, Quote } from "lucide-react";
 import { DivisionCard } from "../components/DivisionCard";
+import { Reveal } from "../components/Reveal";
+import { CountUp } from "../components/CountUp";
+import { companyStats, testimonials } from "../data/companyProfile";
+
+const divisionImages = import.meta.glob<{ default: string }>(
+  "../assets/divisions/*.{jpg,jpeg,png}",
+  { eager: true }
+);
+
+function divisionImage(file: string) {
+  const match = Object.entries(divisionImages).find(([path]) => path.endsWith(file));
+  return match?.[1].default;
+}
+
+const stats = [
+  { label: "Years of Service", value: companyStats.yearsExperience, suffix: "+" },
+  { label: "Projects Completed", value: companyStats.projectsDone, suffix: "+" },
+  { label: "Industry Sectors", value: companyStats.sectors, suffix: "" },
+  { label: "Customer Satisfaction", value: companyStats.customerFocusPercent, suffix: "%" },
+];
 
 export default function Home() {
   return (
     <div>
-      <section className="bg-gradient-to-b from-brand-navy to-brand-steel py-20 text-white">
-        <div className="mx-auto max-w-4xl px-4 text-center">
-          <h1 className="font-display text-4xl font-bold sm:text-5xl">Balasuriya Group</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-white/85">
-            Trusted construction projects and unforgettable tours — local and abroad — with visa
-            assistance and air ticketing handled for you.
-          </p>
+      {/* Hero with looping background video */}
+      <section className="relative flex min-h-[85vh] items-center overflow-hidden bg-brand-navy text-white">
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          src="/videos/hero.mp4"
+          poster="/videos/hero-poster.jpg"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="absolute inset-0 bg-brand-navy/30" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-brand-navy to-transparent" />
+
+        {/* soft animated glow blobs for depth */}
+        <div className="pointer-events-none absolute -left-20 top-10 h-72 w-72 rounded-full bg-brand-accent/30 blur-3xl animate-blob" />
+        <div className="pointer-events-none absolute -right-10 bottom-0 h-80 w-80 rounded-full bg-brand-gold/20 blur-3xl animate-blob" />
+
+        <div className="relative mx-auto max-w-4xl px-4 text-center">
+          <motion.p
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-gold"
+          >
+            Balasuriya Group
+          </motion.p>
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="mt-4 font-display text-4xl font-bold leading-tight [text-shadow:0_4px_24px_rgba(0,0,0,0.55)] sm:text-6xl"
+          >
+            Building the Future of Sri Lanka
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="mx-auto mt-5 max-w-2xl text-lg text-white/90 [text-shadow:0_2px_12px_rgba(0,0,0,0.5)]"
+          >
+            Trusted construction projects built to last, and unforgettable journeys across Sri
+            Lanka shaped around you — with visa assistance and air ticket booking handled every
+            step of the way.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="mt-8 flex flex-wrap items-center justify-center gap-3"
+          >
+            <a href="/construction" className="btn-primary bg-brand-gold text-brand-navy hover:bg-brand-gold/90">
+              Explore Projects
+            </a>
+            <a href="/tourism" className="btn-secondary border-white/40 text-white hover:bg-white/10">
+              Discover Tours
+            </a>
+          </motion.div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <h2 className="text-center font-display text-2xl font-bold text-brand-navy">Our Divisions</h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <DivisionCard
-            title="Construction"
-            description="From planning to handover — track real project progress, milestones, and what's next."
-            to="/construction"
-          />
-          <DivisionCard
-            title="Tourism"
-            description="Local tours, family & team trips, and religious tours — plus visa help and air tickets."
-            to="/tourism"
-          />
-          <DivisionCard
-            title="Software"
-            description="Coming soon — digital products from the Balasuriya Group technology team."
-            to="/about"
-            cta="Stay tuned"
-          />
+      {/* Stats */}
+      <section className="bg-white py-12 shadow-sm">
+        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-6 px-4 sm:grid-cols-4">
+          {stats.map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="font-display text-3xl font-bold text-brand-navy sm:text-4xl">
+                <CountUp end={s.value} suffix={s.suffix} />
+              </div>
+              <div className="mt-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Divisions */}
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <Reveal className="text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-accent">What we do</p>
+          <h2 className="mt-2 font-display text-3xl font-bold text-brand-navy">Our Divisions</h2>
+        </Reveal>
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <Reveal delay={0}>
+            <DivisionCard
+              title="Construction"
+              description="From planning to handover — track real project progress, milestones, and what's next."
+              to="/construction"
+              image={divisionImage("construction.jpg")}
+              icon={<Building2 className="h-5 w-5" />}
+            />
+          </Reveal>
+          <Reveal delay={0.1}>
+            <DivisionCard
+              title="Tourism"
+              description="Local tours, family & team trips, and religious tours — plus visa help and air tickets."
+              to="/tourism"
+              image={divisionImage("tourism.jpg")}
+              icon={<Plane className="h-5 w-5" />}
+            />
+          </Reveal>
+          <Reveal delay={0.2}>
+            <DivisionCard
+              title="Software"
+              description="Coming soon — digital products from the Balasuriya Group technology team."
+              to="/about"
+              cta="Stay tuned"
+              image={divisionImage("software.jpg")}
+              icon={<Code2 className="h-5 w-5" />}
+            />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="bg-brand-surface py-16">
+        <div className="mx-auto max-w-5xl px-4">
+          <Reveal className="text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-accent">Testimonials</p>
+            <h2 className="mt-2 font-display text-3xl font-bold text-brand-navy">What Our Clients Say</h2>
+          </Reveal>
+          <div className="mt-10 grid gap-6 sm:grid-cols-3">
+            {testimonials.map((t, i) => (
+              <Reveal key={t.name} delay={i * 0.1}>
+                <blockquote className="card h-full">
+                  <Quote className="h-6 w-6 text-brand-gold" />
+                  <p className="mt-3 text-sm italic text-gray-700">&ldquo;{t.text}&rdquo;</p>
+                  <footer className="mt-4 text-sm">
+                    <span className="font-semibold text-brand-navy">{t.name}</span>
+                    <span className="block text-xs text-gray-500">{t.role}</span>
+                  </footer>
+                </blockquote>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
     </div>

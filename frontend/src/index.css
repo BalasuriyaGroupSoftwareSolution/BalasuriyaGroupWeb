@@ -3,8 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-brand-surface text-brand-navy antialiased;
+    @apply bg-brand-surface text-brand-navy antialiased font-sans;
+  }
+  ::selection {
+    @apply bg-brand-gold/40 text-brand-navy;
   }
 }
 

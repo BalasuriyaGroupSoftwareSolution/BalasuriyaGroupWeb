@@ -1,3 +1,5 @@
+import { contactInfo } from "../data/companyProfile";
+
 export function Footer() {
   return (
     <footer className="mt-16 border-t border-black/5 bg-brand-navy text-white">
@@ -18,7 +20,9 @@ export function Footer() {
         </div>
         <div>
           <h4 className="text-sm font-semibold uppercase tracking-wide text-white/60">Contact</h4>
-          <p className="mt-2 text-sm text-white/80">balasuriyagroup.software@gmail.com</p>
+          <p className="mt-2 text-sm text-white/80">{contactInfo.address}</p>
+          <p className="text-sm text-white/80">{contactInfo.phone}</p>
+          <p className="text-sm text-white/80">{contactInfo.email}</p>
           <p className="text-sm text-white/80">balasuriyagroup.tech</p>
         </div>
       </div>

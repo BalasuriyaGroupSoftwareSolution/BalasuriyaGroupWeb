@@ -2,10 +2,12 @@ import { Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
+import { FloatingWhatsApp } from "./components/FloatingWhatsApp";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
 import About from "./pages/About";
+import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ConstructionPublic from "./pages/construction/ConstructionPublic";
@@ -28,6 +30,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/staff/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -38,7 +41,22 @@ export default function App() {
           <Route path="/tourism" element={<TourismPublic />} />
           <Route path="/tourism/:id" element={<PackageDetail />} />
 
-          <Route element={<ProtectedRoute />}>
+          <Route
+            element={
+              <ProtectedRoute
+                roles={[
+                  "ADMIN",
+                  "CONSTRUCTION_MANAGER",
+                  "TOURISM_AGENT",
+                  "FINANCE_APPROVER",
+                  "TICKET_AGENT",
+                  "SOFTWARE_ENGINEER",
+                  "CHARTERED_ACCOUNTANT",
+                ]}
+                redirectTo="/"
+              />
+            }
+          >
             <Route path="/staff" element={<StaffLayout />}>
               <Route index element={<StaffDashboard />} />
 
@@ -62,6 +80,7 @@ export default function App() {
         </Routes>
       </div>
       <Footer />
+      <FloatingWhatsApp />
     </div>
   );
 }
