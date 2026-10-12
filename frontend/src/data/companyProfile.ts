@@ -6,6 +6,12 @@ export const companyStats = {
   customerFocusPercent: 98,
 };
 
+export const companyVision =
+  "To be Sri Lanka’s most trusted multi-industry group—shaping the nation’s technology, infrastructure, and tourism sectors to connect people, spaces, and opportunities with the world";
+
+export const companyMission =
+  "Driven by integrity and operational excellence, we empower possibilities and build tomorrow across Sri Lanka and beyond—delivering intelligent software, enduring construction, and seamless global travel experiences";
+
 export const contactInfo = {
   address: "54, Andiambalama, Sri Lanka",
   phone: "+94 76 7171 938",

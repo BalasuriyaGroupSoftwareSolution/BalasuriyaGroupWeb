@@ -170,10 +170,10 @@ export default function TourismPublic() {
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-brand-gold ring-1 ring-brand-gold/40"
+            className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-brand-gold ring-1 ring-brand-gold/40 backdrop-blur-sm"
           >
             <Palmtree className="h-4 w-4" />
-            Balasuriya Tours & Travels Division
+            StayLanka & Foreign Tours • A Balasuriya Group Division
           </motion.div>
 
           <motion.h1

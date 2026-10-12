@@ -108,32 +108,43 @@ export default function Home() {
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-accent">What we do</p>
           <h2 className="mt-2 font-display text-3xl font-bold text-brand-navy">Our Divisions</h2>
         </Reveal>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <Reveal delay={0}>
             <DivisionCard
               title="Construction"
-              description="From planning to handover — track real project progress, milestones, and what's next."
+              description="From architectural planning to turnkey handover — engineering enduring infrastructure across Sri Lanka."
               to="/construction"
-              image={divisionImage("construction.jpg")}
+              image={divisionImage("constructions.jpg")}
               icon={<Building2 className="h-5 w-5" />}
             />
           </Reveal>
           <Reveal delay={0.1}>
             <DivisionCard
-              title="Tourism"
-              description="Local tours, family & team trips, and religious tours — plus visa help and air tickets."
+              title="Foreign Tours"
+              description="Curated outbound holidays, religious pilgrimages, and bespoke travel adventures designed around you."
               to="/tourism"
-              image={divisionImage("tourism.jpg")}
+              cta="Explore tours"
+              image={divisionImage("foreign-tours.png")}
               icon={<Plane className="h-5 w-5" />}
             />
           </Reveal>
           <Reveal delay={0.2}>
             <DivisionCard
-              title="Software & Digital Solutions"
+              title="Air Ticket Booking"
+              description="IATA-aligned global flight ticketing, visa assistance, and corporate travel itinerary management."
+              to="/air-ticketing"
+              cta="Book flights"
+              image={divisionImage("air-tickets.png")}
+              icon={<Plane className="h-5 w-5" />}
+            />
+          </Reveal>
+          <Reveal delay={0.3}>
+            <DivisionCard
+              title="Software & Solutions"
               description="Enterprise cloud architecture, custom web platforms, mobile apps, and business AI automation."
               to="/software"
               cta="Explore tech stack"
-              image={divisionImage("software.jpg")}
+              image={divisionImage("software-solutions.jpg")}
               icon={<Code2 className="h-5 w-5" />}
             />
           </Reveal>

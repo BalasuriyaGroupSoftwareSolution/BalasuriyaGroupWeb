@@ -77,20 +77,20 @@ export default function About() {
       <section className="mx-auto max-w-5xl px-4 py-14">
         <div className="grid gap-6 sm:grid-cols-2">
           <Reveal>
-            <div className="card h-full">
-              <h2 className="font-display text-xl font-bold text-brand-navy">Mission</h2>
-              <p className="mt-2 text-sm text-gray-700">
-                To provide innovative, reliable, and customer-focused services while expanding across
-                multiple industries with excellence and integrity.
+            <div className="card h-full border-l-4 border-l-brand-accent">
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-accent">Our Direction</span>
+              <h2 className="mt-1 font-display text-2xl font-bold text-brand-navy">Vision</h2>
+              <p className="mt-3 text-sm leading-relaxed text-gray-700">
+                &ldquo;To be Sri Lanka’s most trusted multi-industry group—shaping the nation’s technology, infrastructure, and tourism sectors to connect people, spaces, and opportunities with the world&rdquo;
               </p>
             </div>
           </Reveal>
           <Reveal delay={0.1}>
-            <div className="card h-full">
-              <h2 className="font-display text-xl font-bold text-brand-navy">Vision</h2>
-              <p className="mt-2 text-sm text-gray-700">
-                To become a globally recognized diversified business group known for innovation,
-                technology, leadership, and customer trust.
+            <div className="card h-full border-l-4 border-l-brand-gold">
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">Our Purpose</span>
+              <h2 className="mt-1 font-display text-2xl font-bold text-brand-navy">Mission</h2>
+              <p className="mt-3 text-sm leading-relaxed text-gray-700">
+                &ldquo;Driven by integrity and operational excellence, we empower possibilities and build tomorrow across Sri Lanka and beyond—delivering intelligent software, enduring construction, and seamless global travel experiences&rdquo;
               </p>
             </div>
           </Reveal>
