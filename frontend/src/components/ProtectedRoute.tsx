@@ -18,7 +18,7 @@ export function ProtectedRoute({ roles, redirectTo = "/staff" }: Props) {
   }
 
   if (!user) {
-    return <Navigate to="/staff/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (roles && roles.length > 0 && user.role !== "OWNER" && !roles.includes(user.role)) {

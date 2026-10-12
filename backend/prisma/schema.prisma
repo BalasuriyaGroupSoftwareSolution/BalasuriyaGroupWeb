@@ -56,6 +56,17 @@ model ConstructionProject {
   description   String?
   location      String?
   status        ProjectStatus @default(PLANNING)
+  // Free-text category for display (e.g. "Residential", "Commercial",
+  // "Infrastructure", "Industrial", "Renovation"). Not an enum since staff
+  // may want new categories later without a migration.
+  projectType   String?
+  // Cover photo shown on the public listing, chosen by staff for this
+  // project. Same convention as ProgressUpdate.photoUrls — an externally
+  // hosted image URL (no file upload storage yet).
+  coverImageUrl String?
+  // Staff pick which projects appear in the public "Selected Projects"
+  // showcase, instead of every project always being shown.
+  featured      Boolean       @default(false)
   startDate     DateTime?
   targetEndDate DateTime?
   createdById   String
@@ -64,6 +75,8 @@ model ConstructionProject {
   updatedAt     DateTime      @updatedAt
 
   progressUpdates ProgressUpdate[]
+
+  @@index([featured])
 }
 
 model ProgressUpdate {
@@ -131,6 +144,8 @@ enum BookingType {
   AIR_TICKET
   VISA_ASSISTANCE
   CONSTRUCTION_QUOTE
+  SOFTWARE_PROJECT
+  GENERAL_INQUIRY
 }
 
 enum BookingStatus {

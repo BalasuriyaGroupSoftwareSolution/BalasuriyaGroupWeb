@@ -129,14 +129,37 @@ export default function Home() {
           </Reveal>
           <Reveal delay={0.2}>
             <DivisionCard
-              title="Software"
-              description="Coming soon — digital products from the Balasuriya Group technology team."
-              to="/about"
-              cta="Stay tuned"
+              title="Software & Digital Solutions"
+              description="Enterprise cloud architecture, custom web platforms, mobile apps, and business AI automation."
+              to="/software"
+              cta="Explore tech stack"
               image={divisionImage("software.jpg")}
               icon={<Code2 className="h-5 w-5" />}
             />
           </Reveal>
+        </div>
+
+        {/* Rapid Actions Bar */}
+        <div className="mt-12 rounded-2xl bg-gradient-to-r from-brand-navy via-brand-steel to-slate-900 p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <span className="text-xs uppercase tracking-widest text-brand-gold font-bold">
+              Instant Estimation & Proposals
+            </span>
+            <h3 className="font-display font-bold text-2xl mt-1">
+              Have an Upcoming Project or Travel Plan?
+            </h3>
+            <p className="text-xs text-white/75 mt-1 max-w-xl">
+              Use our interactive RFQ wizard for Construction civil works, bespoke Holiday bookings, or Enterprise Software proposals.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <a href="/quote" className="btn-primary bg-brand-gold text-brand-navy hover:bg-brand-gold/90 text-xs py-2.5 px-6 font-bold whitespace-nowrap">
+              Calculate RFQ Quote →
+            </a>
+            <a href="/portal" className="btn-secondary border-white/30 text-white hover:bg-white/10 text-xs py-2.5 px-6 whitespace-nowrap">
+              Access Client Portal
+            </a>
+          </div>
         </div>
       </section>
 

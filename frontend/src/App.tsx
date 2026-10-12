@@ -10,10 +10,19 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import CustomerPortal from "./pages/CustomerPortal";
+
 import ConstructionPublic from "./pages/construction/ConstructionPublic";
 import ProjectDetail from "./pages/construction/ProjectDetail";
 import TourismPublic from "./pages/tourism/TourismPublic";
 import PackageDetail from "./pages/tourism/PackageDetail";
+import AirTicketingPublic from "./pages/AirTicketingPublic";
+import SoftwarePublic from "./pages/SoftwarePublic";
+import QuoteWizard from "./pages/QuoteWizard";
+import Careers from "./pages/Careers";
+import Sustainability from "./pages/Sustainability";
+
 import StaffLayout from "./pages/staff/StaffLayout";
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import ConstructionStaff from "./pages/staff/ConstructionStaff";
@@ -28,19 +37,34 @@ export default function App() {
       <Navbar />
       <div className="flex-1">
         <Routes>
+          {/* Public Corporate Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/careers" element={<Careers />} />
+          <Route path="/sustainability" element={<Sustainability />} />
+          <Route path="/quote" element={<QuoteWizard />} />
+
+          {/* Authentication & Security Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/staff/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
+          {/* Division Showcases */}
           <Route path="/construction" element={<ConstructionPublic />} />
           <Route path="/construction/:id" element={<ProjectDetail />} />
-
           <Route path="/tourism" element={<TourismPublic />} />
           <Route path="/tourism/:id" element={<PackageDetail />} />
+          <Route path="/air-ticketing" element={<AirTicketingPublic />} />
+          <Route path="/software" element={<SoftwarePublic />} />
 
+          {/* Customer / Client Portal (Protected) */}
+          <Route element={<ProtectedRoute redirectTo="/login" />}>
+            <Route path="/portal" element={<CustomerPortal />} />
+          </Route>
+
+          {/* Staff / Admin Portal (Role-Protected) */}
           <Route
             element={
               <ProtectedRoute

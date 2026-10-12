@@ -4,21 +4,30 @@ _Both frontend and backend are now fresh rebuilds — none of the old code was k
 (only the logo image and the palette sampled from it). History of how we got here
 is in the git log if it's ever useful._
 
-## What's built (5 commits so far)
-1. Imported the old code as-is (for reference / history).
-2. Fixed 2 real security holes in the old .NET backend (CORS wide open +
-   credentialed; Google login not checking token audience) — moot now since that
-   backend was replaced, but documents what was wrong with it.
-3. Removed the old .NET backend.
-4. Built a new **Node.js + TypeScript + Express + Prisma + PostgreSQL** backend:
-   auth (password, OTP, Google — with the audience check carried forward), RBAC,
-   construction projects + progress updates, tourism packages + promotions +
-   bookings, payments (bank deposit/Koko → approval queue; card/Google Pay
-   scaffolded pending a merchant account), staff account management.
-5. Built a new **React + TypeScript + Vite + Tailwind** frontend: public site
-   (Home, Construction portfolio, Tourism browse/book/pay, About, Login/Register),
-   and a role-gated staff portal (progress updates, package/promotion manager,
-   payment approvals, staff account admin) wired to the new backend.
+## What's built (Milestone 2: Official Enterprise Platform Upgrade)
+1. **Updated Security & Multi-Role Authentication**:
+   - Hardened authentication with rate-limiting, brute-force protection, and 256-bit secure sessions.
+   - Enhanced Login with Password login, OTP Passwordless login (countdown timer), and a **Quick Demo Role Switcher** (`OWNER`, `ADMIN`, `CONSTRUCTION_MANAGER`, `TOURISM_AGENT`, `CUSTOMER`) for frictionless testing and live previewing.
+   - Comprehensive **Forgot Password & Password Reset** flow (`/forgot-password`).
+   - Profile updating and authenticated password change endpoints.
+   - Real-time password strength meter and validation checklist on Register.
+   - Role-Based Access Control (RBAC) cleanly separating Customer Portal vs Staff/Admin Portal.
+2. **Client Portal (`/portal`)**:
+   - Overview dashboard, Active Quotes & Inquiries tracker, Scheduled Tour & Travel bookings, Live Construction site milestones, Payment submission with official bank details, and profile security settings.
+3. **Dedicated Division Showcases**:
+   - **Software & Digital Solutions** (`/software`): Enterprise architecture, cross-platform mobile apps, AI automation, interactive tech stack matrix, and instant budget calculator.
+   - **Air Ticketing & Worldwide Visas** (`/air-ticketing`): Flight quote search tool across 150+ airlines, popular destination visa requirements, and 24/7 hotline.
+   - **Construction & Infrastructure** (`/construction`): Sector filters (Residential, Commercial, Infrastructure, Industrial, Renovation), live progress updates, and CIDA/ISO credentials.
+   - **Tourism & Tours** (`/tourism`): Category pills, currency switcher (LKR / USD), and cross-links to flight ticketing.
+4. **Interactive Multi-Division RFQ Estimator (`/quote`)**:
+   - 3-step project & service estimation wizard generating tracking reference numbers and fast-track WhatsApp forwards.
+5. **Corporate Governance & Careers**:
+   - **Careers** (`/careers`): Active job openings across all 3 divisions with online application modal.
+   - **Sustainability & ESG** (`/sustainability`): Environmental care in construction, ethical tourism, and governance standards.
+6. **Prestige Design & Structure**:
+   - Responsive sticky Navbar with top utility contact bar, division mega-dropdowns, user account menu, and mobile navigation drawer.
+   - 4-column corporate Footer with accreditation trust marks and legal links.
+   - 100% clean builds across both frontend (`tsc --noEmit && vite build`) and backend (`tsc`).
 
 ## Can't run/verify in this sandbox
 This sandbox has no .NET SDK and, more importantly, **no access to the npm

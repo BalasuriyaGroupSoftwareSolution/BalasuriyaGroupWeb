@@ -15,6 +15,9 @@ export default function ConstructionStaff() {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
+  const [projectType, setProjectType] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [featured, setFeatured] = useState(false);
 
   // Progress update form
   const [currentStatus, setCurrentStatus] = useState("");
@@ -34,11 +37,22 @@ export default function ConstructionStaff() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post("/api/construction/projects", { name, location, description, status: "PLANNING" });
+      await api.post("/api/construction/projects", {
+        name,
+        location,
+        description,
+        status: "PLANNING",
+        projectType: projectType || undefined,
+        coverImageUrl: coverImageUrl || undefined,
+        featured,
+      });
       toast.success("Project created.");
       setName("");
       setLocation("");
       setDescription("");
+      setProjectType("");
+      setCoverImageUrl("");
+      setFeatured(false);
       setShowNewProject(false);
       loadProjects();
     } catch (err) {
@@ -54,6 +68,27 @@ export default function ConstructionStaff() {
       loadProjects();
     } catch (err) {
       toast.error(apiErrorMessage(err));
+    }
+  }
+
+  async function toggleFeatured(project: ConstructionProject) {
+    try {
+      await api.patch(`/api/construction/projects/${project.id}`, { featured: !project.featured });
+      loadProjects();
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    }
+  }
+
+  async function handleCoverImageChange(projectId: string) {
+    const url = window.prompt("Cover image URL for this project (shown on the public Construction page):");
+    if (!url) return;
+    try {
+      await api.patch(`/api/construction/projects/${projectId}`, { coverImageUrl: url });
+      toast.success("Cover image updated.");
+      loadProjects();
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Could not update cover image."));
     }
   }
 
@@ -102,6 +137,35 @@ export default function ConstructionStaff() {
             <label className="label">Description</label>
             <textarea className="input" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="label">Project type</label>
+              <input
+                className="input"
+                placeholder="e.g. Residential, Commercial, Infrastructure"
+                value={projectType}
+                onChange={(e) => setProjectType(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">Cover image URL</label>
+              <input
+                className="input"
+                placeholder="https://…"
+                value={coverImageUrl}
+                onChange={(e) => setCoverImageUrl(e.target.value)}
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={featured}
+              onChange={(e) => setFeatured(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            Show in "Selected Projects" on the public Construction page
+          </label>
           <button className="btn-primary" disabled={submitting} type="submit">
             Create project
           </button>
@@ -120,6 +184,7 @@ export default function ConstructionStaff() {
                 <span className="font-medium text-brand-navy">{p.name}</span>
                 <StatusBadge status={p.status} />
               </div>
+              {p.projectType && <p className="mt-0.5 text-xs text-gray-500">{p.projectType}</p>}
               <div className="mt-3 flex flex-wrap gap-1">
                 {STATUSES.map((s) => (
                   <button
@@ -136,6 +201,30 @@ export default function ConstructionStaff() {
                     {s.replace(/_/g, " ")}
                   </button>
                 ))}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFeatured(p);
+                  }}
+                  className={`rounded px-2 py-0.5 text-[11px] font-medium ${
+                    p.featured ? "bg-brand-gold text-brand-navy" : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {p.featured ? "★ Selected" : "☆ Not selected"}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCoverImageChange(p.id);
+                  }}
+                  className="rounded px-2 py-0.5 text-[11px] text-brand-accent hover:underline"
+                >
+                  {p.coverImageUrl ? "Change cover image" : "Add cover image"}
+                </button>
               </div>
             </button>
           ))}

@@ -12,8 +12,10 @@ const STAFF_ROLES = ["CONSTRUCTION_MANAGER", "ADMIN"] as const;
 
 constructionRouter.get(
   "/projects",
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    const featuredOnly = req.query.featured === "true";
     const projects = await prisma.constructionProject.findMany({
+      where: featuredOnly ? { featured: true } : undefined,
       orderBy: { updatedAt: "desc" },
       include: {
         progressUpdates: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -42,6 +44,9 @@ const projectSchema = z.object({
   description: z.string().max(4000).optional(),
   location: z.string().max(200).optional(),
   status: z.enum(["PLANNING", "IN_PROGRESS", "ON_HOLD", "COMPLETED"]).optional(),
+  projectType: z.string().max(60).optional(),
+  coverImageUrl: z.string().url().max(2000).optional(),
+  featured: z.boolean().optional(),
   startDate: z.string().datetime().optional(),
   targetEndDate: z.string().datetime().optional(),
 });

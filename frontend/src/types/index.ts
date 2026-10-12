@@ -37,6 +37,9 @@ export interface ConstructionProject {
   description: string | null;
   location: string | null;
   status: ProjectStatus;
+  projectType: string | null;
+  coverImageUrl: string | null;
+  featured: boolean;
   startDate: string | null;
   targetEndDate: string | null;
   progressUpdates: ProgressUpdate[];
@@ -67,7 +70,13 @@ export interface TourPackage {
   promotions: Promotion[];
 }
 
-export type BookingType = "TOUR_PACKAGE" | "AIR_TICKET" | "VISA_ASSISTANCE" | "CONSTRUCTION_QUOTE";
+export type BookingType =
+  | "TOUR_PACKAGE"
+  | "AIR_TICKET"
+  | "VISA_ASSISTANCE"
+  | "CONSTRUCTION_QUOTE"
+  | "SOFTWARE_PROJECT"
+  | "GENERAL_INQUIRY";
 export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 
 export interface Booking {
@@ -76,6 +85,7 @@ export interface Booking {
   status: BookingStatus;
   package?: TourPackage | null;
   payments: Payment[];
+  details?: Record<string, any> | null;
   createdAt: string;
 }
 

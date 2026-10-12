@@ -27,6 +27,20 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+/** Attaches req.user if a valid token is provided, but continues if not. */
+export function optionalAuthenticate(req: Request, _res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (header?.startsWith("Bearer ")) {
+    const token = header.slice("Bearer ".length);
+    try {
+      req.user = verifyAuthToken(token);
+    } catch {
+      // Continue unauthenticated
+    }
+  }
+  return next();
+}
+
 /**
  * Restricts a route to the given roles. OWNER always passes, since owners
  * oversee every division. Call `authenticate` first on the same route.

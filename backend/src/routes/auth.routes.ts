@@ -193,3 +193,147 @@ authRouter.get(
     res.json({ user: toPublicUser(user) });
   })
 );
+
+// --- Enhanced Security: Profile Update & Password Management ---
+
+const updateProfileSchema = z.object({
+  name: z.string().min(2).max(120).optional(),
+  phone: z.string().min(7).max(25).optional(),
+});
+
+authRouter.patch(
+  "/profile",
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const data = updateProfileSchema.parse(req.body);
+    const user = await prisma.user.update({
+      where: { id: req.user!.sub },
+      data: {
+        ...(data.name ? { name: data.name } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone } : {}),
+      },
+    });
+    res.json({ user: toPublicUser(user), message: "Profile updated successfully." });
+  })
+);
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8, "New password must be at least 8 characters."),
+});
+
+authRouter.post(
+  "/change-password",
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+    const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
+    if (!user || !user.passwordHash) {
+      throw new HttpError(400, "Unable to change password for this account.");
+    }
+
+    const isValid = await verifyPassword(currentPassword, user.passwordHash);
+    if (!isValid) {
+      throw new HttpError(401, "Current password is incorrect.");
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(newPassword) },
+    });
+
+    res.json({ message: "Password updated successfully." });
+  })
+);
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+authRouter.post(
+  "/forgot-password",
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const { email } = forgotPasswordSchema.parse(req.body);
+    const normalized = email.toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: normalized } });
+
+    // Always return success response to prevent email enumeration attacks
+    if (user && user.isActive) {
+      await createVerificationCode(normalized);
+    }
+
+    res.json({
+      message: "If an active account exists with that email, a verification code has been sent.",
+    });
+  })
+);
+
+const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  code: z.string().length(6),
+  newPassword: z.string().min(8, "Password must be at least 8 characters."),
+});
+
+authRouter.post(
+  "/reset-password",
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const { email, code, newPassword } = resetPasswordSchema.parse(req.body);
+    const normalized = email.toLowerCase();
+
+    const ok = await consumeVerificationCode(normalized, code);
+    if (!ok) {
+      throw new HttpError(400, "Invalid or expired reset code.");
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: normalized } });
+    if (!user || !user.isActive) {
+      throw new HttpError(404, "User not found or account disabled.");
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(newPassword) },
+    });
+
+    const token = signAuthToken({ sub: user.id, email: user.email, role: user.role, name: user.name });
+    res.json({ token, user: toPublicUser(user), message: "Password successfully reset." });
+  })
+);
+
+// --- Testing / Demo Role Login for smooth review & inspection ---
+const demoRoles = [
+  "OWNER",
+  "ADMIN",
+  "CONSTRUCTION_MANAGER",
+  "TOURISM_AGENT",
+  "CUSTOMER",
+] as const;
+
+authRouter.post(
+  "/demo-login",
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const roleReq = (req.body.role || "CUSTOMER").toUpperCase();
+    const role = (demoRoles.includes(roleReq as any) ? roleReq : "CUSTOMER") as (typeof demoRoles)[number];
+
+    const demoEmail = `demo.${role.toLowerCase()}@balasuriyagroup.tech`;
+    let user = await prisma.user.findUnique({ where: { email: demoEmail } });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: demoEmail,
+          name: `Demo ${role.replace(/_/g, " ")}`,
+          role: role as any,
+          isActive: true,
+        },
+      });
+    }
+
+    const token = signAuthToken({ sub: user.id, email: user.email, role: user.role, name: user.name });
+    res.json({ token, user: toPublicUser(user) });
+  })
+);
+
