@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: balasuriya-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run prisma:generate && npm run build
+    startCommand: npm run prisma:deploy && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: balasuriya-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://balasuriyagroup.tech,https://www.balasuriyagroup.tech,http://localhost:5173
+
+databases:
+  - name: balasuriya-postgres
+    databaseName: balasuriya
+    user: balasuriya_admin
+    plan: free
