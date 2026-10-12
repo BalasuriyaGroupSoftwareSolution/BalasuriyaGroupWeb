@@ -40,17 +40,10 @@ is not the same as actually running it. **You'll need to `npm install` in both
 `backend/` and `frontend/` on your own machine (or wherever this deploys) and
 report back anything that breaks.**
 
-## Git: can't push directly from this session
-Tried pushing to `git@github.com:ClemonBalasuriya/BalasuriyaGroup.git` — the
-session's git proxy refused with:
-> access denied by the git proxy: ClemonBalasuriya/BalasuriyaGroup is not in
-> this session's authorized repository set
-
-So this session *can* push to GitHub through an injected credential, but only for
-repos explicitly authorized for it — which happens outside this chat (likely
-wherever this Claude environment/session's connected repositories are configured).
-Until that's sorted out, work is delivered as a **git bundle** (preserves full
-commit history) after each milestone — clone it, add your real remote, push.
+## Company Repository
+Connected to official company GitHub repository:
+`https://github.com/balasuriyagroup/BalasuriyaGroupWeb.git`
+Git author configured as `balasuriyagroup` (`balasuriyagroup.software@gmail.com`).
 
 ## Resolved
 - No payment gateway account yet — Card/Google Pay stay as explicit "not
