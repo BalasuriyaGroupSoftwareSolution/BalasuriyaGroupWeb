@@ -40,39 +40,71 @@ export const testimonials = [
 export interface TeamMember {
   name: string;
   role: string;
+  departmentScope?: string;
   image: string;
   email?: string;
   linkedin?: string;
 }
 
+// Executive Leadership (Board / Shareholders / Top Executives)
 export const directors: TeamMember[] = [
   {
-    name: "Mr. Clemon Balasuriya",
-    role: "Chief Executive Officer (CEO)",
+    name: "Clemon Balasuriya",
+    role: "CEO",
+    departmentScope: "Software & Solutions & Construction",
     image: "clemon-balasuriya.jpg",
-    email: "avishkaclemon@gmail.com",
-    linkedin:
-      "https://www.linkedin.com/in/clemon-balasuriya-05518b256",
+    email: "clemonbalasuriyagroup@gmail.com",
+    linkedin: "https://www.linkedin.com/in/clemon-balasuriya-05518b256",
   },
   {
-    name: "Mr. Damian Balasuriya",
-    role: "Managing Director (MD)",
+    name: "Damian Balasuriya",
+    role: "MD",
+    departmentScope: "Strategy, Marketing & Expansion",
     image: "damian-balasuriya.jpg",
     email: "damianbalasuriyagroup@gmail.com",
-    linkedin:
-      "https://www.linkedin.com/in/damian-balasuriya-578a72358",
+    linkedin: "https://www.linkedin.com/in/damian-balasuriya-578a72358",
   },
   {
-    name: "Mr. Clavo Balasuriya",
-    role: "Executive Director",
+    name: "Clavo Balasuriya",
+    role: "ED & Company Secretary",
+    departmentScope: "Finance, HR, Legal & Corporate Affairs",
     image: "clavo-balasuriya.jpg",
     email: "clavobalasuriyagroup@gmail.com",
   },
   {
-    name: "Dr. Christina Jayamaha",
-    role: "Director",
+    name: "Christina Balasuriya",
+    role: "Director & Shareholder",
+    departmentScope: "Governance & Shareholder Oversight",
     image: "christina-jayamaha.jpg",
     email: "christinabalasuriyagroup@gmail.com",
+  },
+];
+
+// Division Heads & Operational Leaders (without email addresses, per specification)
+export const operationalLeaders: TeamMember[] = [
+  {
+    name: "Kevin",
+    role: "Software Leadership",
+    departmentScope: "Software & Solutions",
+    image: "kevin.jpg",
+  },
+  {
+    name: "Shenal",
+    role: "Software Operations & Marketing Execution",
+    departmentScope: "Software & Solutions",
+    image: "shenal.jpg",
+  },
+  {
+    name: "Migara",
+    role: "Construction Leadership",
+    departmentScope: "Construction",
+    image: "migara.jpg",
+  },
+  {
+    name: "Pasindu",
+    role: "Construction Logistics & Marketing Execution",
+    departmentScope: "Construction",
+    image: "pasindu.jpg",
   },
 ];
 
@@ -85,64 +117,36 @@ export interface Department {
 
 export const departments: Department[] = [
   {
-    id: "construction",
-    title: "Construction Division",
-    description: "End-to-end construction projects with planning precision and trusted delivery standards.",
-    members: [
-      {
-        name: "Mr. Migara Fonseka",
-        role: "Division Leader",
-        image: "migara-fonseka.jpg",
-        email: "Malindamfonseka@gmail.com",
-        linkedin: "https://www.linkedin.com/in/migara-fonseka-b12134236",
-      },
-      {
-        name: "Mr. Pasindu Manjitha",
-        role: "Logistics & Workforce Management",
-        image: "pasindu-manjitha.jpg",
-        email: "radm.pasindu@gmail.com",
-        linkedin: "https://www.linkedin.com/in/pasindu-manjitha-9b1072237",
-      },
-    ],
-  },
-  {
-    id: "tourism",
-    title: "Tourism & Air Ticketing Division",
-    description: "Personalized travel consulting, tour planning, visa assistance, and air ticket booking.",
-    members: [
-      {
-        name: "Mr. Damian Balasuriya",
-        role: "Division Leader",
-        image: "damian-balasuriya.jpg",
-        email: "damianbalasuriyagroup@gmail.com",
-        linkedin: "https://www.linkedin.com/in/damian-balasuriya-578a72358",
-      },
-      {
-        name: "Mr. Clavo Balasuriya",
-        role: "Air Ticketing Lead",
-        image: "clavo-balasuriya.jpg",
-        email: "clavobalasuriyagroup@gmail.com",
-      },
-    ],
-  },
-  {
     id: "software",
-    title: "Software Engineering Division",
-    description: "Modern software engineering, scalable architecture, and agile product execution — coming soon.",
+    title: "Software & Solutions Operational Leadership",
+    description: "Enterprise software architecture, product engineering, scalable cloud operations, and marketing execution.",
     members: [
       {
-        name: "Mr. Clemon Balasuriya",
-        role: "Division Leader",
-        image: "clemon-balasuriya.jpg",
-        email: "avishkaclemon@gmail.com",
-        linkedin: "https://www.linkedin.com/in/clemon-balasuriya-05518b256",
+        name: "Kevin",
+        role: "Software Leadership",
+        image: "kevin.jpg",
       },
       {
-        name: "Mr. Shenal Fonseka",
-        role: "Software Engineer",
-        image: "shenal-fonseka.jpg",
-        email: "hianthony218@gmail.com",
-        linkedin: "https://www.linkedin.com/in/shenal-fonseka-15a353263",
+        name: "Shenal",
+        role: "Software Operations & Marketing Execution",
+        image: "shenal.jpg",
+      },
+    ],
+  },
+  {
+    id: "construction",
+    title: "Construction Operational Leadership",
+    description: "Site execution, structural engineering, supply chain logistics, and marketing execution across Sri Lanka.",
+    members: [
+      {
+        name: "Migara",
+        role: "Construction Leadership",
+        image: "migara.jpg",
+      },
+      {
+        name: "Pasindu",
+        role: "Construction Logistics & Marketing Execution",
+        image: "pasindu.jpg",
       },
     ],
   },

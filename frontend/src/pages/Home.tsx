@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Building2, Code2, Plane, Quote } from "lucide-react";
+import { Building2, Code2, Palmtree, Plane, Quote } from "lucide-react";
 import { DivisionCard } from "../components/DivisionCard";
 import { Reveal } from "../components/Reveal";
 import { CountUp } from "../components/CountUp";
@@ -108,37 +108,48 @@ export default function Home() {
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-accent">What we do</p>
           <h2 className="mt-2 font-display text-3xl font-bold text-brand-navy">Our Divisions</h2>
         </Reveal>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <Reveal delay={0}>
             <DivisionCard
               title="Construction"
-              description="From architectural planning to turnkey handover — engineering enduring infrastructure across Sri Lanka."
+              description="Turnkey civil construction, architectural planning, and infrastructure development across Sri Lanka."
               to="/construction"
+              cta="Explore projects"
               image={divisionImage("constructions.jpg")}
               icon={<Building2 className="h-5 w-5" />}
             />
           </Reveal>
-          <Reveal delay={0.1}>
+          <Reveal delay={0.08}>
+            <DivisionCard
+              title="StayLanka"
+              description="Inbound destination management, luxury island villas, eco-retreats, and cultural heritage experiences."
+              to="/tourism"
+              cta="Wonder awaits"
+              image={divisionImage("stay-lanka.png")}
+              icon={<Palmtree className="h-5 w-5" />}
+            />
+          </Reveal>
+          <Reveal delay={0.16}>
             <DivisionCard
               title="Foreign Tours"
-              description="Curated outbound holidays, religious pilgrimages, and bespoke travel adventures designed around you."
+              description="Curated outbound holidays, international holiday packages, and sacred pilgrimage journeys."
               to="/tourism"
               cta="Explore tours"
               image={divisionImage("foreign-tours.png")}
               icon={<Plane className="h-5 w-5" />}
             />
           </Reveal>
-          <Reveal delay={0.2}>
+          <Reveal delay={0.24}>
             <DivisionCard
               title="Air Ticket Booking"
-              description="IATA-aligned global flight ticketing, visa assistance, and corporate travel itinerary management."
+              description="IATA-aligned global flight ticketing, corporate reservations, and seamless embassy visa services."
               to="/air-ticketing"
               cta="Book flights"
               image={divisionImage("air-tickets.png")}
               icon={<Plane className="h-5 w-5" />}
             />
           </Reveal>
-          <Reveal delay={0.3}>
+          <Reveal delay={0.32}>
             <DivisionCard
               title="Software & Solutions"
               description="Enterprise cloud architecture, custom web platforms, mobile apps, and business AI automation."

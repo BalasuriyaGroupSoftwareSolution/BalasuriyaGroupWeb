@@ -19,7 +19,7 @@ function PersonCard({ person, onView }: { person: TeamMember; onView: (p: TeamMe
       <button
         onClick={() => onView(person)}
         aria-label={`View photo of ${person.name}`}
-        className="group relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-brand-accent/40"
+        className="group relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-brand-gold/60"
       >
         <img
           src={teamImage(person.image)}
@@ -30,11 +30,14 @@ function PersonCard({ person, onView }: { person: TeamMember; onView: (p: TeamMe
           <ZoomIn className="h-5 w-5 text-white" />
         </span>
       </button>
-      <div>
-        <h4 className="font-semibold text-brand-navy">{person.name}</h4>
-        <p className="text-sm text-gray-600">{person.role}</p>
+      <div className="flex-1 min-w-0">
+        <h4 className="font-semibold text-brand-navy truncate">{person.name}</h4>
+        <p className="text-xs font-bold uppercase tracking-wider text-brand-gold">{person.role}</p>
+        {person.departmentScope && (
+          <p className="text-xs text-gray-500 mt-0.5">{person.departmentScope}</p>
+        )}
         {person.email && (
-          <a href={`mailto:${person.email}`} className="text-xs text-brand-accent hover:underline">
+          <a href={`mailto:${person.email}`} className="mt-1 block text-xs text-brand-accent hover:underline truncate">
             {person.email}
           </a>
         )}
@@ -97,12 +100,19 @@ export default function About() {
         </div>
       </section>
 
+      {/* Executive Leadership */}
       <section className="bg-white py-14">
         <div className="mx-auto max-w-5xl px-4">
           <Reveal className="text-center">
-            <h2 className="font-display text-2xl font-bold text-brand-navy">Meet Our Directors</h2>
+            <span className="text-xs font-bold uppercase tracking-widest text-brand-gold">
+              Balasuriya Group Management Structure
+            </span>
+            <h2 className="mt-2 font-display text-3xl font-bold text-brand-navy">Executive Leadership</h2>
+            <p className="mt-2 text-sm text-gray-600 max-w-2xl mx-auto">
+              Strategic governance, executive direction, and multi-industry oversight across the Balasuriya Group.
+            </p>
           </Reveal>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
+          <div className="mt-10 grid gap-6 sm:grid-cols-2">
             {directors.map((d, i) => (
               <Reveal key={d.name} delay={i * 0.08}>
                 <PersonCard person={d} onView={setSelected} />
@@ -112,17 +122,26 @@ export default function About() {
         </div>
       </section>
 
+      {/* Division Heads & Operational Leaders */}
       <section className="mx-auto max-w-5xl px-4 py-14">
         <Reveal className="text-center">
-          <h2 className="font-display text-2xl font-bold text-brand-navy">Department Leadership</h2>
+          <span className="text-xs font-bold uppercase tracking-widest text-brand-accent">
+            Operational Excellence
+          </span>
+          <h2 className="mt-2 font-display text-3xl font-bold text-brand-navy">
+            Division Heads & Operational Leaders
+          </h2>
+          <p className="mt-2 text-sm text-gray-600 max-w-2xl mx-auto">
+            Heading operational delivery, engineering implementation, and logistics execution across our subsidiaries.
+          </p>
         </Reveal>
         <div className="mt-8 space-y-8">
           {departments.map((dept, di) => (
             <Reveal key={dept.id} delay={di * 0.05}>
-              <div>
-                <h3 className="font-semibold text-brand-navy">{dept.title}</h3>
-                <p className="mt-1 text-sm text-gray-600">{dept.description}</p>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-gray-100 bg-white/70 p-6 shadow-sm">
+                <h3 className="font-display text-lg font-bold text-brand-navy">{dept.title}</h3>
+                <p className="mt-1 text-xs text-gray-600">{dept.description}</p>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   {dept.members.map((m) => (
                     <PersonCard key={`${dept.id}-${m.name}`} person={m} onView={setSelected} />
                   ))}
@@ -130,6 +149,48 @@ export default function About() {
               </div>
             </Reveal>
           ))}
+        </div>
+      </section>
+
+      {/* Organizational Principle Hierarchy */}
+      <section className="bg-brand-surface py-12 border-y border-black/5">
+        <div className="mx-auto max-w-5xl px-4">
+          <Reveal className="text-center">
+            <span className="text-xs font-bold uppercase tracking-widest text-brand-navy/60">
+              Governance Framework
+            </span>
+            <h3 className="mt-1 font-display text-xl font-bold text-brand-navy">
+              Final Organizational Principle
+            </h3>
+            <p className="mt-1 text-xs text-gray-500">
+              Clear reporting lines and accountability across all corporate tiers
+            </p>
+          </Reveal>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-semibold">
+            <span className="rounded-xl bg-brand-navy px-4 py-2.5 text-white shadow-sm">
+              Board / Shareholders
+            </span>
+            <span className="text-brand-gold font-bold">→</span>
+            <span className="rounded-xl bg-white px-4 py-2.5 text-brand-navy ring-1 ring-black/10 shadow-sm">
+              CEO
+            </span>
+            <span className="text-brand-gold font-bold">→</span>
+            <span className="rounded-xl bg-white px-4 py-2.5 text-brand-navy ring-1 ring-black/10 shadow-sm">
+              MD
+            </span>
+            <span className="text-brand-gold font-bold">→</span>
+            <span className="rounded-xl bg-white px-4 py-2.5 text-brand-navy ring-1 ring-black/10 shadow-sm">
+              ED & Company Secretary
+            </span>
+            <span className="text-brand-gold font-bold">→</span>
+            <span className="rounded-xl bg-white px-4 py-2.5 text-brand-navy ring-1 ring-black/10 shadow-sm">
+              Director & Shareholder
+            </span>
+            <span className="text-brand-gold font-bold">→</span>
+            <span className="rounded-xl bg-brand-gold px-4 py-2.5 text-brand-navy font-bold shadow-sm">
+              Division Heads & Operational Leaders
+            </span>
+          </div>
         </div>
       </section>
 

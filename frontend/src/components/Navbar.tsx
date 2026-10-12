@@ -170,8 +170,8 @@ export function Navbar() {
                         <Palmtree className="h-4 w-4" />
                       </div>
                       <div>
-                        <span className="block text-xs font-bold text-brand-navy">Tourism & Travel</span>
-                        <span className="text-[11px] text-gray-500">Bespoke itineraries & Sri Lanka tours</span>
+                        <span className="block text-xs font-bold text-brand-navy">StayLanka & Foreign Tours</span>
+                        <span className="text-[11px] text-gray-500">Inbound island luxury & outbound packages</span>
                       </div>
                     </Link>
 

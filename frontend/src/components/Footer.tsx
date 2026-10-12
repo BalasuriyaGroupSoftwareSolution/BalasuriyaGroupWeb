@@ -82,7 +82,7 @@ export function Footer() {
             <li>
               <Link to="/tourism" className="flex items-center gap-2 hover:text-white transition">
                 <Palmtree className="h-3.5 w-3.5 text-emerald-400" />
-                Tourism & Holiday Packages
+                StayLanka & Foreign Tours
               </Link>
             </li>
             <li>
