@@ -2,6 +2,7 @@ services:
   - type: web
     name: balasuriya-backend
     runtime: node
+    plan: free
     rootDir: backend
     buildCommand: npm install && npm run prisma:generate && npm run build
     startCommand: npm run prisma:deploy && npm start
