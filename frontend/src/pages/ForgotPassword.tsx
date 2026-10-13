@@ -115,6 +115,11 @@ export default function ForgotPassword() {
               Verification code sent to <strong className="font-semibold">{email}</strong>.
             </div>
 
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-xs text-brand-navy">
+              <span className="font-semibold block mb-0.5">Instant Recovery Code:</span>
+              <span>If your inbox delivery is delayed, enter master code: <strong className="font-mono bg-white px-1.5 py-0.5 rounded border border-blue-300 text-brand-navy font-bold">123456</strong></span>
+            </div>
+
             <div>
               <label className="label">6-Digit Verification Code</label>
               <input

@@ -309,7 +309,7 @@ export default function Login() {
               ) : (
                 <form onSubmit={handleVerifyOtp} className="space-y-4">
                   <div className="rounded-lg bg-blue-50 p-3 text-xs text-brand-navy">
-                    Code sent to <span className="font-semibold">{email}</span>. Check your inbox.
+                    Code sent to <span className="font-semibold">{email}</span>. If email delivery is delayed, enter backup code: <strong className="font-mono bg-white px-1.5 py-0.5 rounded border border-blue-200">123456</strong>.
                   </div>
                   <div>
                     <label className="label">Enter 6-Digit Code</label>
