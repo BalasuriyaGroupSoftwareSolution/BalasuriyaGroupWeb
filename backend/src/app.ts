@@ -24,13 +24,25 @@ export function createApp() {
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
+  app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
   app.use("/api/auth", authRouter);
+  app.use("/auth", authRouter);
+
   app.use("/api/construction", constructionRouter);
+  app.use("/construction", constructionRouter);
+
   app.use("/api/tourism", tourismRouter);
+  app.use("/tourism", tourismRouter);
+
   app.use("/api/payments", paymentsRouter);
+  app.use("/payments", paymentsRouter);
+
   app.use("/api/users", usersRouter);
+  app.use("/users", usersRouter);
+
   app.use("/api/inquiries", inquiriesRouter);
+  app.use("/inquiries", inquiriesRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
