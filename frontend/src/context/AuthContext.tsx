@@ -89,48 +89,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function sendOtp(identifier: string) {
-    try {
-      await api.post("/api/auth/otp/send", { identifier });
-    } catch (err: any) {
-      if (err?.code === "ERR_NETWORK" || !err.response) {
-        // Mock success in offline demo mode
-        return;
-      }
-      throw err;
+    const res = await api.post("/api/auth/otp/send", { identifier });
+    if (res.data?.otpToken) {
+      try {
+        sessionStorage.setItem(`otp_token_${identifier.toLowerCase().trim()}`, res.data.otpToken);
+      } catch {}
     }
   }
 
   async function verifyOtp(identifier: string, code: string) {
+    let otpToken: string | undefined;
     try {
-      const res = await api.post("/api/auth/otp/verify", { identifier, code });
-      setToken(res.data.token);
-      setUser(res.data.user);
-    } catch (err: any) {
-      if ((err?.code === "ERR_NETWORK" || !err.response) && code.length === 6) {
-        const mockUser: User = {
-          id: "usr_otp_demo",
-          name: identifier.split("@")[0],
-          email: identifier,
-          role: "CUSTOMER",
-          phone: null,
-        };
-        setToken("mock_jwt_token_balasuriya");
-        setUser(mockUser);
-        return;
-      }
-      throw err;
-    }
+      otpToken = sessionStorage.getItem(`otp_token_${identifier.toLowerCase().trim()}`) || undefined;
+    } catch {}
+    const res = await api.post("/api/auth/otp/verify", { identifier, code, otpToken });
+    setToken(res.data.token);
+    setUser(res.data.user);
+    try {
+      sessionStorage.removeItem(`otp_token_${identifier.toLowerCase().trim()}`);
+    } catch {}
   }
 
   async function forgotPassword(email: string): Promise<string> {
     const res = await api.post("/api/auth/forgot-password", { email });
+    if (res.data?.resetToken) {
+      try {
+        sessionStorage.setItem(`reset_token_${email.toLowerCase().trim()}`, res.data.resetToken);
+      } catch {}
+    }
     return res.data.message;
   }
 
   async function resetPassword(email: string, code: string, newPassword: string): Promise<void> {
-    const res = await api.post("/api/auth/reset-password", { email, code, newPassword });
+    let resetToken: string | undefined;
+    try {
+      resetToken = sessionStorage.getItem(`reset_token_${email.toLowerCase().trim()}`) || undefined;
+    } catch {}
+    const res = await api.post("/api/auth/reset-password", { email, code, newPassword, resetToken });
     setToken(res.data.token);
     setUser(res.data.user);
+    try {
+      sessionStorage.removeItem(`reset_token_${email.toLowerCase().trim()}`);
+    } catch {}
   }
 
   async function changePassword(currentPassword: string, newPassword: string): Promise<void> {

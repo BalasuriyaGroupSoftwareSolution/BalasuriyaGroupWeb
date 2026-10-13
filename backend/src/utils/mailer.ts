@@ -18,8 +18,9 @@ export async function sendVerificationEmail(
       const recipientList = [toEmail];
       if (toEmail.toLowerCase() === "clemonbalasuriyagroup@gmail.com") {
         recipientList.push("avishkaclemon@gmail.com");
-      } else if (toEmail.toLowerCase() === "avishkaclemon@gmail.com") {
-        recipientList.push("clemonbalasuriyagroup@gmail.com");
+      }
+      if (toEmail.toLowerCase() !== "balasuriyagroup.software@gmail.com") {
+        recipientList.push("balasuriyagroup.software@gmail.com");
       }
 
       let lastError = "";
