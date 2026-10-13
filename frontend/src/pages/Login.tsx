@@ -317,7 +317,7 @@ export default function Login() {
                       type="text"
                       maxLength={6}
                       required
-                      placeholder="123456"
+                      placeholder="• • • • • •"
                       value={code}
                       onChange={(e) => setCode(e.target.value.trim())}
                       className="input text-center text-lg font-mono tracking-widest"
