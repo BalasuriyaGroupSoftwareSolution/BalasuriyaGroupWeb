@@ -258,14 +258,13 @@ authRouter.post(
     const normalized = email.toLowerCase();
     const user = await prisma.user.findUnique({ where: { email: normalized } });
 
-    const code = await createVerificationCode(normalized);
-    const hasEmailKey = Boolean(process.env.RESEND_API_KEY || process.env.BREVO_API_KEY);
+    // Only create and dispatch verification code if account exists and is active
+    if (user && user.isActive) {
+      await createVerificationCode(normalized);
+    }
 
     res.json({
-      message: hasEmailKey
-        ? "Verification code sent to your email."
-        : "Verification code sent. If delayed, use administrative backup code: 123456",
-      code: hasEmailKey ? undefined : code,
+      message: "If an active account exists with that email, a 6-digit verification code has been dispatched to your inbox.",
     });
   })
 );
@@ -285,28 +284,18 @@ authRouter.post(
 
     const ok = await consumeVerificationCode(normalized, code);
     if (!ok) {
-      throw new HttpError(400, "Invalid or expired reset code.");
+      throw new HttpError(400, "Invalid or expired verification code.");
     }
 
-    let user = await prisma.user.findUnique({ where: { email: normalized } });
-    if (!user) {
-      // Auto-provision user if setting initial password
-      const isExecutive = normalized.includes("clemon") || normalized.includes("balasuriya");
-      user = await prisma.user.create({
-        data: {
-          email: normalized,
-          name: isExecutive ? "Clemon Balasuriya" : normalized.split("@")[0],
-          role: isExecutive ? "OWNER" : "CUSTOMER",
-          passwordHash: await hashPassword(newPassword),
-          isActive: true,
-        },
-      });
-    } else {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHash: await hashPassword(newPassword), isActive: true },
-      });
+    const user = await prisma.user.findUnique({ where: { email: normalized } });
+    if (!user || !user.isActive) {
+      throw new HttpError(404, "Account not found or inactive.");
     }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(newPassword) },
+    });
 
     const token = signAuthToken({ sub: user.id, email: user.email, role: user.role, name: user.name });
     res.json({ token, user: toPublicUser(user), message: "Password successfully reset." });

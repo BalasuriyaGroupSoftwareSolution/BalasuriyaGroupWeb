@@ -113,12 +113,7 @@ export default function ForgotPassword() {
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800">
               <CheckCircle2 className="mr-1 inline h-4 w-4 text-emerald-600" />
-              Verification code sent to <strong className="font-semibold">{email}</strong>.
-            </div>
-
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-xs text-brand-navy">
-              <span className="font-semibold block mb-0.5">Instant Recovery Code:</span>
-              <span>If your inbox delivery is delayed, enter master code: <strong className="font-mono bg-white px-1.5 py-0.5 rounded border border-blue-300 text-brand-navy font-bold">123456</strong></span>
+              Verification code sent to <strong className="font-semibold">{email}</strong>. Please check your inbox and spam folder.
             </div>
 
             <div>

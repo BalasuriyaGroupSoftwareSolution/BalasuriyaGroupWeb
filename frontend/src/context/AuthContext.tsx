@@ -123,38 +123,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function forgotPassword(email: string): Promise<string> {
-    try {
-      const res = await api.post("/api/auth/forgot-password", { email });
-      return res.data.message;
-    } catch (err: any) {
-      if (err?.code === "ERR_NETWORK" || !err.response) {
-        return "Verification code generated. If email is delayed, enter backup code: 123456";
-      }
-      throw err;
-    }
+    const res = await api.post("/api/auth/forgot-password", { email });
+    return res.data.message;
   }
 
   async function resetPassword(email: string, code: string, newPassword: string): Promise<void> {
-    try {
-      const res = await api.post("/api/auth/reset-password", { email, code, newPassword });
-      setToken(res.data.token);
-      setUser(res.data.user);
-    } catch (err: any) {
-      if ((err?.code === "ERR_NETWORK" || !err.response) && code.length === 6) {
-        const isClemon = email.toLowerCase().includes("clemon") || email.toLowerCase().includes("balasuriya");
-        const mockUser: User = {
-          id: "usr_reset_success",
-          name: isClemon ? "Clemon Balasuriya" : email.split("@")[0],
-          email,
-          role: isClemon ? "OWNER" : "CUSTOMER",
-          phone: null,
-        };
-        setToken("auth_jwt_token_balasuriya_group");
-        setUser(mockUser);
-        return;
-      }
-      throw err;
-    }
+    const res = await api.post("/api/auth/reset-password", { email, code, newPassword });
+    setToken(res.data.token);
+    setUser(res.data.user);
   }
 
   async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
