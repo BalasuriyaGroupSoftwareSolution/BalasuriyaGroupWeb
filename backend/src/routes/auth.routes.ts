@@ -15,7 +15,7 @@ export const authRouter = Router();
 // rate limiting at all on login or OTP endpoints.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 20,
+  limit: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many attempts. Please wait a few minutes and try again." },

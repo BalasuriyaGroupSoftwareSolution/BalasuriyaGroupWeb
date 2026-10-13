@@ -12,11 +12,12 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
   const app = express();
+  app.set("trust proxy", 1);
 
   app.use(helmet());
   app.use(
     cors({
-      origin: env.cors.allowedOrigins,
+      origin: true,
       credentials: true,
     })
   );
