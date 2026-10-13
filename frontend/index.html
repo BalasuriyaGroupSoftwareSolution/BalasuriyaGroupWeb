@@ -12,6 +12,11 @@
       rel="stylesheet"
     />
     <title>Balasuriya Group</title>
+    <script>
+      if (window.location.hostname === "balasuriyagroup.tech") {
+        window.location.replace("https://www.balasuriyagroup.tech" + window.location.pathname + window.location.search + window.location.hash);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
