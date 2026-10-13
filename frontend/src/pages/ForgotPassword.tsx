@@ -23,7 +23,7 @@ export default function ForgotPassword() {
     setSubmitting(true);
     try {
       const msg = await forgotPassword(email);
-      toast.success(msg || "Reset code generated. Enter 123456 to continue.", { duration: 10000 });
+      toast.success(msg || "Reset code dispatched. Please check your inbox and spam folder.", { duration: 8000 });
       setStep("reset");
     } catch (err) {
       toast.error(apiErrorMessage(err, "Failed to send reset code."));
