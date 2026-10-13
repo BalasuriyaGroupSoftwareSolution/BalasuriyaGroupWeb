@@ -7,10 +7,16 @@ import { hashPassword } from "../utils/password.js";
 
 export const usersRouter = Router();
 
-// Managing staff accounts (creating logins, fixing lockouts, deactivating
-// people who've left) is an ADMIN/OWNER job — this is the "solve user login
-// issues" feature from the brief.
-const ADMIN_ROLES = ["ADMIN"] as const;
+// OWNER & ADMIN can manage any staff across all divisions.
+// Division Leaders (CONSTRUCTION_MANAGER, TOURISM_AGENT, SOFTWARE_ENGINEER, TICKET_AGENT)
+// can add, view, reset passwords, and manage staff in their respective divisions.
+const STAFF_MANAGEMENT_ROLES = [
+  "ADMIN",
+  "CONSTRUCTION_MANAGER",
+  "TOURISM_AGENT",
+  "SOFTWARE_ENGINEER",
+  "TICKET_AGENT",
+] as const;
 
 function toSafeUser(u: {
   id: string;
@@ -27,9 +33,23 @@ function toSafeUser(u: {
 usersRouter.get(
   "/",
   authenticate,
-  requireRole(...ADMIN_ROLES),
-  asyncHandler(async (_req, res) => {
+  requireRole(...STAFF_MANAGEMENT_ROLES),
+  asyncHandler(async (req, res) => {
+    const callerRole = req.user?.role;
+    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
+
+    // Executive sees all users; Division Leader sees themselves and their division's staff
+    const whereClause = isExecutive
+      ? undefined
+      : {
+          OR: [
+            { role: callerRole as any },
+            { id: req.user?.id },
+          ],
+        };
+
     const users = await prisma.user.findMany({
+      where: whereClause,
       orderBy: { createdAt: "desc" },
       select: { id: true, email: true, name: true, role: true, phone: true, isActive: true, createdAt: true },
     });
@@ -57,9 +77,17 @@ const createStaffSchema = z.object({
 usersRouter.post(
   "/",
   authenticate,
-  requireRole(...ADMIN_ROLES),
+  requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
+    const callerRole = req.user?.role;
+    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
     const data = createStaffSchema.parse(req.body);
+
+    // If division leader, can only create accounts matching their division
+    if (!isExecutive && data.role !== callerRole) {
+      throw new HttpError(403, `You can only add staff to your own division (${callerRole}).`);
+    }
+
     const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
     if (existing) throw new HttpError(409, "A user with that email already exists.");
 
@@ -102,9 +130,20 @@ const updateUserSchema = z.object({
 usersRouter.patch(
   "/:id",
   authenticate,
-  requireRole(...ADMIN_ROLES),
+  requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
+    const callerRole = req.user?.role;
+    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
     const data = updateUserSchema.parse(req.body);
+
+    const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!targetUser) throw new HttpError(404, "User not found.");
+
+    // Division leaders can only modify staff in their own division
+    if (!isExecutive && targetUser.role !== callerRole) {
+      throw new HttpError(403, "You can only manage staff within your own division.");
+    }
+
     const user = await prisma.user.update({ where: { id: req.params.id }, data });
     res.json({ user: toSafeUser(user) });
   })
@@ -113,11 +152,21 @@ usersRouter.patch(
 usersRouter.delete(
   "/:id",
   authenticate,
-  requireRole(...ADMIN_ROLES),
+  requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
     if (req.user?.id === req.params.id) {
       throw new HttpError(400, "You cannot delete your own active account.");
     }
+    const callerRole = req.user?.role;
+    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
+
+    const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!targetUser) throw new HttpError(404, "User not found.");
+
+    if (!isExecutive && targetUser.role !== callerRole) {
+      throw new HttpError(403, "You can only remove staff within your own division.");
+    }
+
     await prisma.user.delete({ where: { id: req.params.id } });
     res.json({ message: "User account removed permanently." });
   })
@@ -128,8 +177,18 @@ const resetPasswordSchema = z.object({ temporaryPassword: z.string().min(8) });
 usersRouter.post(
   "/:id/reset-password",
   authenticate,
-  requireRole(...ADMIN_ROLES),
+  requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
+    const callerRole = req.user?.role;
+    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
+
+    const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!targetUser) throw new HttpError(404, "User not found.");
+
+    if (!isExecutive && targetUser.role !== callerRole) {
+      throw new HttpError(403, "You can only reset passwords for staff in your division.");
+    }
+
     const { temporaryPassword } = resetPasswordSchema.parse(req.body);
     await prisma.user.update({
       where: { id: req.params.id },

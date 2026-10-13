@@ -17,6 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { api, apiErrorMessage } from "../../lib/api";
+import { useAuth } from "../../context/AuthContext";
 import type { Role, User } from "../../types";
 import toast from "react-hot-toast";
 
@@ -137,16 +138,22 @@ function generateStrongTempPassword() {
 }
 
 export default function StaffUsers() {
+  const { user: currentUser } = useAuth();
+  const isExecutive = currentUser?.role === "OWNER" || currentUser?.role === "ADMIN";
+
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [showNew, setShowNew] = useState(false);
 
+  // Default role for new staff based on caller's division
+  const defaultRole: Role = isExecutive ? "CONSTRUCTION_MANAGER" : (currentUser?.role || "CONSTRUCTION_MANAGER");
+
   // Create form state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<Role>("CONSTRUCTION_MANAGER");
+  const [role, setRole] = useState<Role>(defaultRole);
   const [tempPassword, setTempPassword] = useState(generateStrongTempPassword());
   const [submitting, setSubmitting] = useState(false);
 
@@ -409,13 +416,16 @@ Balasuriya Group`;
               <select
                 className="input bg-white font-medium"
                 value={role}
+                disabled={!isExecutive}
                 onChange={(e) => setRole(e.target.value as Role)}
               >
-                {ROLE_HIERARCHY.filter((r) => r.role !== "CUSTOMER").map((r) => (
-                  <option key={r.role} value={r.role}>
-                    {r.tier} - {r.label} ({r.role.replace(/_/g, " ")})
-                  </option>
-                ))}
+                {ROLE_HIERARCHY.filter((r) => r.role !== "CUSTOMER")
+                  .filter((r) => isExecutive || r.role === currentUser?.role)
+                  .map((r) => (
+                    <option key={r.role} value={r.role}>
+                      {r.tier} - {r.label} ({r.role.replace(/_/g, " ")})
+                    </option>
+                  ))}
               </select>
               <p className="mt-1.5 text-xs text-brand-steel">
                 <strong>Access Scope:</strong>{" "}

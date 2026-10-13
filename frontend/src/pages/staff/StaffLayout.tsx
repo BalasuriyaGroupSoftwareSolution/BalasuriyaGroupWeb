@@ -16,7 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/staff/construction", label: "Construction Progress", roles: ["CONSTRUCTION_MANAGER", "ADMIN"] },
   { to: "/staff/tourism", label: "Tourism Packages", roles: ["TOURISM_AGENT", "ADMIN"] },
   { to: "/staff/payments", label: "Payment Approvals", roles: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "ADMIN"] },
-  { to: "/staff/users", label: "Staff & Access Hierarchy", roles: ["ADMIN"] },
+  { to: "/staff/users", label: "Staff & Access Hierarchy", roles: ["ADMIN", "CONSTRUCTION_MANAGER", "TOURISM_AGENT", "SOFTWARE_ENGINEER", "TICKET_AGENT"] },
 ];
 
 export default function StaffLayout() {

@@ -18,48 +18,10 @@ import { useAuth, apiErrorMessage } from "../context/AuthContext";
 import { GoogleLoginButton } from "../components/GoogleLoginButton";
 import toast from "react-hot-toast";
 
-type Mode = "password" | "otp" | "demo";
-
-const DEMO_ACCOUNTS = [
-  {
-    role: "OWNER",
-    title: "Executive Owner / CEO",
-    description: "Full corporate authority, strategic overview, and cross-division controls.",
-    icon: Shield,
-    badge: "Full Access",
-  },
-  {
-    role: "ADMIN",
-    title: "Corporate Administrator",
-    description: "Manage staff accounts, users, approvals, and system-wide settings.",
-    icon: UserCheck,
-    badge: "Admin",
-  },
-  {
-    role: "CONSTRUCTION_MANAGER",
-    title: "Construction Division Manager",
-    description: "Post live project progress, milestones, blueprints, and site updates.",
-    icon: Building2,
-    badge: "Engineering",
-  },
-  {
-    role: "TOURISM_AGENT",
-    title: "Tourism & Travel Lead",
-    description: "Manage travel packages, seasonal promotions, and tour reservations.",
-    icon: Sparkles,
-    badge: "Travel & Tours",
-  },
-  {
-    role: "CUSTOMER",
-    title: "Customer / Client Portal",
-    description: "Explore the client dashboard: track quotes, bookings, construction sites & receipts.",
-    icon: CheckCircle2,
-    badge: "Client Account",
-  },
-];
+type Mode = "password" | "otp";
 
 export default function Login() {
-  const { user, login, sendOtp, verifyOtp, demoLogin } = useAuth();
+  const { user, login, sendOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -153,19 +115,6 @@ export default function Login() {
     }
   }
 
-  async function handleDemoRole(role: string) {
-    setSubmitting(true);
-    try {
-      await demoLogin(role);
-      toast.success(`Signed in as ${role.replace(/_/g, " ")}`);
-      redirectAfterAuth();
-    } catch (err) {
-      toast.error("Could not switch role.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
     <div className="flex min-h-[85vh] items-center justify-center bg-brand-surface px-4 py-12">
       <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 md:grid-cols-5">
@@ -227,7 +176,7 @@ export default function Login() {
           </div>
 
           {/* Mode Tabs */}
-          <div className="mb-6 grid grid-cols-3 gap-1 rounded-xl bg-gray-100 p-1 text-xs font-semibold text-gray-600">
+          <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1 text-xs font-semibold text-gray-600">
             <button
               type="button"
               onClick={() => setMode("password")}
@@ -237,7 +186,7 @@ export default function Login() {
                   : "hover:text-brand-navy"
               }`}
             >
-              Password
+              Password Login
             </button>
             <button
               type="button"
@@ -248,19 +197,7 @@ export default function Login() {
                   : "hover:text-brand-navy"
               }`}
             >
-              OTP Code
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("demo")}
-              className={`rounded-lg py-2 transition flex items-center justify-center gap-1 ${
-                mode === "demo"
-                  ? "bg-brand-navy text-white shadow-sm"
-                  : "text-brand-accent hover:text-brand-navy"
-              }`}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Demo Roles
+              Email / SMS OTP
             </button>
           </div>
 
@@ -415,58 +352,13 @@ export default function Login() {
             </motion.div>
           )}
 
-          {/* Tab 3: Demo Role Switcher */}
-          {mode === "demo" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2.5">
-              <p className="text-xs text-gray-500">
-                Click any role to test and preview privileges immediately:
-              </p>
-              <div className="space-y-2">
-                {DEMO_ACCOUNTS.map((d) => {
-                  const Icon = d.icon;
-                  return (
-                    <button
-                      key={d.role}
-                      type="button"
-                      disabled={submitting}
-                      onClick={() => handleDemoRole(d.role)}
-                      className="flex w-full items-center justify-between rounded-xl border border-gray-200 p-3 text-left transition hover:border-brand-navy hover:bg-brand-surface group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-navy/10 text-brand-navy group-hover:bg-brand-navy group-hover:text-white transition">
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <span className="block text-xs font-semibold text-brand-navy">
-                            {d.title}
-                          </span>
-                          <span className="text-[11px] text-gray-500 line-clamp-1">
-                            {d.description}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600 group-hover:bg-brand-gold/20 group-hover:text-brand-navy">
-                        {d.badge}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
+          <div className="my-5 flex items-center gap-3 text-xs text-gray-400">
+            <div className="h-px flex-1 bg-gray-200" />
+            or continue with
+            <div className="h-px flex-1 bg-gray-200" />
+          </div>
 
-          {/* Social or divider */}
-          {mode !== "demo" && (
-            <>
-              <div className="my-5 flex items-center gap-3 text-xs text-gray-400">
-                <div className="h-px flex-1 bg-gray-200" />
-                or continue with
-                <div className="h-px flex-1 bg-gray-200" />
-              </div>
-
-              <GoogleLoginButton />
-            </>
-          )}
+          <GoogleLoginButton />
 
           <p className="mt-6 text-center text-xs text-gray-500">
             Don't have an account yet?{" "}
