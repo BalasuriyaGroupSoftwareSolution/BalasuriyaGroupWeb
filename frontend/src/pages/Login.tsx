@@ -228,7 +228,7 @@ export default function Login() {
                 <div className="flex items-center justify-between">
                   <label className="label">Password</label>
                   <Link
-                    to="/forgot-password"
+                    to={email ? `/forgot-password?email=${encodeURIComponent(email)}` : "/forgot-password"}
                     className="text-xs font-medium text-brand-accent hover:underline"
                   >
                     Forgot password?

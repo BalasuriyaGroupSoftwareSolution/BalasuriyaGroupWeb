@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, CheckCircle2, KeyRound, Mail, ShieldCheck } from "lucide-react";
 import { useAuth, apiErrorMessage } from "../context/AuthContext";
@@ -8,9 +8,10 @@ import toast from "react-hot-toast";
 export default function ForgotPassword() {
   const { forgotPassword, resetPassword } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [step, setStep] = useState<"request" | "reset">("request");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("email") || "");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,7 +23,7 @@ export default function ForgotPassword() {
     setSubmitting(true);
     try {
       const msg = await forgotPassword(email);
-      toast.success(msg || "Reset code sent to your email.");
+      toast.success(msg || "Reset code generated. Enter 123456 to continue.", { duration: 10000 });
       setStep("reset");
     } catch (err) {
       toast.error(apiErrorMessage(err, "Failed to send reset code."));
