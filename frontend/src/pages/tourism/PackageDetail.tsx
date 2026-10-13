@@ -55,7 +55,7 @@ export default function PackageDetail() {
         travelerCount,
       });
       setBooking(res.data.booking);
-      toast.success("Booking created — now choose how you'd like to pay.");
+      toast.success("Booking created! Now choose how you'd like to pay.");
     } catch (err) {
       // Mock booking for preview
       setBooking({
@@ -66,7 +66,7 @@ export default function PackageDetail() {
         payments: [],
         createdAt: new Date().toISOString(),
       });
-      toast.success("Booking created (Preview Mode) — proceed to payment.");
+      toast.success("Booking created (Preview Mode). Proceed to payment.");
     } finally {
       setSubmitting(false);
     }
@@ -91,7 +91,7 @@ export default function PackageDetail() {
       setPaid(true);
       toast.success(
         needsRef
-          ? "Payment submitted — our finance team will confirm it shortly."
+          ? "Payment submitted. Our finance team will confirm it shortly."
           : "Payment submitted."
       );
     } catch (err) {
@@ -117,7 +117,7 @@ export default function PackageDetail() {
       </div>
       {activePromo && (
         <p className="mt-2 text-sm font-medium text-red-600">
-          {activePromo.title} — {activePromo.discountPercent}% off, ends{" "}
+          {activePromo.title}: {activePromo.discountPercent}% off, ends{" "}
           {new Date(activePromo.endDate).toLocaleDateString()}
         </p>
       )}

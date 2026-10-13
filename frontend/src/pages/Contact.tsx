@@ -154,7 +154,7 @@ export default function Contact() {
                 Send Message
               </button>
               <p className="text-xs text-gray-400">
-                This opens your email app with the message pre-filled — nothing leaves your device
+                This opens your email app with the message pre-filled. Nothing leaves your device
                 until you hit send.
               </p>
               <button

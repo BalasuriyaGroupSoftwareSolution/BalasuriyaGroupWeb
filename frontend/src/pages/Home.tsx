@@ -67,7 +67,7 @@ export default function Home() {
             className="mx-auto mt-5 max-w-2xl text-lg text-white/90 [text-shadow:0_2px_12px_rgba(0,0,0,0.5)]"
           >
             Trusted construction projects built to last, and unforgettable journeys across Sri
-            Lanka shaped around you — with visa assistance and air ticket booking handled every
+            Lanka shaped around you, with visa assistance and air ticket booking handled every
             step of the way.
           </motion.p>
           <motion.div

@@ -7,10 +7,10 @@ export const companyStats = {
 };
 
 export const companyVision =
-  "To be Sri Lanka’s most trusted multi-industry group—shaping the nation’s technology, infrastructure, and tourism sectors to connect people, spaces, and opportunities with the world";
+  "To be Sri Lanka’s most trusted multi-industry group, shaping the nation’s technology, infrastructure, and tourism sectors to connect people, spaces, and opportunities with the world";
 
 export const companyMission =
-  "Driven by integrity and operational excellence, we empower possibilities and build tomorrow across Sri Lanka and beyond—delivering intelligent software, enduring construction, and seamless global travel experiences";
+  "Driven by integrity and operational excellence, we empower possibilities and build tomorrow across Sri Lanka and beyond, delivering intelligent software, enduring construction, and seamless global travel experiences";
 
 export const contactInfo = {
   address: "54, Andiambalama, Sri Lanka",

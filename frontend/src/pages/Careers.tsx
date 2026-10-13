@@ -139,7 +139,7 @@ export default function Careers() {
       <section className="bg-white py-16 border-b border-gray-100">
         <div className="mx-auto max-w-6xl px-4">
           <Reveal className="text-center">
-            <h2 className="font-display text-2xl font-bold text-brand-navy">Why Join Balasuriya Group?</h2>
+            <h2 className="font-display text-2xl font-bold text-brand-navy">Why Join With Us?</h2>
             <p className="mt-1 text-sm text-gray-500">We invest in our people and empower talent</p>
           </Reveal>
 

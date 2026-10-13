@@ -190,7 +190,7 @@ export default function TourismPublic() {
             transition={{ delay: 0.1 }}
             className="mx-auto mt-4 max-w-2xl text-white/85 text-base sm:text-lg"
           >
-            Experience breathtaking landscapes, ancient UNESCO heritage, and tropical coastlines —
+            Experience breathtaking landscapes, ancient UNESCO heritage, and tropical coastlines,
             with private chauffeurs, flight bookings, and visa facilitation.
           </motion.p>
 

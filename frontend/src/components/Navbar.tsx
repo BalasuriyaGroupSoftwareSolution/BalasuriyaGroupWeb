@@ -29,20 +29,15 @@ export function Navbar() {
   const navigate = useNavigate();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [divisionsDropdown, setDivisionsDropdown] = useState(false);
   const [companyDropdown, setCompanyDropdown] = useState(false);
   const [userDropdown, setUserDropdown] = useState(false);
 
-  const divisionsRef = useRef<HTMLDivElement>(null);
   const companyRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (divisionsRef.current && !divisionsRef.current.contains(e.target as Node)) {
-        setDivisionsDropdown(false);
-      }
       if (companyRef.current && !companyRef.current.contains(e.target as Node)) {
         setCompanyDropdown(false);
       }
@@ -108,17 +103,17 @@ export function Navbar() {
                 Balasuriya Group
               </span>
               <span className="text-[10px] uppercase tracking-wider font-semibold text-brand-steel">
-                Engineering • Tourism • Software
+                Construction • Tourism • Software
               </span>
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <div className="hidden items-center gap-1 lg:flex">
+          {/* Desktop Navigation Links — Clear, Direct & User-Friendly */}
+          <div className="hidden items-center gap-0.5 lg:flex">
             <NavLink
               to="/"
               className={({ isActive }) =>
-                `px-3 py-2 text-xs font-semibold rounded-lg transition ${
+                `px-2.5 py-2 text-xs font-semibold rounded-lg transition ${
                   isActive ? "text-brand-navy bg-brand-surface" : "text-gray-600 hover:text-brand-navy"
                 }`
               }
@@ -126,93 +121,61 @@ export function Navbar() {
               Home
             </NavLink>
 
-            {/* Divisions Dropdown */}
-            <div className="relative" ref={divisionsRef}>
-              <button
-                type="button"
-                onClick={() => setDivisionsDropdown(!divisionsDropdown)}
-                className={`flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-lg transition ${
-                  divisionsDropdown ? "text-brand-navy bg-brand-surface" : "text-gray-600 hover:text-brand-navy"
-                }`}
-              >
-                <span>Divisions</span>
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${divisionsDropdown ? "rotate-180" : ""}`} />
-              </button>
+            <NavLink
+              to="/construction"
+              className={({ isActive }) =>
+                `px-2.5 py-2 text-xs font-semibold rounded-lg transition ${
+                  isActive ? "text-brand-navy bg-brand-surface" : "text-gray-600 hover:text-brand-navy"
+                }`
+              }
+            >
+              Construction
+            </NavLink>
 
-              <AnimatePresence>
-                {divisionsDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    className="absolute left-0 top-full mt-1.5 w-72 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/5"
-                  >
-                    <Link
-                      to="/construction"
-                      onClick={() => setDivisionsDropdown(false)}
-                      className="flex items-start gap-3 rounded-xl p-2.5 transition hover:bg-brand-surface group"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-brand-navy group-hover:bg-brand-navy group-hover:text-white transition">
-                        <Building2 className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <span className="block text-xs font-bold text-brand-navy">Construction & Infra</span>
-                        <span className="text-[11px] text-gray-500">Portfolio, live sites & estimation</span>
-                      </div>
-                    </Link>
+            <NavLink
+              to="/tourism"
+              className={({ isActive }) =>
+                `px-2.5 py-2 text-xs font-semibold rounded-lg transition ${
+                  isActive ? "text-brand-navy bg-brand-surface" : "text-gray-600 hover:text-brand-navy"
+                }`
+              }
+            >
+              Tourism & StayLanka
+            </NavLink>
 
-                    <Link
-                      to="/tourism"
-                      onClick={() => setDivisionsDropdown(false)}
-                      className="flex items-start gap-3 rounded-xl p-2.5 transition hover:bg-brand-surface group"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-800 group-hover:bg-emerald-800 group-hover:text-white transition">
-                        <Palmtree className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <span className="block text-xs font-bold text-brand-navy">StayLanka & Foreign Tours</span>
-                        <span className="text-[11px] text-gray-500">Inbound island luxury & outbound packages</span>
-                      </div>
-                    </Link>
+            <NavLink
+              to="/air-ticketing"
+              className={({ isActive }) =>
+                `px-2.5 py-2 text-xs font-semibold rounded-lg transition ${
+                  isActive ? "text-brand-navy bg-brand-surface" : "text-gray-600 hover:text-brand-navy"
+                }`
+              }
+            >
+              Air Tickets & Visas
+            </NavLink>
 
-                    <Link
-                      to="/air-ticketing"
-                      onClick={() => setDivisionsDropdown(false)}
-                      className="flex items-start gap-3 rounded-xl p-2.5 transition hover:bg-brand-surface group"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-800 group-hover:bg-sky-800 group-hover:text-white transition">
-                        <Plane className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <span className="block text-xs font-bold text-brand-navy">Air Ticketing & Visas</span>
-                        <span className="text-[11px] text-gray-500">150+ airlines & embassy consulting</span>
-                      </div>
-                    </Link>
+            <NavLink
+              to="/software"
+              className={({ isActive }) =>
+                `px-2.5 py-2 text-xs font-semibold rounded-lg transition ${
+                  isActive ? "text-brand-navy bg-brand-surface" : "text-gray-600 hover:text-brand-navy"
+                }`
+              }
+            >
+              Software
+            </NavLink>
 
-                    <Link
-                      to="/software"
-                      onClick={() => setDivisionsDropdown(false)}
-                      className="flex items-start gap-3 rounded-xl p-2.5 transition hover:bg-brand-surface group"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-800 group-hover:bg-purple-800 group-hover:text-white transition">
-                        <Code2 className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <span className="block text-xs font-bold text-brand-navy">Software Solutions</span>
-                        <span className="text-[11px] text-gray-500">Cloud apps, ERP & AI automation</span>
-                      </div>
-                    </Link>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Corporate Dropdown */}
-            <div className="relative" ref={companyRef}>
+            {/* Corporate Dropdown with hover + click */}
+            <div
+              className="relative"
+              ref={companyRef}
+              onMouseEnter={() => setCompanyDropdown(true)}
+              onMouseLeave={() => setCompanyDropdown(false)}
+            >
               <button
                 type="button"
                 onClick={() => setCompanyDropdown(!companyDropdown)}
-                className={`flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-lg transition ${
+                className={`flex items-center gap-1 px-2.5 py-2 text-xs font-semibold rounded-lg transition ${
                   companyDropdown ? "text-brand-navy bg-brand-surface" : "text-gray-600 hover:text-brand-navy"
                 }`}
               >
@@ -223,35 +186,45 @@ export function Navbar() {
               <AnimatePresence>
                 {companyDropdown && (
                   <motion.div
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    className="absolute left-0 top-full mt-1.5 w-60 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/5"
+                    exit={{ opacity: 0, y: 6 }}
+                    className="absolute left-0 top-full pt-1 w-60 z-50"
                   >
-                    <Link
-                      to="/about"
-                      onClick={() => setCompanyDropdown(false)}
-                      className="flex items-center gap-2.5 rounded-xl p-2 text-xs font-semibold text-brand-navy hover:bg-brand-surface"
-                    >
-                      <Users className="h-4 w-4 text-brand-steel" />
-                      About & Board of Directors
-                    </Link>
-                    <Link
-                      to="/careers"
-                      onClick={() => setCompanyDropdown(false)}
-                      className="flex items-center gap-2.5 rounded-xl p-2 text-xs font-semibold text-brand-navy hover:bg-brand-surface"
-                    >
-                      <Sparkles className="h-4 w-4 text-brand-gold" />
-                      Careers & Culture
-                    </Link>
-                    <Link
-                      to="/sustainability"
-                      onClick={() => setCompanyDropdown(false)}
-                      className="flex items-center gap-2.5 rounded-xl p-2 text-xs font-semibold text-brand-navy hover:bg-brand-surface"
-                    >
-                      <Leaf className="h-4 w-4 text-emerald-600" />
-                      Sustainability & ESG
-                    </Link>
+                    <div className="rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/5">
+                      <Link
+                        to="/about"
+                        onClick={() => setCompanyDropdown(false)}
+                        className="flex items-center gap-2.5 rounded-xl p-2 text-xs font-semibold text-brand-navy hover:bg-brand-surface"
+                      >
+                        <Users className="h-4 w-4 text-brand-steel" />
+                        About & Leadership
+                      </Link>
+                      <Link
+                        to="/careers"
+                        onClick={() => setCompanyDropdown(false)}
+                        className="flex items-center gap-2.5 rounded-xl p-2 text-xs font-semibold text-brand-navy hover:bg-brand-surface"
+                      >
+                        <Sparkles className="h-4 w-4 text-brand-gold" />
+                        Careers
+                      </Link>
+                      <Link
+                        to="/sustainability"
+                        onClick={() => setCompanyDropdown(false)}
+                        className="flex items-center gap-2.5 rounded-xl p-2 text-xs font-semibold text-brand-navy hover:bg-brand-surface"
+                      >
+                        <Leaf className="h-4 w-4 text-emerald-600" />
+                        Sustainability & ESG
+                      </Link>
+                      <Link
+                        to="/contact"
+                        onClick={() => setCompanyDropdown(false)}
+                        className="flex items-center gap-2.5 rounded-xl p-2 text-xs font-semibold text-brand-navy hover:bg-brand-surface"
+                      >
+                        <Phone className="h-4 w-4 text-brand-accent" />
+                        Contact Us
+                      </Link>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -260,23 +233,12 @@ export function Navbar() {
             <NavLink
               to="/quote"
               className={({ isActive }) =>
-                `px-3 py-2 text-xs font-semibold rounded-lg transition ${
+                `px-2.5 py-2 text-xs font-semibold rounded-lg transition ${
                   isActive ? "text-brand-navy bg-brand-surface" : "text-gray-600 hover:text-brand-navy"
                 }`
               }
             >
-              Request a Quote
-            </NavLink>
-
-            <NavLink
-              to="/contact"
-              className={({ isActive }) =>
-                `px-3 py-2 text-xs font-semibold rounded-lg transition ${
-                  isActive ? "text-brand-navy bg-brand-surface" : "text-gray-600 hover:text-brand-navy"
-                }`
-              }
-            >
-              Contact
+              Quote Estimator
             </NavLink>
           </div>
 

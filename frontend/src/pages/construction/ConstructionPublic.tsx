@@ -212,7 +212,7 @@ export default function ConstructionPublic() {
             className="mx-auto mt-4 max-w-2xl text-white/90 [text-shadow:0_2px_12px_rgba(0,0,0,0.5)] text-base sm:text-lg"
           >
             From high-rise residential complexes and Grade-A commercial towers to highways and industrial
-            hubs — engineered to CIDA / ICTAD standards with full transparency.
+            hubs, engineered to CIDA / ICTAD standards with full transparency.
           </motion.p>
         </div>
       </section>

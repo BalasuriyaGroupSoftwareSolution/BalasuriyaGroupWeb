@@ -40,8 +40,10 @@ usersRouter.get(
 const createStaffSchema = z.object({
   name: z.string().min(2).max(120),
   email: z.string().email(),
+  phone: z.string().optional(),
   temporaryPassword: z.string().min(8),
   role: z.enum([
+    "OWNER",
     "ADMIN",
     "CONSTRUCTION_MANAGER",
     "TOURISM_AGENT",
@@ -65,6 +67,7 @@ usersRouter.post(
       data: {
         name: data.name,
         email: data.email.toLowerCase(),
+        phone: data.phone || null,
         role: data.role,
         passwordHash: await hashPassword(data.temporaryPassword),
       },
@@ -79,6 +82,7 @@ usersRouter.post(
 
 const updateUserSchema = z.object({
   name: z.string().min(2).max(120).optional(),
+  phone: z.string().optional(),
   isActive: z.boolean().optional(),
   role: z
     .enum([
@@ -103,6 +107,19 @@ usersRouter.patch(
     const data = updateUserSchema.parse(req.body);
     const user = await prisma.user.update({ where: { id: req.params.id }, data });
     res.json({ user: toSafeUser(user) });
+  })
+);
+
+usersRouter.delete(
+  "/:id",
+  authenticate,
+  requireRole(...ADMIN_ROLES),
+  asyncHandler(async (req, res) => {
+    if (req.user?.id === req.params.id) {
+      throw new HttpError(400, "You cannot delete your own active account.");
+    }
+    await prisma.user.delete({ where: { id: req.params.id } });
+    res.json({ message: "User account removed permanently." });
   })
 );
 

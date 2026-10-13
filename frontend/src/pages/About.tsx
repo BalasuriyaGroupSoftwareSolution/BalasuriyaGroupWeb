@@ -84,7 +84,7 @@ export default function About() {
               <span className="text-xs font-bold uppercase tracking-wider text-brand-accent">Our Direction</span>
               <h2 className="mt-1 font-display text-2xl font-bold text-brand-navy">Vision</h2>
               <p className="mt-3 text-sm leading-relaxed text-gray-700">
-                &ldquo;To be Sri Lanka’s most trusted multi-industry group—shaping the nation’s technology, infrastructure, and tourism sectors to connect people, spaces, and opportunities with the world&rdquo;
+                &ldquo;To be Sri Lanka’s most trusted multi-industry group, shaping the nation’s technology, infrastructure, and tourism sectors to connect people, spaces, and opportunities with the world&rdquo;
               </p>
             </div>
           </Reveal>
@@ -93,7 +93,7 @@ export default function About() {
               <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">Our Purpose</span>
               <h2 className="mt-1 font-display text-2xl font-bold text-brand-navy">Mission</h2>
               <p className="mt-3 text-sm leading-relaxed text-gray-700">
-                &ldquo;Driven by integrity and operational excellence, we empower possibilities and build tomorrow across Sri Lanka and beyond—delivering intelligent software, enduring construction, and seamless global travel experiences&rdquo;
+                &ldquo;Driven by integrity and operational excellence, we empower possibilities and build tomorrow across Sri Lanka and beyond, delivering intelligent software, enduring construction, and seamless global travel experiences&rdquo;
               </p>
             </div>
           </Reveal>
