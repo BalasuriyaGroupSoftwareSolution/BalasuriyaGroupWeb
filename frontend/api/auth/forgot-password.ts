@@ -50,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const resendApiKey = process.env.RESEND_API_KEY;
   let emailSent = false;
   let deliveredTo = "";
-  let resendError = "";
+  const attemptLogs: string[] = [];
 
   if (resendApiKey) {
     const emailHtml = `
@@ -86,14 +86,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (resVerified.ok) {
         emailSent = true;
         deliveredTo = normalized;
-        console.log(`[RESEND] Delivered directly to ${normalized} via verified domain ${VERIFIED_FROM_EMAIL}`);
+        attemptLogs.push(`Attempt 1 OK: sent to ${normalized} via ${VERIFIED_FROM_EMAIL}`);
       } else {
         const errText = await resVerified.text();
-        resendError = errText;
-        console.warn(`[RESEND] Attempt with verified domain failed: ${errText}`);
+        attemptLogs.push(`Attempt 1 failed (${VERIFIED_FROM_EMAIL} -> ${normalized}): ${errText}`);
       }
     } catch (e: any) {
-      resendError = e.message;
+      attemptLogs.push(`Attempt 1 exception: ${e.message}`);
     }
 
     // Attempt 2: If Attempt 1 failed (e.g. domain pending), try sending from onboarding@resend.dev to target
@@ -116,14 +115,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (resSandboxDirect.ok) {
           emailSent = true;
           deliveredTo = normalized;
-          console.log(`[RESEND] Delivered to ${normalized} via sandbox sender`);
+          attemptLogs.push(`Attempt 2 OK: sent to ${normalized} via ${SANDBOX_FROM_EMAIL}`);
         } else {
           const errText = await resSandboxDirect.text();
-          resendError = errText;
-          console.warn(`[RESEND] Sandbox direct attempt failed: ${errText}`);
+          attemptLogs.push(`Attempt 2 failed (${SANDBOX_FROM_EMAIL} -> ${normalized}): ${errText}`);
         }
       } catch (e: any) {
-        resendError = e.message;
+        attemptLogs.push(`Attempt 2 exception: ${e.message}`);
       }
     }
 
@@ -147,12 +145,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (resFallback.ok) {
           emailSent = true;
           deliveredTo = RESEND_REGISTERED_EMAIL;
-          console.log(`[RESEND] Delivered to registered owner mailbox: ${RESEND_REGISTERED_EMAIL}`);
+          attemptLogs.push(`Attempt 3 OK: sent to fallback ${RESEND_REGISTERED_EMAIL}`);
         } else {
-          resendError = await resFallback.text();
+          const errText = await resFallback.text();
+          attemptLogs.push(`Attempt 3 failed: ${errText}`);
         }
       } catch (e: any) {
-        resendError = e.message;
+        attemptLogs.push(`Attempt 3 exception: ${e.message}`);
       }
     }
   }
@@ -171,6 +170,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     delivered: emailSent,
     deliveredTo: emailSent ? deliveredTo : undefined,
     resetToken,
-    error: emailSent ? undefined : resendError,
+    attemptLogs: deliveredTo !== normalized ? attemptLogs : undefined,
   });
 }
