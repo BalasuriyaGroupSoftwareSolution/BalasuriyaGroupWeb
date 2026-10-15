@@ -63,7 +63,7 @@ constructionRouter.post(
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         targetEndDate: data.targetEndDate ? new Date(data.targetEndDate) : undefined,
         createdById: req.user!.sub,
-      },
+      } as any,
     });
     res.status(201).json({ project });
   })

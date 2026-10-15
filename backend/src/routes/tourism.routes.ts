@@ -61,7 +61,7 @@ tourismRouter.post(
   asyncHandler(async (req, res) => {
     const data = packageSchema.parse(req.body);
     const pkg = await prisma.tourPackage.create({
-      data: { ...data, createdById: req.user!.sub },
+      data: { ...data, createdById: req.user!.sub } as any,
     });
     res.status(201).json({ package: pkg });
   })
@@ -100,7 +100,7 @@ tourismRouter.post(
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         createdById: req.user!.sub,
-      },
+      } as any,
     });
     res.status(201).json({ promotion });
   })
