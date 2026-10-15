@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import crypto from "crypto";
 
 const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
-const VERIFIED_FROM_EMAIL = process.env.FROM_EMAIL || "Balasuriya Group Security <security@balasuriyagroup.tech>";
+const VERIFIED_FROM_EMAIL = process.env.FROM_EMAIL || "Balasuriya Group <security@balasuriyagroup.tech>";
 
 const globalStore = globalThis as unknown as {
   otpStore?: Map<string, { code: string; expiresAt: number }>;
@@ -13,20 +13,15 @@ if (!globalStore.otpStore) {
 }
 export const otpStore = globalStore.otpStore;
 
-// Strict whitelist of company registered accounts allowed to perform password resets
+// Strict whitelist: ONLY registered company accounts are permitted
 function isRegisteredCompanyAccount(email: string): boolean {
   const normalized = email.toLowerCase().trim();
+  // 1. Corporate domain accounts
   if (normalized.endsWith("@balasuriyagroup.tech")) return true;
-  const registeredCompanyEmails = [
-    "clemonbalasuriyagroup@gmail.com",
-    "balasuriyagroup.software@gmail.com",
-    "avishkaclemon@gmail.com",
-    "owner@balasuriyagroup.tech",
-    "admin@balasuriyagroup.tech",
-    "damian@balasuriyagroup.tech",
-    "migara@balasuriyagroup.tech",
-  ];
-  return registeredCompanyEmails.includes(normalized);
+  // 2. Official Executive Company Owner Account
+  if (normalized === "clemonbalasuriyagroup@gmail.com") return true;
+  // (avishkaclemon@gmail.com and other personal addresses are explicitly NOT registered)
+  return false;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -49,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const normalized = email.toLowerCase().trim();
 
-  // Strict check: Only registered company accounts are permitted to reset password
+  // Strict check: Only registered company accounts are permitted
   if (!isRegisteredCompanyAccount(normalized)) {
     return res.status(403).json({
       message: "This email address is not registered for Balasuriya Group. Only registered company accounts can request a password reset.",
@@ -57,7 +52,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins validity
-  const code = String(crypto.randomInt(100000, 1000000));
 
   // Cryptographically signed 1-click magic link token
   const linkSignature = crypto
@@ -65,9 +59,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .update(`reset_link:${normalized}:${expiresAt}`)
     .digest("hex");
   const linkToken = `${expiresAt}:${linkSignature}`;
-
-  // Store in-memory code backup
-  otpStore.set(normalized, { code, expiresAt });
 
   const reqOrigin = (req.headers["origin"] as string) || (req.headers["referer"] as string) || "";
   const baseUrl = reqOrigin.includes("localhost") ? "http://localhost:5173" : "https://www.balasuriyagroup.tech";
@@ -78,15 +69,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (resendApiKey) {
     const timeTag = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Colombo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    const emailSubject = `Balasuriya Group Security — Password Reset Link [${timeTag}]`;
+    const emailSubject = `Reset your Balasuriya Group password [${timeTag}]`;
 
+    // 100% Link-Only Email template — NO 6-digit codes
     const emailHtml = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Reset Your Balasuriya Group Password</title>
+        <title>Reset your Balasuriya Group password</title>
       </head>
       <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 40px 16px;">
@@ -113,11 +105,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 <tr>
                   <td style="padding: 40px 40px 32px 40px;">
                     <h2 style="color: #0B1E3F; font-size: 19px; font-weight: 700; margin-top: 0; margin-bottom: 16px;">
-                      Password Reset Protocol
+                      Password Reset Request
                     </h2>
                     
                     <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">
-                      A security request was initiated to reset the password for your registered corporate account:
+                      We received a request to reset the password for your registered company account:
                     </p>
 
                     <div style="background-color: #f1f5f9; border-left: 4px solid #0B1E3F; padding: 12px 16px; border-radius: 4px; font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 24px;">
@@ -125,7 +117,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     </div>
 
                     <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 28px;">
-                      To establish your new secure password, click the verification button below. No manual verification code is required.
+                      Click the button below to directly choose your new password. No verification code is needed:
                     </p>
 
                     <!-- Direct Action Button -->
@@ -140,22 +132,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     </table>
 
                     <p style="color: #64748b; font-size: 12px; line-height: 1.6; word-break: break-all; margin-bottom: 24px;">
-                      If the button does not open directly, copy and paste this link into your secure browser:<br/>
+                      If the button above does not open directly, copy and paste this link into your browser:<br/>
                       <a href="${resetUrl}" style="color: #1E3A6E; text-decoration: underline;">${resetUrl}</a>
                     </p>
 
-                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;" />
-
-                    <p style="color: #64748b; font-size: 12px; line-height: 1.5; margin-bottom: 8px;">
-                      Alternatively, if you prefer entering a code manually in your active browser session:
-                    </p>
-                    <div style="font-size: 24px; font-weight: 800; letter-spacing: 6px; color: #1E3A6E; padding: 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; font-family: monospace; margin-bottom: 24px;">
-                      ${code}
-                    </div>
-
                     <div style="background-color: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px;">
                       <p style="color: #92400E; font-size: 12px; line-height: 1.5; margin: 0;">
-                        <strong>Security Notice:</strong> This password reset link and code will expire in <strong>15 minutes</strong> and can only be used once. If you did not make this request, please safely disregard this notice. Your account remains protected.
+                        <strong>Security Notice:</strong> This password reset link will expire in <strong>15 minutes</strong> and can only be used once. If you did not make this request, please safely disregard this email. Your credentials remain protected.
                       </p>
                     </div>
                   </td>
@@ -178,7 +161,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       </html>
     `;
 
-    // Strictly send ONLY to the specific registered email address that was requested
     try {
       const resVerified = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -195,7 +177,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             "X-Entity-Ref-ID": `${Date.now()}-${normalized}`,
           },
           html: emailHtml,
-          text: `BALASURIYA GROUP CORPORATE SECURITY\n\nPassword Reset Protocol\n\nA security request was initiated to reset the password for your registered corporate account: ${normalized}\n\nClick the link below to set your new password directly:\n${resetUrl}\n\nAlternatively, enter this 6-digit code manually: ${code}\n\nThis link expires in 15 minutes.\n\nBalasuriya Group Corporate Headquarters — Colombo, Sri Lanka`,
+          text: `BALASURIYA GROUP CORPORATE SECURITY\n\nPassword Reset Request\n\nWe received a request to reset the password for your registered company account: ${normalized}\n\nClick the link below to directly set your new password:\n${resetUrl}\n\nThis single-use link expires in 15 minutes.\n\nBalasuriya Group Corporate Headquarters — Colombo, Sri Lanka`,
         }),
       });
 
@@ -207,7 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // Pure security: Never leak resetToken or resetUrl in the response payload
+  // Security: Never leak the reset token in the response
   return res.status(200).json({
     message: `A secure password reset link has been dispatched to ${normalized}. Please check your inbox and spam folder.`,
     delivered: emailDispatched,

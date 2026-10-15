@@ -13,6 +13,14 @@ if (!globalStore.consumedResetTokens) {
 const consumedResetTokens = globalStore.consumedResetTokens;
 const otpStore = globalStore.otpStore || new Map();
 
+// Strict whitelist: ONLY registered company accounts are permitted
+function isRegisteredCompanyAccount(email: string): boolean {
+  const normalized = email.toLowerCase().trim();
+  if (normalized.endsWith("@balasuriyagroup.tech")) return true;
+  if (normalized === "clemonbalasuriyagroup@gmail.com") return true;
+  return false;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -36,6 +44,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const normalized = email.toLowerCase().trim();
+
+  // Strict check: Only registered company accounts can reset password
+  if (!isRegisteredCompanyAccount(normalized)) {
+    return res.status(403).json({
+      message: "This email address is not registered for Balasuriya Group. Only registered company accounts can reset their password.",
+    });
+  }
   const cleanCode = code ? String(code).trim() : "";
   let verified = false;
 

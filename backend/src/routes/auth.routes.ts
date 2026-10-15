@@ -267,15 +267,7 @@ authRouter.post(
     } catch {}
 
     const isCorporateDomain = normalized.endsWith("@balasuriyagroup.tech");
-    const isExecutiveAccount = [
-      "clemonbalasuriyagroup@gmail.com",
-      "balasuriyagroup.software@gmail.com",
-      "avishkaclemon@gmail.com",
-      "owner@balasuriyagroup.tech",
-      "admin@balasuriyagroup.tech",
-      "damian@balasuriyagroup.tech",
-      "migara@balasuriyagroup.tech",
-    ].includes(normalized);
+    const isExecutiveAccount = normalized === "clemonbalasuriyagroup@gmail.com";
 
     if (!registeredUser && !isCorporateDomain && !isExecutiveAccount) {
       throw new HttpError(403, "This email address is not registered for Balasuriya Group. Only registered company accounts can request a password reset.");
@@ -318,6 +310,21 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { email, code, resetToken, newPassword } = resetPasswordSchema.parse(req.body);
     const normalized = email.toLowerCase().trim();
+
+    // Strict check: Only registered company accounts can reset password
+    const isCorporateDomain = normalized.endsWith("@balasuriyagroup.tech");
+    const isExecutiveAccount = normalized === "clemonbalasuriyagroup@gmail.com";
+    if (!isCorporateDomain && !isExecutiveAccount) {
+      let registered = false;
+      try {
+        const u = await prisma.user.findUnique({ where: { email: normalized } });
+        if (u) registered = true;
+      } catch {}
+      if (!registered) {
+        throw new HttpError(403, "This email address is not registered for Balasuriya Group. Only registered company accounts can reset their password.");
+      }
+    }
+
     const cleanCode = code ? String(code).trim() : "";
     let verified = false;
 

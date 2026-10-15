@@ -9,7 +9,7 @@ import {
   KeyRound,
   Lock,
   Mail,
-  ShieldAlert,
+  Send,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -25,9 +25,9 @@ export default function ForgotPassword() {
   const emailParam = searchParams.get("email") || "";
 
   const [linkToken, setLinkToken] = useState(tokenParam);
-  const [step, setStep] = useState<"request" | "reset">(tokenParam ? "reset" : "request");
+  // steps: "request" (enter email) | "sent" (link dispatched, wait for email click) | "reset" (user clicked email link, choose new password)
+  const [step, setStep] = useState<"request" | "sent" | "reset">(tokenParam ? "reset" : "request");
   const [email, setEmail] = useState(emailParam);
-  const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -35,7 +35,7 @@ export default function ForgotPassword() {
   const [submitting, setSubmitting] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
-  // Sync search parameters from URL (e.g. when user clicks link in email)
+  // Sync token from URL query params (when user clicks link in email)
   useEffect(() => {
     const t = searchParams.get("token");
     const em = searchParams.get("email");
@@ -81,13 +81,11 @@ export default function ForgotPassword() {
     setSubmitting(true);
     try {
       const msg = await forgotPassword(email);
-      toast.success(msg || "Password reset link sent! Please check your email inbox and spam folder.", {
-        duration: 8000,
-      });
-      setStep("reset");
+      toast.success(msg || "Password reset link dispatched to your email.", { duration: 8000 });
+      setStep("sent");
       setCountdown(45);
     } catch (err) {
-      toast.error(apiErrorMessage(err, "Failed to send reset email. Please ensure your email is correct."));
+      toast.error(apiErrorMessage(err, "Failed to send reset email. Please ensure your email is registered."));
     } finally {
       setSubmitting(false);
     }
@@ -95,8 +93,8 @@ export default function ForgotPassword() {
 
   async function handleResetPassword(e: FormEvent) {
     e.preventDefault();
-    if (!linkToken && (!code || code.length !== 6)) {
-      toast.error("Please enter the 6-digit verification code sent to your email.");
+    if (!linkToken) {
+      toast.error("No valid reset token detected. Please open the link from your email.");
       return;
     }
     if (newPassword.length < 8) {
@@ -109,14 +107,14 @@ export default function ForgotPassword() {
     }
     setSubmitting(true);
     try {
-      await resetPassword(email, code, newPassword, linkToken || undefined);
-      toast.success("Password reset successful! Logging you into your corporate portal…");
+      await resetPassword(email, "", newPassword, linkToken);
+      toast.success("Password reset successful! Welcome back to Balasuriya Group.");
       navigate("/portal", { replace: true });
     } catch (err) {
       toast.error(
         apiErrorMessage(
           err,
-          "Invalid or expired link/code. For security, please request a fresh password reset link."
+          "Invalid or expired password reset link. Please request a new link."
         )
       );
     } finally {
@@ -145,27 +143,28 @@ export default function ForgotPassword() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold text-brand-navy">
-              {step === "request" ? "Password Recovery" : "Set New Password"}
+              {step === "reset" ? "Set New Password" : "Password Recovery"}
             </h1>
             <p className="text-xs text-gray-500">Balasuriya Group Corporate Identity Protocol</p>
           </div>
         </div>
 
-        {step === "request" ? (
+        {/* STEP 1: Request Reset Link */}
+        {step === "request" && (
           <form onSubmit={handleRequestLink} className="space-y-5">
             <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-              Enter your registered Balasuriya Group email address. We will dispatch a secure, single-use
+              Enter your registered Balasuriya Group company email address. We will dispatch a secure 1-click
               password reset link directly to your inbox.
             </p>
 
             <div>
-              <label className="label">Registered Corporate Email Address</label>
+              <label className="label">Registered Company Email Address</label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-gray-400" />
                 <input
                   type="email"
                   required
-                  placeholder="name@company.com"
+                  placeholder="name@balasuriyagroup.tech"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input pl-10"
@@ -176,8 +175,9 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={submitting}
-              className="btn-primary w-full py-3 text-sm font-semibold shadow-md"
+              className="btn-primary w-full py-3 text-sm font-semibold shadow-md flex items-center justify-center gap-2"
             >
+              <Send className="h-4 w-4" />
               {submitting ? "Dispatching Secure Link…" : "Send Password Reset Link"}
             </button>
 
@@ -185,79 +185,86 @@ export default function ForgotPassword() {
             <div className="mt-6 rounded-xl bg-gray-50 p-3.5 text-xs text-gray-500 space-y-2 border border-gray-100">
               <div className="flex items-center gap-2 text-gray-600 font-medium">
                 <ShieldCheck className="h-4 w-4 text-brand-navy" />
-                <span>Protected by 256-bit cryptographically signed HMAC tokens</span>
+                <span>Protected by 256-bit cryptographically signed single-use links</span>
               </div>
               <div className="flex items-center gap-2 text-gray-500 text-[11px]">
                 <Sparkles className="h-3.5 w-3.5 text-brand-gold" />
-                <span>One-click direct reset — no code memorization required</span>
+                <span>100% Direct Reset Link — No verification codes required</span>
               </div>
             </div>
           </form>
-        ) : (
-          <form onSubmit={handleResetPassword} className="space-y-5">
-            {/* Context Verification Banner */}
-            {linkToken ? (
-              <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-4 text-xs text-emerald-900">
-                <div className="flex items-center gap-2 font-bold text-emerald-950 mb-1">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                  Identity Link Verified
-                </div>
-                <div className="text-emerald-800 leading-relaxed">
-                  Resetting credentials for <strong className="font-semibold">{email}</strong>. Please define your new secure password below.
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="rounded-xl bg-blue-50/70 border border-blue-200/70 p-4 text-xs text-blue-900">
-                  <div className="flex items-center gap-2 font-bold text-blue-950 mb-1">
-                    <Mail className="h-4 w-4 text-blue-600 shrink-0" />
-                    Reset Instructions Dispatched
-                  </div>
-                  <div className="text-blue-800 leading-relaxed">
-                    A password reset link was sent to <strong className="font-semibold">{email}</strong>. Check your inbox and spam folder.
-                  </div>
-                  <div className="mt-2 pt-2 border-t border-blue-200/60 text-[11px] text-blue-700">
-                    <strong>Gmail Tip:</strong> If not in Primary, check your <strong>Spam</strong> or <strong>Updates</strong> tab (or search <code>from:security@balasuriyagroup.tech</code>).
-                  </div>
-                </div>
+        )}
 
-                <div>
-                  <label className="label">6-Digit Verification Code</label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    required
-                    placeholder="• • • • • •"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.trim())}
-                    className="input text-center text-lg font-mono tracking-widest"
-                  />
-                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                    <button
-                      type="button"
-                      disabled={countdown > 0 || submitting}
-                      onClick={() => handleRequestLink()}
-                      className="font-medium text-brand-accent hover:underline disabled:opacity-50"
-                    >
-                      {countdown > 0 ? `Resend email in ${countdown}s` : "Resend Email"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStep("request");
-                        setLinkToken("");
-                      }}
-                      className="text-gray-400 hover:text-brand-navy"
-                    >
-                      Change email
-                    </button>
-                  </div>
-                  <p className="mt-1.5 text-[11px] text-gray-400">
-                    Tip: You can also simply click the <strong>&quot;Reset My Password&quot;</strong> button inside your email to bypass this code.
-                  </p>
-                </div>
+        {/* STEP 2: Link Sent Confirmation Screen */}
+        {step === "sent" && (
+          <div className="space-y-6">
+            <div className="rounded-2xl bg-emerald-50/80 border border-emerald-200 p-6 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                <CheckCircle2 className="h-6 w-6" />
               </div>
-            )}
+              <h2 className="font-display text-lg font-bold text-emerald-950 mb-1">
+                Password Reset Link Dispatched
+              </h2>
+              <p className="text-xs text-emerald-800 leading-relaxed">
+                We sent a secure, single-use password reset link to:
+              </p>
+              <div className="mt-2 font-mono text-xs font-bold text-emerald-900 bg-white/80 py-1.5 px-3 rounded-md inline-block border border-emerald-200">
+                {email}
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-gray-50 border border-gray-200/70 p-4 text-xs text-gray-700 space-y-3">
+              <div className="font-semibold text-brand-navy flex items-center gap-2">
+                <Mail className="h-4 w-4 text-brand-navy" />
+                <span>Next Steps:</span>
+              </div>
+              <ol className="list-decimal list-inside space-y-1.5 text-gray-600 text-xs">
+                <li>Open your email inbox at <strong>{email}</strong>.</li>
+                <li>Look for the email with subject: <strong>Reset your Balasuriya Group password</strong>.</li>
+                <li>Click the <strong>[ Reset My Password ]</strong> button inside the email.</li>
+              </ol>
+
+              <div className="pt-2 border-t border-gray-200 text-[11px] text-gray-500 leading-relaxed">
+                <strong>Gmail Tip:</strong> If you do not see it in your Primary inbox, please check your <strong>Spam</strong> or <strong>Updates</strong> tab, or search <code>from:security@balasuriyagroup.tech</code> in Gmail.
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                type="button"
+                disabled={countdown > 0 || submitting}
+                onClick={() => handleRequestLink()}
+                className="btn-secondary w-full py-2.5 text-xs font-semibold"
+              >
+                {countdown > 0 ? `Resend email in ${countdown}s` : "Resend Password Reset Email"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("request");
+                  setLinkToken("");
+                }}
+                className="w-full text-center text-xs text-gray-500 hover:text-brand-navy py-1.5 transition"
+              >
+                Entered the wrong email? Click here to change email
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: Set New Password (Opened via link from email) */}
+        {step === "reset" && (
+          <form onSubmit={handleResetPassword} className="space-y-5">
+            <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-4 text-xs text-emerald-900">
+              <div className="flex items-center gap-2 font-bold text-emerald-950 mb-1">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                Direct Reset Link Verified
+              </div>
+              <div className="text-emerald-800 leading-relaxed">
+                Resetting credentials for <strong className="font-semibold">{email}</strong>. Please define your new corporate password below.
+              </div>
+            </div>
 
             {/* New Password Input */}
             <div>
@@ -332,17 +339,6 @@ export default function ForgotPassword() {
               className="btn-primary w-full py-3 text-sm font-semibold shadow-md"
             >
               {submitting ? "Securing Credentials…" : "Update Password & Sign In"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setStep("request");
-                setLinkToken("");
-              }}
-              className="w-full text-center text-xs text-gray-500 hover:text-brand-navy pt-2"
-            >
-              Need to send to a different email address?
             </button>
           </form>
         )}
