@@ -98,7 +98,7 @@ const ROLE_HIERARCHY: {
 const INITIAL_DEMO_USERS: User[] = [
   {
     id: "usr_owner_1",
-    name: "Clemon Balasuriya",
+    name: "Mr. Clemon Balasuriya",
     email: "clemonbalasuriyagroup@gmail.com",
     phone: "+94 76 7171 938",
     role: "OWNER",
@@ -106,7 +106,7 @@ const INITIAL_DEMO_USERS: User[] = [
   },
   {
     id: "usr_md_2",
-    name: "Damian Balasuriya",
+    name: "Mr. Damian Balasuriya",
     email: "damianbalasuriyagroup@gmail.com",
     phone: "+94 76 7171 938",
     role: "ADMIN",
@@ -114,7 +114,7 @@ const INITIAL_DEMO_USERS: User[] = [
   },
   {
     id: "usr_ed_3",
-    name: "Clavo Balasuriya",
+    name: "Mr. Clavo Balasuriya",
     email: "clavobalasuriyagroup@gmail.com",
     phone: "+94 76 7171 938",
     role: "FINANCE_APPROVER",
@@ -122,10 +122,34 @@ const INITIAL_DEMO_USERS: User[] = [
   },
   {
     id: "usr_dir_4",
-    name: "Christina Balasuriya",
+    name: "Mrs. Christina Balasuriya",
     email: "christinabalasuriyagroup@gmail.com",
     phone: "+94 76 7171 938",
     role: "ADMIN",
+    isActive: true,
+  },
+  {
+    id: "usr_migara_5",
+    name: "Mr. Migara Fonseka",
+    email: "fonsekamigara@gmail.com",
+    phone: "+94 77 234 5678",
+    role: "CONSTRUCTION_MANAGER",
+    isActive: true,
+  },
+  {
+    id: "usr_pasindu_6",
+    name: "Mr. Pasindu Hansana",
+    email: "pasinduhansana@gmail.com",
+    phone: "+94 77 456 7890",
+    role: "SOFTWARE_ENGINEER",
+    isActive: true,
+  },
+  {
+    id: "usr_shenal_7",
+    name: "Mr. Shenal Fernando",
+    email: "shenal@balasuriyagroup.tech",
+    phone: "+94 77 567 8901",
+    role: "TICKET_AGENT",
     isActive: true,
   },
 ];

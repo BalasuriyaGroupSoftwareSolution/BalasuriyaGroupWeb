@@ -91,18 +91,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } catch {}
 
-  const KNOWN_STAFF: Record<string, { name: string; role: string }> = {
-    "fonsekamigara@gmail.com": { name: "Mr. Migara Fonseka", role: "CONSTRUCTION_MANAGER" },
-    "pasinduhansana@gmail.com": { name: "Mr. Pasindu Hansana", role: "SOFTWARE_ENGINEER" },
+  const KNOWN_STAFF: Record<string, { id: string; name: string; role: string; phone: string }> = {
+    "clemonbalasuriyagroup@gmail.com": { id: "usr_owner_1", name: "Mr. Clemon Balasuriya", role: "OWNER", phone: "+94 76 7171 938" },
+    "damianbalasuriyagroup@gmail.com": { id: "usr_md_2", name: "Mr. Damian Balasuriya", role: "ADMIN", phone: "+94 76 7171 938" },
+    "clavobalasuriyagroup@gmail.com": { id: "usr_ed_3", name: "Mr. Clavo Balasuriya", role: "FINANCE_APPROVER", phone: "+94 76 7171 938" },
+    "christinabalasuriyagroup@gmail.com": { id: "usr_dir_4", name: "Mrs. Christina Balasuriya", role: "ADMIN", phone: "+94 76 7171 938" },
+    "fonsekamigara@gmail.com": { id: "usr_migara_5", name: "Mr. Migara Fonseka", role: "CONSTRUCTION_MANAGER", phone: "+94 77 234 5678" },
+    "pasinduhansana@gmail.com": { id: "usr_pasindu_6", name: "Mr. Pasindu Hansana", role: "SOFTWARE_ENGINEER", phone: "+94 77 456 7890" },
+    "shenal@balasuriyagroup.tech": { id: "usr_shenal_7", name: "Mr. Shenal Fernando", role: "TICKET_AGENT", phone: "+94 77 567 8901" },
   };
 
   if (!registeredStaffUser && KNOWN_STAFF[normalized]) {
     registeredStaffUser = {
-      id: `usr_${normalized.split("@")[0]}`,
+      id: KNOWN_STAFF[normalized].id,
       name: KNOWN_STAFF[normalized].name,
       email: normalized,
       role: KNOWN_STAFF[normalized].role,
-      phone: null,
+      phone: KNOWN_STAFF[normalized].phone,
       isActive: true,
     };
   }

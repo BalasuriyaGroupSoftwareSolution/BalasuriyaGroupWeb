@@ -21,8 +21,16 @@ function isRegisteredCompanyAccount(email: string): boolean {
   if (normalized.endsWith("@balasuriyagroup.tech")) return true;
   // 2. Official Executive Company Owner Account
   if (normalized === "clemonbalasuriyagroup@gmail.com") return true;
-  // 3. Known registered staff
-  if (["fonsekamigara@gmail.com", "pasinduhansana@gmail.com"].includes(normalized)) return true;
+  // 3. Known registered corporate staff
+  const KNOWN_REGISTERED = [
+    "clemonbalasuriyagroup@gmail.com",
+    "damianbalasuriyagroup@gmail.com",
+    "clavobalasuriyagroup@gmail.com",
+    "christinabalasuriyagroup@gmail.com",
+    "fonsekamigara@gmail.com",
+    "pasinduhansana@gmail.com",
+  ];
+  if (KNOWN_REGISTERED.includes(normalized)) return true;
   // 4. Dynamic staff accounts registered via Staff Management
   try {
     if (fs.existsSync("/tmp/balasuriya_staff_users.json")) {

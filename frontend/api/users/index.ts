@@ -18,11 +18,13 @@ interface UserRecord {
 }
 
 const DEFAULT_USERS: UserRecord[] = [
-  { id: "usr_clemon_ceo", name: "Mr. Clemon Balasuriya", email: "clemonbalasuriyagroup@gmail.com", role: "OWNER", phone: "+94 77 123 4567", isActive: true, createdAt: "2026-09-01T00:00:00.000Z" },
-  { id: "usr_migara", name: "Mr. Migara Fonseka", email: "fonsekamigara@gmail.com", role: "CONSTRUCTION_MANAGER", phone: "+94 77 234 5678", isActive: true, createdAt: "2026-09-02T00:00:00.000Z" },
-  { id: "usr_damian", name: "Mr. Damian Balasuriya", email: "damian@balasuriyagroup.tech", role: "TOURISM_AGENT", phone: "+94 77 345 6789", isActive: true, createdAt: "2026-09-03T00:00:00.000Z" },
-  { id: "usr_pasindu", name: "Mr. Pasindu Hansana", email: "pasinduhansana@gmail.com", role: "SOFTWARE_ENGINEER", phone: "+94 77 456 7890", isActive: true, createdAt: "2026-09-04T00:00:00.000Z" },
-  { id: "usr_shenal", name: "Mr. Shenal Fernando", email: "shenal@balasuriyagroup.tech", role: "TICKET_AGENT", phone: "+94 77 567 8901", isActive: true, createdAt: "2026-09-05T00:00:00.000Z" },
+  { id: "usr_owner_1", name: "Mr. Clemon Balasuriya", email: "clemonbalasuriyagroup@gmail.com", role: "OWNER", phone: "+94 76 7171 938", isActive: true, createdAt: "2026-09-01T00:00:00.000Z" },
+  { id: "usr_md_2", name: "Mr. Damian Balasuriya", email: "damianbalasuriyagroup@gmail.com", role: "ADMIN", phone: "+94 76 7171 938", isActive: true, createdAt: "2026-09-02T00:00:00.000Z" },
+  { id: "usr_ed_3", name: "Mr. Clavo Balasuriya", email: "clavobalasuriyagroup@gmail.com", role: "FINANCE_APPROVER", phone: "+94 76 7171 938", isActive: true, createdAt: "2026-09-03T00:00:00.000Z" },
+  { id: "usr_dir_4", name: "Mrs. Christina Balasuriya", email: "christinabalasuriyagroup@gmail.com", role: "ADMIN", phone: "+94 76 7171 938", isActive: true, createdAt: "2026-09-04T00:00:00.000Z" },
+  { id: "usr_migara_5", name: "Mr. Migara Fonseka", email: "fonsekamigara@gmail.com", role: "CONSTRUCTION_MANAGER", phone: "+94 77 234 5678", isActive: true, createdAt: "2026-09-05T00:00:00.000Z" },
+  { id: "usr_pasindu_6", name: "Mr. Pasindu Hansana", email: "pasinduhansana@gmail.com", role: "SOFTWARE_ENGINEER", phone: "+94 77 456 7890", isActive: true, createdAt: "2026-09-06T00:00:00.000Z" },
+  { id: "usr_shenal_7", name: "Mr. Shenal Fernando", email: "shenal@balasuriyagroup.tech", role: "TICKET_AGENT", phone: "+94 77 567 8901", isActive: true, createdAt: "2026-09-07T00:00:00.000Z" },
 ];
 
 function loadUsers(): UserRecord[] {
