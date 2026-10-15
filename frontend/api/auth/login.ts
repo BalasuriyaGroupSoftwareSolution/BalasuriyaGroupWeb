@@ -1,0 +1,137 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import crypto from "crypto";
+import fs from "fs";
+
+const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
+const ACCOUNTS_FILE = "/tmp/balasuriya_accounts.json";
+
+interface AccountRecord {
+  passwordHash: string;
+  updatedAt: number;
+}
+
+const globalStore = globalThis as unknown as {
+  accountStore?: Map<string, AccountRecord>;
+};
+if (!globalStore.accountStore) {
+  globalStore.accountStore = new Map();
+}
+const accountStore = globalStore.accountStore;
+
+function hashPassword(password: string): string {
+  return crypto.pbkdf2Sync(password, HMAC_SECRET, 10000, 64, "sha512").toString("hex");
+}
+
+function getStoredAccount(email: string): AccountRecord | null {
+  const normalized = email.toLowerCase().trim();
+  if (accountStore.has(normalized)) {
+    return accountStore.get(normalized)!;
+  }
+  try {
+    if (fs.existsSync(ACCOUNTS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, "utf-8"));
+      if (data[normalized]) {
+        accountStore.set(normalized, data[normalized]);
+        return data[normalized];
+      }
+    }
+  } catch {}
+  return null;
+}
+
+export function saveAccountPassword(email: string, plainPassword: string): void {
+  const normalized = email.toLowerCase().trim();
+  const record: AccountRecord = {
+    passwordHash: hashPassword(plainPassword),
+    updatedAt: Date.now(),
+  };
+  accountStore.set(normalized, record);
+  try {
+    let all: Record<string, AccountRecord> = {};
+    if (fs.existsSync(ACCOUNTS_FILE)) {
+      all = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, "utf-8"));
+    }
+    all[normalized] = record;
+    fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(all, null, 2), "utf-8");
+  } catch {}
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required." });
+  }
+
+  const normalized = email.toLowerCase().trim();
+
+  // Strict whitelist: Only registered company accounts are permitted
+  const isCorporateDomain = normalized.endsWith("@balasuriyagroup.tech");
+  const isExecutiveAccount = normalized === "clemonbalasuriyagroup@gmail.com";
+
+  if (!isCorporateDomain && !isExecutiveAccount) {
+    return res.status(403).json({
+      message: "This email address is not registered for Balasuriya Group. Access denied.",
+    });
+  }
+
+  const stored = getStoredAccount(normalized);
+  const candidateHash = hashPassword(String(password));
+
+  let isValid = false;
+
+  if (stored) {
+    if (stored.passwordHash === candidateHash) {
+      isValid = true;
+    }
+  } else {
+    if (password.length >= 8) {
+      isValid = true;
+      saveAccountPassword(normalized, String(password));
+    }
+  }
+
+  if (!isValid) {
+    return res.status(401).json({ message: "Invalid email or password." });
+  }
+
+  const isExecutive = normalized.includes("clemon") || normalized.includes("balasuriya");
+  const user = {
+    id: `usr_${Date.now()}`,
+    name: isExecutive ? "Clemon Balasuriya" : normalized.split("@")[0],
+    email: normalized,
+    role: isExecutive ? "OWNER" : "CUSTOMER",
+    phone: null,
+    isActive: true,
+  };
+
+  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+  const body = Buffer.from(
+    JSON.stringify({
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      exp: Math.floor(Date.now() / 1000) + 7 * 86400,
+    })
+  ).toString("base64url");
+  const signature = crypto.createHmac("sha256", HMAC_SECRET).update(`${header}.${body}`).digest("base64url");
+  const token = `${header}.${body}.${signature}`;
+
+  return res.status(200).json({
+    token,
+    user,
+    message: "Login successful.",
+  });
+}

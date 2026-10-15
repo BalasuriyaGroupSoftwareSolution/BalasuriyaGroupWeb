@@ -100,6 +100,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
+  // Persist the updated password so /api/auth/login verifies it immediately
+  try {
+    const ACCOUNTS_FILE = "/tmp/balasuriya_accounts.json";
+    const passwordHash = crypto.pbkdf2Sync(String(newPassword), HMAC_SECRET, 10000, 64, "sha512").toString("hex");
+    let all: Record<string, any> = {};
+    const fs = await import("fs");
+    if (fs.existsSync(ACCOUNTS_FILE)) {
+      all = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, "utf-8"));
+    }
+    all[normalized] = { passwordHash, updatedAt: Date.now() };
+    fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(all, null, 2), "utf-8");
+  } catch (e) {
+    console.error("Failed to persist updated password to /tmp:", e);
+  }
+
   const isExecutive = normalized.includes("clemon") || normalized.includes("balasuriya");
   const user = {
     id: `usr_live_${Date.now()}`,
