@@ -22,6 +22,7 @@ import {
 import { Reveal } from "../components/Reveal";
 import { contactInfo } from "../data/companyProfile";
 import { api } from "../lib/api";
+import QuickVisaInquiry from "../components/QuickVisaInquiry";
 import toast from "react-hot-toast";
 
 const POPULAR_DESTINATIONS = [
@@ -442,6 +443,11 @@ export default function AirTicketingPublic() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Express Visa Inquiry Desk with WhatsApp & Email Dispatch */}
+      <section className="mx-auto max-w-6xl px-4 pt-12">
+        <QuickVisaInquiry />
       </section>
 
       {/* Worldwide Visa Assistance Showcase */}

@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, requireRole, optionalAuthenticate } from "../middleware/auth.js";
 import { asyncHandler, HttpError } from "../middleware/errorHandler.js";
+import { sendInquiryNotificationEmail } from "../utils/mailer.js";
 
 export const inquiriesRouter = Router();
 
@@ -74,6 +75,18 @@ inquiriesRouter.post(
         },
       },
     });
+
+    // Notify balasuriyagroup.info@gmail.com asynchronously
+    sendInquiryNotificationEmail({
+      division: data.division,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      subject: data.subject,
+      message: data.message,
+      referenceId: booking.id,
+      details: data.details,
+    }).catch((err) => console.error("[INQUIRIES_ROUTE] Mail notification error:", err));
 
     res.status(201).json({
       success: true,

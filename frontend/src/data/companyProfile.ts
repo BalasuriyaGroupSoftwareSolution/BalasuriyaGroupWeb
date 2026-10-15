@@ -16,7 +16,7 @@ export const contactInfo = {
   address: "54, Andiambalama, Sri Lanka",
   phone: "+94 76 7171 938",
   whatsapp: "https://wa.me/94767171938",
-  email: "info@balasuriyagroup.lk",
+  email: "balasuriyagroup.info@gmail.com",
 };
 
 export const testimonials = [

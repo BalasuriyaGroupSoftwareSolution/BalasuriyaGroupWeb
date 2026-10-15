@@ -11,12 +11,14 @@ import {
   FileText,
   Filter,
   Globe,
+  Mail,
   MapPin,
   Pencil,
   Phone,
   Plane,
   Printer,
   Search,
+  Send,
   Shield,
   Sparkles,
   User,
@@ -26,6 +28,8 @@ import {
 import type { User as AuthUser, VisaApplication, VisaCategory, VisaStatus } from "../types";
 import { api } from "../lib/api";
 import { logStaffActivity } from "../lib/activityLogger";
+import { contactInfo } from "../data/companyProfile";
+import QuickVisaInquiry from "./QuickVisaInquiry";
 import toast from "react-hot-toast";
 
 const LOCAL_VISAS_KEY = "bg_client_visa_applications";
@@ -259,8 +263,38 @@ export default function CustomerVisaPortal({ user }: Props) {
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [search, setSearch] = useState("");
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isExpressModalOpen, setIsExpressModalOpen] = useState(false);
   const [editingVisa, setEditingVisa] = useState<VisaApplication | null>(null);
   const [viewingSlip, setViewingSlip] = useState<VisaApplication | null>(null);
+
+  // Send an existing visa application summary to balasuriyagroup.info@gmail.com
+  async function handleSendAppToEmail(app: VisaApplication) {
+    try {
+      toast.loading("Emailing application to balasuriyagroup.info@gmail.com...", { id: "email_dispatch" });
+      await api.post("/api/inquiries", {
+        division: "VISA",
+        name: app.userName,
+        email: app.userEmail,
+        phone: app.phone,
+        subject: `Visa Application Summary [${app.referenceNo}]: ${app.country} (${app.userName})`,
+        message: `Visa Application Reference: ${app.referenceNo}\nStatus: ${app.status}\nCountry: ${app.country}\nCategory: ${app.category}\nPassport No: ${app.passportNumber} (Expiry: ${app.passportExpiry})\nIntended Arrival: ${app.intendedArrivalDate}\nStay Duration: ${app.stayDurationDays || 15} Days\nDestination/Sponsor: ${app.destinationAddress || app.sponsorCompany || "N/A"}\nNotes: ${app.notes || "None"}`,
+        details: {
+          referenceNo: app.referenceNo,
+          status: app.status,
+          country: app.country,
+          category: app.category,
+          passportNumber: app.passportNumber,
+          intendedArrivalDate: app.intendedArrivalDate,
+        },
+      });
+      toast.success("Application details emailed to balasuriyagroup.info@gmail.com!", { id: "email_dispatch" });
+    } catch {
+      const subject = encodeURIComponent(`Visa Application [${app.referenceNo}]: ${app.country} (${app.userName})`);
+      const body = encodeURIComponent(`Reference: ${app.referenceNo}\nApplicant: ${app.userName}\nPassport: ${app.passportNumber}\nCountry: ${app.country}\nArrival: ${app.intendedArrivalDate}`);
+      window.location.href = `mailto:${contactInfo.email}?subject=${subject}&body=${body}`;
+      toast.success("Opening email client to dispatch to balasuriyagroup.info@gmail.com", { id: "email_dispatch" });
+    }
+  }
 
   // New Application Form State
   const [destCountry, setDestCountry] = useState(VISA_DESTINATIONS[0].country);
@@ -541,7 +575,14 @@ export default function CustomerVisaPortal({ user }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+            <button
+              onClick={() => setIsExpressModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-brand-gold/40 bg-brand-gold/10 px-4 py-2.5 text-xs font-bold text-brand-navy hover:bg-brand-gold/20 transition shadow-xs"
+            >
+              <Send className="h-3.5 w-3.5 text-brand-gold" />
+              Quick Inquiry (WhatsApp / Email)
+            </button>
             <button
               onClick={() => setIsNewModalOpen(true)}
               className="btn-primary flex items-center gap-2 text-xs py-2.5 px-5 shadow-sm"
@@ -771,6 +812,16 @@ export default function CustomerVisaPortal({ user }: Props) {
                       View Official Slip
                     </button>
 
+                    <button
+                      type="button"
+                      onClick={() => handleSendAppToEmail(app)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-100 transition"
+                      title="Send application summary to balasuriyagroup.info@gmail.com"
+                    >
+                      <Mail className="h-3.5 w-3.5 text-sky-600" />
+                      Email Bureau
+                    </button>
+
                     <a
                       href={`https://wa.me/94767171938?text=Hello%20Balasuriya%20Visa%20Bureau,%20I%20am%20inquiring%20about%20my%20Visa%20Application%20Ref:%20${encodeURIComponent(
                         app.referenceNo
@@ -780,7 +831,7 @@ export default function CustomerVisaPortal({ user }: Props) {
                       className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition"
                     >
                       <Phone className="h-3.5 w-3.5" />
-                      Visa Desk WhatsApp
+                      WhatsApp Desk
                     </a>
                   </div>
                 </div>
@@ -1453,23 +1504,62 @@ export default function CustomerVisaPortal({ user }: Props) {
             </div>
 
             {/* Slip Action Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setViewingSlip(null)}
-                className="btn-secondary text-xs py-2 px-4"
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="btn-primary text-xs py-2 px-5 flex items-center gap-1.5"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                Print Acknowledgement Slip
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={`https://wa.me/94767171938?text=Hello%20Balasuriya%20Visa%20Bureau,%20here%20is%20my%20Visa%20Application%20Ref:%20${encodeURIComponent(
+                    viewingSlip.referenceNo
+                  )}%20(${encodeURIComponent(viewingSlip.userName)}%20-%20${encodeURIComponent(viewingSlip.country)}).`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition shadow-2xs"
+                >
+                  <Phone className="h-3.5 w-3.5 text-emerald-600" />
+                  Send to WhatsApp
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleSendAppToEmail(viewingSlip)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-800 hover:bg-sky-100 transition shadow-2xs"
+                >
+                  <Mail className="h-3.5 w-3.5 text-sky-600" />
+                  Email to balasuriyagroup.info@gmail.com
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setViewingSlip(null)}
+                  className="btn-secondary text-xs py-2 px-4"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="btn-primary text-xs py-2 px-5 flex items-center gap-1.5"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  Print Slip
+                </button>
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Express Inquiry Modal */}
+      {isExpressModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-2xl my-8">
+            <button
+              onClick={() => setIsExpressModalOpen(false)}
+              className="absolute right-4 top-4 z-10 rounded-full bg-white/90 p-1.5 text-gray-400 hover:text-gray-700 shadow-md"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <QuickVisaInquiry compact onSuccess={() => setIsExpressModalOpen(false)} />
           </div>
         </div>
       )}

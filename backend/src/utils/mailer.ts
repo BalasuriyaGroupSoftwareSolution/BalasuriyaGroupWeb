@@ -209,3 +209,74 @@ export async function sendStaffWelcomeEmail(params: {
     return { success: false, error: err.message };
   }
 }
+
+export async function sendInquiryNotificationEmail(params: {
+  division: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  referenceId?: string;
+  details?: Record<string, any>;
+}): Promise<{ success: boolean; error?: string }> {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const targetEmail = "balasuriyagroup.info@gmail.com";
+  const fromEmail = process.env.FROM_EMAIL || "Balasuriya Group <security@balasuriyagroup.tech>";
+
+  if (!resendApiKey) {
+    console.log(`[MAILER] No RESEND_API_KEY. Inquiry from ${params.name} noted for ${targetEmail}.`);
+    return { success: true };
+  }
+
+  const timeTag = new Date().toLocaleString("en-GB", { timeZone: "Asia/Colombo" });
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+      <div style="background-color: #0B1E3F; padding: 18px 24px; border-radius: 8px 8px 0 0; color: #ffffff;">
+        <div style="color: #D4AF37; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">
+          ${params.division} DIVISION INQUIRY
+        </div>
+        <h2 style="margin: 6px 0 0 0; font-size: 18px; color: #ffffff;">${params.subject}</h2>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;">Ref: ${params.referenceId || "BG-INQ"} &bull; ${timeTag}</p>
+      </div>
+
+      <div style="padding: 20px 4px;">
+        <p style="font-size: 14px; color: #334155;"><strong>From:</strong> ${params.name} (${params.email})</p>
+        ${params.phone ? `<p style="font-size: 14px; color: #334155;"><strong>Phone:</strong> ${params.phone}</p>` : ""}
+        <div style="background-color: #f8fafc; border-left: 4px solid #0B1E3F; padding: 14px; border-radius: 4px; font-size: 14px; color: #1e293b; margin: 16px 0; line-height: 1.5;">
+          ${params.message.replace(/\n/g, "<br/>")}
+        </div>
+        <div style="text-align: center; margin-top: 24px;">
+          <a href="mailto:${params.email}?subject=RE: ${encodeURIComponent(params.subject)}" style="background-color: #0B1E3F; color: #ffffff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">
+            Reply to ${params.name}
+          </a>
+        </div>
+      </div>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">Dispatched to ${targetEmail} by Balasuriya Group Platform</p>
+    </div>
+  `;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromEmail.includes("<") ? fromEmail : `Balasuriya Group <${fromEmail}>`,
+        to: [targetEmail],
+        reply_to: params.email,
+        subject: `[${params.division}] Inquiry: ${params.subject} (${params.name})`,
+        html,
+      }),
+    });
+    return { success: res.ok };
+  } catch (err: any) {
+    console.error("[sendInquiryNotificationEmail] error:", err);
+    return { success: false, error: err.message };
+  }
+}
+
