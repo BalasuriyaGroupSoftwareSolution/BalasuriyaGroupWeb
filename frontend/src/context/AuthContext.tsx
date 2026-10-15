@@ -38,12 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function login(email: string, password: string) {
+    const normEmail = email.toLowerCase().trim();
+    const authHash = localStorage.getItem(`bg_auth_hash_${normEmail}`) || "";
     try {
-      const res = await api.post("/api/auth/login", { email, password });
+      const res = await api.post("/api/auth/login", { email: normEmail, password, authHash });
       setToken(res.data.token);
       setUser(res.data.user);
     } catch (err: any) {
-      const normEmail = email.toLowerCase().trim();
       const savedPwd = localStorage.getItem(`bg_pwd_${normEmail}`);
       if (savedPwd && savedPwd === password) {
         const isExecutive = normEmail.includes("clemon") || normEmail.includes("balasuriya");
@@ -132,8 +133,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function resetPassword(email: string, code: string, newPassword: string, customResetToken?: string): Promise<void> {
+    const normEmail = email.toLowerCase().trim();
     const payload: { email: string; newPassword: string; code?: string; resetToken?: string } = {
-      email,
+      email: normEmail,
       newPassword,
     };
     if (customResetToken) {
@@ -146,7 +148,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.data.token);
     setUser(res.data.user);
     try {
-      localStorage.setItem(`bg_pwd_${email.toLowerCase().trim()}`, newPassword);
+      if (res.data?.authHash) {
+        localStorage.setItem(`bg_auth_hash_${normEmail}`, res.data.authHash);
+      }
+      localStorage.setItem(`bg_pwd_${normEmail}`, newPassword);
     } catch {}
   }
 

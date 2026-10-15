@@ -100,10 +100,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
+  // Compute cryptographic password hash and server HMAC signature
+  const passwordHash = crypto.pbkdf2Sync(String(newPassword), HMAC_SECRET, 10000, 64, "sha512").toString("hex");
+  const authHashSig = crypto.createHmac("sha256", HMAC_SECRET).update(`${normalized}:${passwordHash}`).digest("hex");
+  const authHash = `${passwordHash}:${authHashSig}`;
+
   // Persist the updated password so /api/auth/login verifies it immediately
   try {
     const ACCOUNTS_FILE = "/tmp/balasuriya_accounts.json";
-    const passwordHash = crypto.pbkdf2Sync(String(newPassword), HMAC_SECRET, 10000, 64, "sha512").toString("hex");
     let all: Record<string, any> = {};
     const fs = await import("fs");
     if (fs.existsSync(ACCOUNTS_FILE)) {
@@ -123,6 +127,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error("Failed to persist updated password to /tmp:", e);
   }
 
+  // Set cross-instance cookie
+  res.setHeader(
+    "Set-Cookie",
+    `bg_auth_hash=${encodeURIComponent(authHash)}; Path=/; Max-Age=31536000; SameSite=Lax`
+  );
+
   const isExecutive = normalized.includes("clemon") || normalized.includes("balasuriya");
   const user = {
     id: `usr_live_${Date.now()}`,
@@ -136,6 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return res.status(200).json({
     token: `live_jwt_token_${Date.now()}`,
     user,
+    authHash,
     message: "Password successfully updated! Welcome back.",
   });
 }
