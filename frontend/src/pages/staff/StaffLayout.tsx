@@ -12,7 +12,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/staff", label: "Dashboard Overview" },
+  { to: "/staff", label: "Dashboard & Activity Feed" },
   { to: "/staff/construction", label: "Construction Progress", roles: ["CONSTRUCTION_MANAGER", "CONSTRUCTION_STAFF", "ADMIN"] },
   { to: "/staff/tourism", label: "Tourism Packages", roles: ["TOURISM_AGENT", "TOURISM_STAFF", "ADMIN"] },
   { to: "/staff/payments", label: "Payment Approvals", roles: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "FINANCE_STAFF", "ADMIN"] },

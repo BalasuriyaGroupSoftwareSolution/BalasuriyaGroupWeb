@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -14,6 +14,8 @@ import {
   HardHat,
   Palmtree,
   Plane,
+  RefreshCw,
+  Search,
   Shield,
   ShieldAlert,
   ShieldCheck,
@@ -22,6 +24,11 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import {
+  getStoredActivities,
+  logStaffActivity,
+  type ActivityEvent,
+} from "../../lib/activityLogger";
 import toast from "react-hot-toast";
 
 interface ApprovalItem {
@@ -36,16 +43,6 @@ interface ApprovalItem {
   status: "PENDING" | "APPROVED" | "REJECTED";
   approvedBy?: string;
   urgency: "HIGH" | "MEDIUM" | "NORMAL";
-}
-
-interface ActivityEvent {
-  id: string;
-  division: "CONSTRUCTION" | "TOURISM" | "SOFTWARE" | "TICKETING" | "FINANCE" | "GOVERNANCE";
-  title: string;
-  actor: string;
-  actorRole: string;
-  timestamp: string;
-  badgeColor: string;
 }
 
 const INITIAL_APPROVAL_ITEMS: ApprovalItem[] = [
@@ -111,54 +108,6 @@ const INITIAL_APPROVAL_ITEMS: ApprovalItem[] = [
   },
 ];
 
-const INITIAL_ACTIVITY_STREAM: ActivityEvent[] = [
-  {
-    id: "act-1",
-    division: "GOVERNANCE",
-    title: "Executive Staff Hierarchy updated with delegated division authority",
-    actor: "Clemon Balasuriya",
-    actorRole: "CEO / Executive Owner",
-    timestamp: "15 minutes ago",
-    badgeColor: "bg-brand-navy text-brand-gold",
-  },
-  {
-    id: "act-2",
-    division: "CONSTRUCTION",
-    title: "Updated Site Progress for Kandy Luxury Hillside Villa to 62%",
-    actor: "Migara Balasuriya",
-    actorRole: "Construction Manager",
-    timestamp: "1 hour ago",
-    badgeColor: "bg-blue-100 text-blue-900",
-  },
-  {
-    id: "act-3",
-    division: "FINANCE",
-    title: "Approved verified bank deposit receipt for Mirissa Beach Resort",
-    actor: "Clavo Balasuriya",
-    actorRole: "Executive Director",
-    timestamp: "2 hours ago",
-    badgeColor: "bg-amber-100 text-amber-900",
-  },
-  {
-    id: "act-4",
-    division: "TOURISM",
-    title: "Published 'Mirissa Whale Watching & Yala Safari 5-Day Odyssey'",
-    actor: "Damian Balasuriya",
-    actorRole: "Managing Director",
-    timestamp: "4 hours ago",
-    badgeColor: "bg-emerald-100 text-emerald-900",
-  },
-  {
-    id: "act-5",
-    division: "SOFTWARE",
-    title: "Deployed automated client quotation estimator v2.4 to cloud",
-    actor: "Kevin Rathnayake",
-    actorRole: "Lead Software Architect",
-    timestamp: "Yesterday, 6:00 PM",
-    badgeColor: "bg-indigo-100 text-indigo-900",
-  },
-];
-
 export default function StaffDashboard() {
   const { user } = useAuth();
 
@@ -174,8 +123,21 @@ export default function StaffDashboard() {
   const canManageStaff = isOwnerOrAdmin || isDivisionLeader;
 
   const [approvals, setApprovals] = useState<ApprovalItem[]>(INITIAL_APPROVAL_ITEMS);
-  const [activities, setActivities] = useState<ActivityEvent[]>(INITIAL_ACTIVITY_STREAM);
+  const [activities, setActivities] = useState<ActivityEvent[]>(() => getStoredActivities());
   const [divisionFilter, setDivisionFilter] = useState<string>("ALL");
+  const [activityDivisionFilter, setActivityDivisionFilter] = useState<string>("ALL");
+  const [activitySearch, setActivitySearch] = useState<string>("");
+
+  useEffect(() => {
+    const handleNewActivity = (e: Event) => {
+      const customEvt = e as CustomEvent<ActivityEvent>;
+      if (customEvt.detail) {
+        setActivities((prev) => [customEvt.detail, ...prev.filter((a) => a.id !== customEvt.detail.id)]);
+      }
+    };
+    window.addEventListener("bg_staff_activity_added", handleNewActivity);
+    return () => window.removeEventListener("bg_staff_activity_added", handleNewActivity);
+  }, []);
 
   function canUserApprove(item: ApprovalItem): boolean {
     if (isOwnerOrAdmin) return true; // CEO & Directors can approve ANY division item
@@ -203,17 +165,15 @@ export default function StaffDashboard() {
       )
     );
 
-    // Append to live activity stream
-    const newEvent: ActivityEvent = {
-      id: `act-${Date.now()}`,
+    const logged = logStaffActivity({
       division: item.division,
-      title: `Approved: "${item.title}"`,
+      title: `Executive Sign-off: "${item.title}"`,
       actor: user?.name || "Staff Lead",
       actorRole: user?.role.replace(/_/g, " ") || "Leader",
-      timestamp: "Just now",
       badgeColor: "bg-emerald-100 text-emerald-900",
-    };
-    setActivities((prev) => [newEvent, ...prev]);
+      details: `Sign-off completed by ${user?.name} (${user?.role.replace(/_/g, " ")}). Approved for production release.`,
+    });
+    setActivities((prev) => [logged, ...prev.filter((a) => a.id !== logged.id)]);
 
     toast.success(`Approved: "${item.title}"`);
   }
@@ -234,6 +194,16 @@ export default function StaffDashboard() {
       )
     );
 
+    const logged = logStaffActivity({
+      division: item.division,
+      title: `Revision Requested: "${item.title}"`,
+      actor: user?.name || "Staff Lead",
+      actorRole: user?.role.replace(/_/g, " ") || "Leader",
+      badgeColor: "bg-rose-100 text-rose-900",
+      details: `Revision requested by ${user?.name}. Team must address feedback and resubmit.`,
+    });
+    setActivities((prev) => [logged, ...prev.filter((a) => a.id !== logged.id)]);
+
     toast.error(`Returned with feedback: "${item.title}"`);
   }
 
@@ -243,6 +213,17 @@ export default function StaffDashboard() {
   });
 
   const pendingCount = approvals.filter((a) => a.status === "PENDING").length;
+
+  const filteredActivities = activities.filter((act) => {
+    const matchesDiv = activityDivisionFilter === "ALL" || act.division === activityDivisionFilter;
+    const matchesQuery =
+      activitySearch.trim() === "" ||
+      act.title.toLowerCase().includes(activitySearch.toLowerCase()) ||
+      act.actor.toLowerCase().includes(activitySearch.toLowerCase()) ||
+      act.actorRole.toLowerCase().includes(activitySearch.toLowerCase()) ||
+      (act.details && act.details.toLowerCase().includes(activitySearch.toLowerCase()));
+    return matchesDiv && matchesQuery;
+  });
 
   return (
     <div className="space-y-8">
@@ -264,6 +245,32 @@ export default function StaffDashboard() {
               ? " As an Executive Board Member, you possess universal authority across all corporate divisions, delegated approvals, and real-time audit governance."
               : " Review division tasks, approve submissions from your team members, and coordinate with Executive Directors."}
           </p>
+
+          <div className="mt-5 flex flex-wrap gap-2.5">
+            <a
+              href="#staff-activities"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-1.5 text-xs font-semibold text-white transition backdrop-blur-sm shadow-xs"
+            >
+              <Activity className="h-3.5 w-3.5 text-brand-gold" />
+              Live Staff Activity Feed ({activities.length} Events)
+            </a>
+            <a
+              href="#approval-queue"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-1.5 text-xs font-semibold text-white transition backdrop-blur-sm"
+            >
+              <FileCheck className="h-3.5 w-3.5 text-emerald-400" />
+              Approvals Queue ({pendingCount} Pending)
+            </a>
+            {canManageStaff && (
+              <Link
+                to="/staff/users"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-gold hover:bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-brand-navy transition shadow-xs"
+              >
+                <Users className="h-3.5 w-3.5" />
+                Staff Hierarchy & Directory
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
@@ -311,7 +318,7 @@ export default function StaffDashboard() {
       </div>
 
       {/* Section 1: Division Draft Review & Approval Hierarchy */}
-      <div className="card space-y-6">
+      <div id="approval-queue" className="card space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -449,36 +456,98 @@ export default function StaffDashboard() {
       </div>
 
       {/* Section 2: Executive Cross-Division Activity Log & Audit Stream */}
-      <div className="card space-y-4">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-brand-gold" />
-            <h2 className="font-display font-bold text-lg text-brand-navy">
-              Executive Governance & Live Activity Feed
-            </h2>
+      <div id="staff-activities" className="card space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-brand-gold" />
+              <h2 className="font-display font-bold text-lg text-brand-navy">
+                Executive Governance & Live Activity Feed
+              </h2>
+              <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                Live Audit Stream
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Complete audit trail of real-time actions taken by staff, division leaders, and executive directors across all corporate departments.
+            </p>
           </div>
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-            Live Corporate Audit
-          </span>
+
+          <div className="flex items-center gap-2 text-xs">
+            <span className="rounded-lg bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700">
+              {filteredActivities.length} of {activities.length} Events
+            </span>
+          </div>
         </div>
 
-        <div className="divide-y divide-gray-100">
-          {activities.map((act) => (
-            <div key={act.id} className="py-3 flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${act.badgeColor}`}>
-                    {act.division}
-                  </span>
-                  <span className="text-xs font-semibold text-brand-navy">{act.title}</span>
-                </div>
-                <p className="text-[11px] text-gray-500">
-                  Executed by <span className="font-semibold text-gray-700">{act.actor}</span> ({act.actorRole})
-                </p>
-              </div>
-              <span className="text-[11px] text-gray-400 shrink-0 font-medium">{act.timestamp}</span>
+        {/* Filter & Search Bar */}
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div className="relative w-full sm:w-72">
+            <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by staff name, action, role..."
+              value={activitySearch}
+              onChange={(e) => setActivitySearch(e.target.value)}
+              className="input pl-9 text-xs py-2 bg-gray-50/50"
+            />
+          </div>
+
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs w-full sm:w-auto">
+            <Filter className="h-3.5 w-3.5 text-gray-400 mr-1 shrink-0" />
+            {["ALL", "CONSTRUCTION", "SOFTWARE", "TOURISM", "TICKETING", "FINANCE", "GOVERNANCE"].map((div) => (
+              <button
+                key={div}
+                type="button"
+                onClick={() => setActivityDivisionFilter(div)}
+                className={`rounded-lg px-2.5 py-1 font-semibold transition shrink-0 ${
+                  activityDivisionFilter === div
+                    ? "bg-brand-navy text-white shadow-xs"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {div === "ALL" ? "All Divisions" : div.charAt(0) + div.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Activity List */}
+        <div className="divide-y divide-gray-100 max-h-[520px] overflow-y-auto pr-1">
+          {filteredActivities.length === 0 ? (
+            <div className="py-12 text-center text-xs text-gray-400 space-y-1">
+              <Activity className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+              <p className="font-semibold text-gray-600">No staff activities match the criteria.</p>
+              <p className="text-[11px]">Try clearing your search query or selecting "All Divisions".</p>
             </div>
-          ))}
+          ) : (
+            filteredActivities.map((act) => (
+              <div key={act.id} className="py-3.5 flex items-start justify-between gap-4 hover:bg-gray-50/60 rounded-xl px-2 transition">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${act.badgeColor}`}>
+                      {act.division}
+                    </span>
+                    <span className="text-xs font-semibold text-brand-navy">{act.title}</span>
+                  </div>
+                  {act.details && (
+                    <p className="text-xs text-gray-600 leading-relaxed pl-0.5">
+                      {act.details}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-gray-500 pl-0.5">
+                    Executed by <span className="font-semibold text-gray-800">{act.actor}</span>{" "}
+                    <span className="text-gray-400">({act.actorRole})</span>
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="inline-flex items-center gap-1 text-[11px] text-gray-400 font-medium">
+                    <Clock className="h-3 w-3" /> {act.timestamp}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

@@ -30,6 +30,7 @@ import {
   type Role,
   type User,
 } from "../../types";
+import { logStaffActivity } from "../../lib/activityLogger";
 import toast from "react-hot-toast";
 
 export const DEPARTMENTS = [
@@ -688,6 +689,14 @@ export default function StaffUsers() {
         persistUsers(next);
         return next;
       });
+      logStaffActivity({
+        division: "GOVERNANCE",
+        title: `Provisioned official staff credentials for ${newUserObj.name}`,
+        actor: currentUser?.name || "Corporate Admin",
+        actorRole: currentUser?.role.replace(/_/g, " ") || "Admin",
+        badgeColor: "bg-brand-navy text-brand-gold",
+        details: `Role: ${newUserObj.role.replace(/_/g, " ")}, Department: ${newUserObj.department || "Corporate"}, Divisions: ${(newUserObj.assignedDivisions || []).join(", ")}. Welcome email dispatched.`,
+      });
       setName("");
       setEmail("");
       setPhone("");
@@ -713,6 +722,14 @@ export default function StaffUsers() {
           assignedDivisions: newUserObj.assignedDivisions,
           password: tempPassword,
           emailDispatched: true,
+        });
+        logStaffActivity({
+          division: "GOVERNANCE",
+          title: `Provisioned official staff credentials for ${newUserObj.name}`,
+          actor: currentUser?.name || "Corporate Admin",
+          actorRole: currentUser?.role.replace(/_/g, " ") || "Admin",
+          badgeColor: "bg-brand-navy text-brand-gold",
+          details: `Role: ${newUserObj.role.replace(/_/g, " ")}, Department: ${newUserObj.department || "Corporate"}, Divisions: ${(newUserObj.assignedDivisions || []).join(", ")}.`,
         });
         setName("");
         setEmail("");
@@ -742,6 +759,14 @@ export default function StaffUsers() {
       persistUsers(next);
       return next;
     });
+    logStaffActivity({
+      division: "GOVERNANCE",
+      title: `Modified role for ${user.name} to ${newRole.replace(/_/g, " ")}`,
+      actor: currentUser?.name || "Corporate Admin",
+      actorRole: currentUser?.role.replace(/_/g, " ") || "Admin",
+      badgeColor: "bg-indigo-100 text-indigo-900",
+      details: `Role updated in system directory.`,
+    });
     toast.success(`${user.name}'s role updated to ${newRole.replace(/_/g, " ")}`);
     try {
       await api.patch(`/api/users/${user.id}`, { role: newRole });
@@ -759,6 +784,14 @@ export default function StaffUsers() {
       const next = prev.map((u) => (u.id === user.id ? updated : u));
       persistUsers(next);
       return next;
+    });
+    logStaffActivity({
+      division: "GOVERNANCE",
+      title: `${nextState ? "Restored active access" : "Suspended account"} for ${user.name}`,
+      actor: currentUser?.name || "Division Leader",
+      actorRole: currentUser?.role.replace(/_/g, " ") || "Leader",
+      badgeColor: nextState ? "bg-emerald-100 text-emerald-900" : "bg-rose-100 text-rose-900",
+      details: `Account access status changed to ${nextState ? "ACTIVE" : "SUSPENDED"}.`,
     });
     toast.success(`${user.name} is now ${nextState ? "Active" : "Suspended"}`);
     try {
@@ -786,6 +819,14 @@ export default function StaffUsers() {
     } catch {
       toast.success(`Password reset generated.`);
     }
+    logStaffActivity({
+      division: "GOVERNANCE",
+      title: `Generated secure password reset for ${user.name}`,
+      actor: currentUser?.name || "Division Leader",
+      actorRole: currentUser?.role.replace(/_/g, " ") || "Leader",
+      badgeColor: "bg-amber-100 text-amber-900",
+      details: `New temporary password generated for ${user.email}.`,
+    });
     setCredentialsModal({
       name: user.name,
       email: user.email,
@@ -812,6 +853,14 @@ export default function StaffUsers() {
       const next = prev.filter((u) => u.id !== user.id);
       persistUsers(next);
       return next;
+    });
+    logStaffActivity({
+      division: "GOVERNANCE",
+      title: `Removed staff member account for ${user.name}`,
+      actor: currentUser?.name || "Corporate Admin",
+      actorRole: currentUser?.role.replace(/_/g, " ") || "Admin",
+      badgeColor: "bg-rose-100 text-rose-900",
+      details: `Account for ${user.email} permanently removed.`,
     });
     toast.success(`${user.name} has been removed.`);
     try {
@@ -973,6 +1022,15 @@ export default function StaffUsers() {
         new CustomEvent("bg_staff_user_updated", { detail: updatedUser })
       );
     } catch {}
+
+    logStaffActivity({
+      division: "GOVERNANCE",
+      title: `Updated staff credentials & cross-section roles for ${updatedUser.name}`,
+      actor: currentUser?.name || "Division Leader",
+      actorRole: currentUser?.role.replace(/_/g, " ") || "Leader",
+      badgeColor: "bg-blue-100 text-blue-900",
+      details: `Designation: ${updatedUser.jobTitle || "Official Staff"}, Department: ${updatedUser.department || "Corporate"}, Divisions: ${(updatedUser.assignedDivisions || []).join(", ")}.`,
+    });
 
     toast.success(`Staff details for ${updatedUser.name} saved successfully!`);
     setEditingUser(null);
