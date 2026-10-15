@@ -770,6 +770,10 @@ export default function StaffUsers() {
         newUserObj.id = res.data.user.id;
       }
 
+      try {
+        localStorage.setItem(`bg_pwd_${newUserObj.email.toLowerCase()}`, tempPassword);
+      } catch {}
+
       const dispatched = res.data?.emailDispatched;
       toast.success(
         dispatched
@@ -811,6 +815,9 @@ export default function StaffUsers() {
       setShowNew(false);
     } catch (err: any) {
       if (err?.code === "ERR_NETWORK" || !err.response) {
+        try {
+          localStorage.setItem(`bg_pwd_${newUserObj.email.toLowerCase()}`, tempPassword);
+        } catch {}
         unmarkIdentifierRemoved(newUserObj.id, newUserObj.email);
         setUsers((prev) => {
           const next = [newUserObj, ...prev.filter((u) => u.email.toLowerCase() !== newUserObj.email.toLowerCase())];
@@ -910,6 +917,9 @@ export default function StaffUsers() {
       return;
     }
     const newTempPassword = generateStrongTempPassword();
+    try {
+      localStorage.setItem(`bg_pwd_${user.email.toLowerCase()}`, newTempPassword);
+    } catch {}
     let emailDispatched = false;
     try {
       const res = await api.post(`/api/users/${user.id}/reset-password`, {
