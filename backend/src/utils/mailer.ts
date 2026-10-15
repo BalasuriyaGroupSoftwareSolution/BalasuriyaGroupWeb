@@ -13,32 +13,22 @@ export async function sendVerificationEmail(
 
   if (resendApiKey) {
     try {
-      const recipientList = [toEmail];
-      if (toEmail.toLowerCase() === "clemonbalasuriyagroup@gmail.com") {
-        recipientList.push("avishkaclemon@gmail.com");
-      }
-      if (toEmail.toLowerCase() !== "balasuriyagroup.software@gmail.com") {
-        recipientList.push("balasuriyagroup.software@gmail.com");
-      }
-
+      const target = toEmail.toLowerCase().trim();
       const timeTag = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Colombo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-      let lastError = "";
-      let anySuccess = false;
-      for (const target of recipientList) {
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromEmail.includes("<") ? fromEmail : `Balasuriya Group Security <${fromEmail}>`,
+          to: [target],
+          subject: `Reset Your Balasuriya Group Password [${timeTag}]`,
           headers: {
-            "Authorization": `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
+            "X-Entity-Ref-ID": `${Date.now()}-${target}`,
           },
-          body: JSON.stringify({
-            from: fromEmail.includes("<") ? fromEmail : `Balasuriya Group Security <${fromEmail}>`,
-            to: [target],
-            subject: `Reset Your Balasuriya Group Password [${timeTag}]`,
-            headers: {
-              "X-Entity-Ref-ID": `${Date.now()}-${target}`,
-            },
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
                 <h2 style="color: #0B1E3F; margin-top: 0;">Balasuriya Group Corporate Security</h2>
@@ -73,19 +63,14 @@ export async function sendVerificationEmail(
         });
 
         if (res.ok) {
-          anySuccess = true;
           console.log(`[MAILER] Successfully dispatched verification email to ${target}`);
+          return { success: true };
         } else {
-          lastError = await res.text();
+          const lastError = await res.text();
           console.warn(`[MAILER] Resend API response for ${target}: ${lastError}`);
+          return { success: false, error: lastError };
         }
-      }
-
-      if (anySuccess) {
-        return { success: true };
-      }
-      return { success: false, error: lastError };
-    } catch (err: any) {
+      } catch (err: any) {
       console.error(`[MAILER] Resend API exception:`, err);
       return { success: false, error: err.message };
     }

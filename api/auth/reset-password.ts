@@ -5,7 +5,12 @@ const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "bal
 
 const globalStore = globalThis as unknown as {
   otpStore?: Map<string, { code: string; expiresAt: number }>;
+  consumedResetTokens?: Set<string>;
 };
+if (!globalStore.consumedResetTokens) {
+  globalStore.consumedResetTokens = new Set();
+}
+const consumedResetTokens = globalStore.consumedResetTokens;
 const otpStore = globalStore.otpStore || new Map();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -34,22 +39,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const cleanCode = code ? String(code).trim() : "";
   let verified = false;
 
-  // 1. Verify via 1-Click Magic Link Token from email
-  if (resetToken && typeof resetToken === "string" && resetToken.includes(":")) {
-    const [expiryStr, sig] = resetToken.split(":");
-    const expiry = parseInt(expiryStr, 10);
-    if (!isNaN(expiry) && Date.now() < expiry) {
-      const expectedLink = crypto
-        .createHmac("sha256", HMAC_SECRET)
-        .update(`reset_link:${normalized}:${expiry}`)
-        .digest("hex");
-      if (sig.length === expectedLink.length && crypto.timingSafeEqual(Buffer.from(expectedLink), Buffer.from(sig))) {
-        verified = true;
+  // 1. Single-use check: If this resetToken was already consumed, refuse immediately
+  if (resetToken && typeof resetToken === "string") {
+    if (consumedResetTokens.has(resetToken)) {
+      return res.status(400).json({
+        message: "This password reset link has already been used. Please request a new link.",
+      });
+    }
+
+    if (resetToken.includes(":")) {
+      const [expiryStr, sig] = resetToken.split(":");
+      const expiry = parseInt(expiryStr, 10);
+      if (!isNaN(expiry) && Date.now() < expiry) {
+        const expectedLink = crypto
+          .createHmac("sha256", HMAC_SECRET)
+          .update(`reset_link:${normalized}:${expiry}`)
+          .digest("hex");
+        if (sig.length === expectedLink.length && crypto.timingSafeEqual(Buffer.from(expectedLink), Buffer.from(sig))) {
+          verified = true;
+          // Mark token as consumed for strict single-use security
+          consumedResetTokens.add(resetToken);
+        }
       }
     }
   }
 
-  // 2. If no valid magic link token was provided, strict 6-digit verification code check is REQUIRED
+  // 2. Fallback to 6-digit code verification (if no valid magic link token was used)
   if (!verified) {
     if (!cleanCode || cleanCode.length !== 6) {
       return res.status(400).json({
@@ -66,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!verified) {
     return res.status(400).json({
-      message: "Invalid or expired verification code. Please check your email or request a new code.",
+      message: "Invalid or expired verification code or link. Please request a new reset link.",
     });
   }
 
@@ -83,6 +98,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return res.status(200).json({
     token: `live_jwt_token_${Date.now()}`,
     user,
-    message: "Password successfully reset! Welcome back.",
+    message: "Password successfully updated! Welcome back.",
   });
 }
