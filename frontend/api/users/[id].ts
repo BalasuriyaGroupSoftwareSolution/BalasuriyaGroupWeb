@@ -59,16 +59,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "PATCH") {
-    const { name, phone, role, isActive } = req.body || {};
+    const { name, email, phone, role, isActive } = req.body || {};
+    const oldEmail = users[index].email.toLowerCase().trim();
+    const newEmail = email !== undefined ? String(email).toLowerCase().trim() : oldEmail;
+
+    if (newEmail !== oldEmail && users.some((u, i) => i !== index && u.email.toLowerCase().trim() === newEmail)) {
+      return res.status(409).json({ message: "Another staff member already uses this email address." });
+    }
+
     const updated = {
       ...users[index],
       name: name !== undefined ? String(name).trim() : users[index].name,
+      email: newEmail,
       phone: phone !== undefined ? (phone ? String(phone).trim() : null) : users[index].phone,
       role: role !== undefined ? String(role).trim() : users[index].role,
       isActive: isActive !== undefined ? Boolean(isActive) : users[index].isActive,
     };
     users[index] = updated;
     saveUsers(users);
+
+    // If email changed, migrate credentials in ACCOUNTS_FILE
+    if (newEmail !== oldEmail) {
+      try {
+        const ACCOUNTS_FILE = "/tmp/balasuriya_accounts.json";
+        if (fs.existsSync(ACCOUNTS_FILE)) {
+          const all = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, "utf-8"));
+          if (all[oldEmail]) {
+            all[newEmail] = all[oldEmail];
+            delete all[oldEmail];
+            fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(all, null, 2), "utf-8");
+          }
+        }
+      } catch {}
+    }
+
     return res.status(200).json({ user: updated, message: "Staff member updated." });
   }
 

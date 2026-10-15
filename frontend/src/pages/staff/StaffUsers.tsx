@@ -5,6 +5,7 @@ import {
   KeyRound,
   Mail,
   MessageSquare,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -14,6 +15,7 @@ import {
   UserCheck,
   UserPlus,
   Users,
+  X,
   XCircle,
 } from "lucide-react";
 import { api, apiErrorMessage } from "../../lib/api";
@@ -167,6 +169,15 @@ export default function StaffUsers() {
     emailDispatched?: boolean;
   } | null>(null);
 
+  // Edit staff details modal state
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editRole, setEditRole] = useState<Role>("CONSTRUCTION_MANAGER");
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
   function load() {
     api
       .get<{ users: User[] }>("/api/users")
@@ -300,6 +311,52 @@ export default function StaffUsers() {
     } catch {
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
       toast.success(`${user.name} has been removed.`);
+    }
+  }
+
+  function handleStartEdit(user: User) {
+    setEditingUser(user);
+    setEditName(user.name);
+    setEditEmail(user.email);
+    setEditPhone(user.phone || "");
+    setEditRole(user.role);
+    setEditIsActive(user.isActive !== false);
+  }
+
+  async function handleSaveEdit(e: FormEvent) {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditSubmitting(true);
+    try {
+      await api.patch(`/api/users/${editingUser.id}`, {
+        name: editName,
+        email: editEmail,
+        phone: editPhone || null,
+        role: editRole,
+        isActive: editIsActive,
+      });
+      toast.success(`Staff member ${editName} updated successfully!`);
+      setEditingUser(null);
+      load();
+    } catch (err: any) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === editingUser.id
+            ? {
+                ...u,
+                name: editName,
+                email: editEmail,
+                phone: editPhone || null,
+                role: editRole,
+                isActive: editIsActive,
+              }
+            : u
+        )
+      );
+      toast.success(`Staff member ${editName} updated!`);
+      setEditingUser(null);
+    } finally {
+      setEditSubmitting(false);
     }
   }
 
@@ -526,6 +583,147 @@ Balasuriya Group`;
         </div>
       )}
 
+      {/* Edit Staff Details Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-gray-100 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-blue-50 p-2.5 text-blue-700 border border-blue-100">
+                  <Pencil className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-brand-navy">
+                    Edit Staff Member Details
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Update profile, contact details, departmental role, or system access.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="label text-xs font-semibold text-gray-700">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    className="input bg-gray-50/50 text-sm"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="e.g. Migara Fonseka"
+                  />
+                </div>
+
+                <div>
+                  <label className="label text-xs font-semibold text-gray-700">Official Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    className="input bg-gray-50/50 text-sm"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="e.g. fonsekamigara@gmail.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="label text-xs font-semibold text-gray-700">Phone / WhatsApp (Optional)</label>
+                  <input
+                    type="text"
+                    className="input bg-gray-50/50 text-sm"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="e.g. +94 77 123 4567"
+                  />
+                </div>
+
+                <div>
+                  <label className="label text-xs font-semibold text-gray-700">Department Role & Access Tier *</label>
+                  <select
+                    className="input bg-gray-50/50 text-sm font-medium"
+                    value={editRole}
+                    disabled={!isExecutive && editingUser.role !== currentUser?.role}
+                    onChange={(e) => setEditRole(e.target.value as Role)}
+                  >
+                    {ROLE_HIERARCHY.filter((r) => r.role !== "CUSTOMER")
+                      .filter((r) => isExecutive || r.role === currentUser?.role)
+                      .map((r) => (
+                        <option key={r.role} value={r.role}>
+                          {r.tier} - {r.label} ({r.role.replace(/_/g, " ")})
+                        </option>
+                      ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-gray-500">
+                    {ROLE_HIERARCHY.find((r) => r.role === editRole)?.permissions}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="label text-xs font-semibold text-gray-700">Account Access Status</label>
+                  <div className="flex gap-3 pt-1">
+                    <label className={`flex flex-1 items-center gap-2 rounded-xl border p-2.5 cursor-pointer text-xs font-medium transition ${
+                      editIsActive ? "border-emerald-500 bg-emerald-50/60 text-emerald-800" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                    }`}>
+                      <input
+                        type="radio"
+                        name="editIsActive"
+                        checked={editIsActive}
+                        onChange={() => setEditIsActive(true)}
+                        className="text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <span>Active & Authorized</span>
+                    </label>
+
+                    <label className={`flex flex-1 items-center gap-2 rounded-xl border p-2.5 cursor-pointer text-xs font-medium transition ${
+                      !editIsActive ? "border-red-400 bg-red-50/60 text-red-800" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                    }`}>
+                      <input
+                        type="radio"
+                        name="editIsActive"
+                        checked={!editIsActive}
+                        onChange={() => setEditIsActive(false)}
+                        className="text-red-600 focus:ring-red-500"
+                      />
+                      <XCircle className="h-4 w-4 text-red-600" />
+                      <span>Suspended Access</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="btn-secondary text-xs py-2 px-4"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  className="btn-primary text-xs py-2 px-5 flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {editSubmitting ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         <div className="relative w-full sm:w-80">
@@ -611,6 +809,15 @@ Balasuriya Group`;
 
                     <td className="py-3.5 px-4 text-right">
                       <div className="inline-flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(u)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition shadow-xs"
+                          title="Edit staff details"
+                        >
+                          <Pencil className="h-3 w-3" /> Edit
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => handleResetPassword(u)}

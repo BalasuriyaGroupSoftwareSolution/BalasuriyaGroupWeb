@@ -127,7 +127,8 @@ usersRouter.post(
 
 const updateUserSchema = z.object({
   name: z.string().min(2).max(120).optional(),
-  phone: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
   role: z
     .enum([
@@ -161,7 +162,18 @@ usersRouter.patch(
       throw new HttpError(403, "You can only manage staff within your own division.");
     }
 
-    const user = await prisma.user.update({ where: { id: req.params.id }, data });
+    if (data.email && data.email.toLowerCase() !== targetUser.email.toLowerCase()) {
+      const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
+      if (existing) throw new HttpError(409, "A user with that email already exists.");
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: {
+        ...data,
+        email: data.email ? data.email.toLowerCase() : undefined,
+      },
+    });
     res.json({ user: toSafeUser(user) });
   })
 );
