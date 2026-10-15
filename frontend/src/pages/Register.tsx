@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth, apiErrorMessage } from "../context/AuthContext";
+import { GoogleLoginButton } from "../components/GoogleLoginButton";
 import toast from "react-hot-toast";
 
 export default function Register() {
@@ -266,6 +267,14 @@ export default function Register() {
             {submitting ? "Registering Account…" : "Create Official Account"}
           </button>
         </form>
+
+        <div className="my-5 flex items-center gap-3 text-xs text-gray-400">
+          <div className="h-px flex-1 bg-gray-200" />
+          or register with
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        <GoogleLoginButton />
 
         <p className="mt-6 text-center text-xs text-gray-500">
           Already have an account?{" "}

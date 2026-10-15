@@ -15,7 +15,7 @@ const inquiryLimiter = rateLimit({
 });
 
 const inquirySchema = z.object({
-  division: z.enum(["CONSTRUCTION", "TOURISM", "SOFTWARE", "AIR_TICKETING", "GENERAL"]),
+  division: z.enum(["CONSTRUCTION", "TOURISM", "SOFTWARE", "AIR_TICKETING", "GENERAL", "VISA"]),
   name: z.string().min(2).max(120),
   email: z.string().email(),
   phone: z.string().min(7).max(25).optional(),
@@ -33,48 +33,55 @@ inquiriesRouter.post(
     const data = inquirySchema.parse(req.body);
 
     let customerId = req.user?.sub;
+    let referenceId = `BG-${data.division.slice(0, 4)}-${Date.now().toString().slice(-6)}`;
 
-    if (!customerId) {
-      // Find or create customer
-      const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
-      if (existing) {
-        customerId = existing.id;
-      } else {
-        const newUser = await prisma.user.create({
-          data: {
-            email: data.email.toLowerCase(),
-            name: data.name,
-            phone: data.phone,
-            role: "CUSTOMER",
-          },
-        });
-        customerId = newUser.id;
+    try {
+      if (!customerId) {
+        // Find or create customer
+        const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
+        if (existing) {
+          customerId = existing.id;
+        } else {
+          const newUser = await prisma.user.create({
+            data: {
+              email: data.email.toLowerCase(),
+              name: data.name,
+              phone: data.phone,
+              role: "CUSTOMER",
+            },
+          });
+          customerId = newUser.id;
+        }
       }
-    }
 
-    let bookingType: any = "GENERAL_INQUIRY";
-    if (data.division === "CONSTRUCTION") bookingType = "CONSTRUCTION_QUOTE";
-    else if (data.division === "TOURISM") bookingType = "TOUR_PACKAGE";
-    else if (data.division === "AIR_TICKETING") bookingType = "AIR_TICKET";
-    else if (data.division === "SOFTWARE") bookingType = "SOFTWARE_PROJECT";
+      let bookingType: any = "GENERAL_INQUIRY";
+      if (data.division === "CONSTRUCTION") bookingType = "CONSTRUCTION_QUOTE";
+      else if (data.division === "TOURISM") bookingType = "TOUR_PACKAGE";
+      else if (data.division === "AIR_TICKETING") bookingType = "AIR_TICKET";
+      else if (data.division === "SOFTWARE") bookingType = "SOFTWARE_PROJECT";
+      else if (data.division === "VISA") bookingType = "GENERAL_INQUIRY";
 
-    const booking = await prisma.booking.create({
-      data: {
-        customerId,
-        type: bookingType,
-        status: "PENDING",
-        details: {
-          division: data.division,
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          subject: data.subject,
-          message: data.message,
-          customDetails: data.details,
-          submittedAt: new Date().toISOString(),
+      const booking = await prisma.booking.create({
+        data: {
+          customerId,
+          type: bookingType,
+          status: "PENDING",
+          details: {
+            division: data.division,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            subject: data.subject,
+            message: data.message,
+            customDetails: data.details,
+            submittedAt: new Date().toISOString(),
+          },
         },
-      },
-    });
+      });
+      referenceId = booking.id;
+    } catch (err) {
+      console.warn("[INQUIRIES_ROUTE] Database save skipped or offline:", err);
+    }
 
     // Notify balasuriyagroup.info@gmail.com asynchronously
     sendInquiryNotificationEmail({
@@ -84,13 +91,13 @@ inquiriesRouter.post(
       phone: data.phone,
       subject: data.subject,
       message: data.message,
-      referenceId: booking.id,
+      referenceId,
       details: data.details,
     }).catch((err) => console.error("[INQUIRIES_ROUTE] Mail notification error:", err));
 
     res.status(201).json({
       success: true,
-      referenceId: booking.id,
+      referenceId,
       message: "Thank you! Your inquiry and quote request has been received. Our team will contact you shortly.",
     });
   })

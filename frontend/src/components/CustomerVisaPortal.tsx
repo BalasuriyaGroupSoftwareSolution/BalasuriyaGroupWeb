@@ -36,6 +36,95 @@ const LOCAL_VISAS_KEY = "bg_client_visa_applications";
 
 export const VISA_DESTINATIONS = [
   {
+    country: "India",
+    flag: "🇮🇳",
+    popularTypes: [
+      "30-Day Express Tourist eVisa",
+      "1-Year Multiple Entry Tourist eVisa",
+      "Commercial Trade & Business eVisa",
+      "Conference & Medical Attendant eVisa",
+    ],
+    processing: "48-72 Hours (Express)",
+    feeLkr: "18,500",
+  },
+  {
+    country: "Malaysia",
+    flag: "🇲🇾",
+    popularTypes: [
+      "30-Day Single Entry Tourist eVisa",
+      "Multiple Entry Business eVisa",
+      "Social Visit Pass & Transit eVisa",
+    ],
+    processing: "48-72 Hours",
+    feeLkr: "22,000",
+  },
+  {
+    country: "Indonesia (Bali & Jakarta)",
+    flag: "🇮🇩",
+    popularTypes: [
+      "Electronic Visa on Arrival (e-VOA 30 Days)",
+      "60-Day Tourist Visit Visa (B211A)",
+      "Multiple Entry Business Visit Visa",
+    ],
+    processing: "24-48 Hours",
+    feeLkr: "26,500",
+  },
+  {
+    country: "Vietnam",
+    flag: "🇻🇳",
+    popularTypes: [
+      "30-Day Single Entry Tourist eVisa",
+      "90-Day Multiple Entry Tourist eVisa",
+      "Commercial & Trade Business eVisa (DN1/DN2)",
+    ],
+    processing: "3-5 Working Days",
+    feeLkr: "21,500",
+  },
+  {
+    country: "Cambodia",
+    flag: "🇰🇭",
+    popularTypes: [
+      "Tourist eVisa (Type T - 30 Days)",
+      "Ordinary Business eVisa (Type E - 30 Days)",
+      "Long-Stay Extension Consultation",
+    ],
+    processing: "3-4 Working Days",
+    feeLkr: "23,000",
+  },
+  {
+    country: "Laos",
+    flag: "🇱🇦",
+    popularTypes: [
+      "Official Tourist eVisa (30 Days)",
+      "Business Delegate Entry Visa",
+      "Official Transit Visa",
+    ],
+    processing: "3-5 Working Days",
+    feeLkr: "24,000",
+  },
+  {
+    country: "China",
+    flag: "🇨🇳",
+    popularTypes: [
+      "L-Category Tourist Visa (Express)",
+      "M-Commercial Trade & Business Visa",
+      "F-Non-Commercial Academic & Cultural Visa",
+    ],
+    processing: "5-7 Working Days",
+    feeLkr: "36,000",
+  },
+  {
+    country: "Maldives",
+    flag: "🇲🇻",
+    popularTypes: [
+      "30-Day Tourist Entry Clearance (IMUGA IM16 Assistance)",
+      "Business & Corporate Delegate Entry",
+      "Expatriate Employment Documentation",
+    ],
+    processing: "24 Hours (Fast Track)",
+    feeLkr: "14,500",
+  },
+  {
     country: "United Arab Emirates (Dubai & Abu Dhabi)",
     flag: "🇦🇪",
     popularTypes: [
@@ -81,16 +170,6 @@ export const VISA_DESTINATIONS = [
     feeLkr: "24,500",
   },
   {
-    country: "Malaysia",
-    flag: "🇲🇾",
-    popularTypes: [
-      "30-Day Single Entry Tourist eVisa",
-      "Multiple Entry Business eVisa",
-    ],
-    processing: "48-72 Hours",
-    feeLkr: "22,000",
-  },
-  {
     country: "Australia & New Zealand",
     flag: "🇦🇺",
     popularTypes: [
@@ -133,7 +212,7 @@ export const VISA_DESTINATIONS = [
     feeLkr: "34,000",
   },
   {
-    country: "Thailand & Indonesia (Bali)",
+    country: "Thailand",
     flag: "🇹🇭",
     popularTypes: [
       "60-Day Tourist Visa (Single Entry)",
@@ -153,16 +232,6 @@ export const VISA_DESTINATIONS = [
     ],
     processing: "24-48 Hours",
     feeLkr: "44,000",
-  },
-  {
-    country: "China",
-    flag: "🇨🇳",
-    popularTypes: [
-      "L-Category Tourist Visa",
-      "M-Category Commercial Business Visa",
-    ],
-    processing: "5-7 Days",
-    feeLkr: "46,000",
   },
 ];
 
