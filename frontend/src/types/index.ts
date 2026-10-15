@@ -160,3 +160,47 @@ export interface Payment {
   createdAt: string;
   booking?: Booking;
 }
+
+export type VisaCategory = "TOURIST" | "BUSINESS" | "TRANSIT" | "STUDENT" | "CONFERENCE";
+export type VisaStatus =
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "DOCS_REQUIRED"
+  | "EMBASSY_PROCESSING"
+  | "APPROVED"
+  | "REJECTED";
+
+export interface VisaApplication {
+  id: string;
+  referenceNo: string;
+  userEmail: string;
+  userName: string;
+  phone: string;
+  country: string;
+  countryFlag: string;
+  category: VisaCategory;
+  visaTypeLabel: string;
+  entryType: "SINGLE" | "MULTIPLE";
+  passportNumber: string;
+  passportExpiry: string;
+  passportIssueDate?: string;
+  nationality: string;
+  dateOfBirth?: string;
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  occupation?: string;
+  employerName?: string;
+  intendedArrivalDate: string;
+  intendedDepartureDate?: string;
+  stayDurationDays?: number;
+  destinationAddress?: string;
+  sponsorCompany?: string;
+  sponsorContact?: string;
+  meetingPurpose?: string;
+  notes?: string;
+  documentSummary?: string;
+  status: VisaStatus;
+  statusNotes?: string;
+  submittedAt: string;
+  updatedAt: string;
+  canEdit?: boolean;
+}

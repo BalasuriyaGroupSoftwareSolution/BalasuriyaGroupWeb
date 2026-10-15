@@ -141,11 +141,11 @@ export default function Home() {
           </Reveal>
           <Reveal delay={0.24}>
             <DivisionCard
-              title="Air Ticket Booking"
-              description="IATA-aligned global flight ticketing, corporate reservations, and seamless embassy visa services."
+              title="Air Ticket & Visa"
+              description="IATA flight ticketing, tourist & business online visa applications, and dedicated pre-embassy revision windows."
               to="/air-ticketing"
-              cta="Book flights"
-              image={divisionImage("air-tickets.png")}
+              cta="Book flights & visas"
+              image={divisionImage("foreign-tours-air-tickets-visa.jpg")}
               icon={<Plane className="h-5 w-5" />}
             />
           </Reveal>

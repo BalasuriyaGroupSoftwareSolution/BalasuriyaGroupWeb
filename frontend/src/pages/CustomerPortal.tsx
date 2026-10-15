@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Building2,
@@ -9,6 +9,7 @@ import {
   CreditCard,
   Download,
   FileText,
+  Globe,
   HardHat,
   KeyRound,
   MapPin,
@@ -23,9 +24,10 @@ import {
 import { useAuth, apiErrorMessage } from "../context/AuthContext";
 import { api } from "../lib/api";
 import type { Booking, ConstructionProject } from "../types";
+import CustomerVisaPortal from "../components/CustomerVisaPortal";
 import toast from "react-hot-toast";
 
-type PortalTab = "overview" | "quotes" | "bookings" | "construction" | "payments" | "settings";
+type PortalTab = "overview" | "visas" | "quotes" | "bookings" | "construction" | "payments" | "settings";
 
 // Curated demo construction client projects so customers immediately see live progress
 const DEMO_CLIENT_PROJECTS: ConstructionProject[] = [
@@ -65,7 +67,19 @@ const DEMO_CLIENT_PROJECTS: ConstructionProject[] = [
 
 export default function CustomerPortal() {
   const { user, updateProfile, changePassword, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<PortalTab>("overview");
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab") as PortalTab | null;
+  const [activeTab, setActiveTab] = useState<PortalTab>(
+    tabParam && ["overview", "visas", "quotes", "bookings", "construction", "payments", "settings"].includes(tabParam)
+      ? tabParam
+      : "overview"
+  );
+
+  useEffect(() => {
+    if (tabParam && ["overview", "visas", "quotes", "bookings", "construction", "payments", "settings"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
@@ -253,6 +267,7 @@ export default function CustomerPortal() {
           <div className="relative mt-8 flex flex-wrap gap-2 border-t border-white/10 pt-4">
             {[
               { id: "overview", label: "Overview", icon: Building2 },
+              { id: "visas", label: "Online Visa Bureau", icon: Globe },
               { id: "quotes", label: "My Inquiries & Quotes", icon: FileText },
               { id: "bookings", label: "Tours & Travel Bookings", icon: Palmtree },
               { id: "construction", label: "Construction Live Tracker", icon: HardHat },
@@ -283,46 +298,102 @@ export default function CustomerPortal() {
         {activeTab === "overview" && (
           <div className="mt-8 space-y-8">
             {/* Quick Stat Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="card flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                  <FileText className="h-6 w-6" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div
+                onClick={() => setActiveTab("visas")}
+                className="card flex items-center gap-3 cursor-pointer hover:border-brand-gold/50 hover:shadow-md transition group"
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-600 group-hover:bg-brand-navy group-hover:text-brand-gold transition">
+                  <Globe className="h-5 w-5" />
                 </div>
                 <div>
-                  <span className="block text-2xl font-bold text-brand-navy">{bookings.length}</span>
-                  <span className="text-xs text-gray-500">Active Inquiries & Quotes</span>
+                  <span className="block text-xl font-bold text-brand-navy">Visa Desk</span>
+                  <span className="text-[11px] text-gray-500">Apply & Track Visas</span>
                 </div>
               </div>
 
-              <div className="card flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                  <HardHat className="h-6 w-6" />
+              <div className="card flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                  <FileText className="h-5 w-5" />
                 </div>
                 <div>
-                  <span className="block text-2xl font-bold text-brand-navy">1 Site</span>
-                  <span className="text-xs text-gray-500">Live Construction Projects</span>
+                  <span className="block text-xl font-bold text-brand-navy">{bookings.length}</span>
+                  <span className="text-[11px] text-gray-500">Inquiries & Quotes</span>
                 </div>
               </div>
 
-              <div className="card flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                  <Plane className="h-6 w-6" />
+              <div className="card flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <HardHat className="h-5 w-5" />
                 </div>
                 <div>
-                  <span className="block text-2xl font-bold text-brand-navy">
+                  <span className="block text-xl font-bold text-brand-navy">1 Site</span>
+                  <span className="text-[11px] text-gray-500">Live Construction</span>
+                </div>
+              </div>
+
+              <div className="card flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                  <Plane className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="block text-xl font-bold text-brand-navy">
                     {bookings.filter((b) => b.type === "TOUR_PACKAGE" || b.type === "AIR_TICKET").length}
                   </span>
-                  <span className="text-xs text-gray-500">Confirmed Travel Trips</span>
+                  <span className="text-[11px] text-gray-500">Travel Itineraries</span>
                 </div>
               </div>
 
-              <div className="card flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-                  <Receipt className="h-6 w-6" />
+              <div className="card flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                  <Receipt className="h-5 w-5" />
                 </div>
                 <div>
-                  <span className="block text-2xl font-bold text-brand-navy">Verified</span>
-                  <span className="text-xs text-gray-500">Corporate Account Status</span>
+                  <span className="block text-xl font-bold text-brand-navy">Verified</span>
+                  <span className="text-[11px] text-gray-500">Corporate Account</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Foreign Tours, Air Ticket Booking & Visa Bureau Banner */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-950 via-brand-navy to-slate-900 p-6 text-white shadow-xl border border-brand-gold/30">
+              <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-brand-gold/15 blur-2xl" />
+              <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-5">
+                  <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-white p-1 shadow-md ring-2 ring-brand-gold/50">
+                    <img
+                      src="/images/foreign-tours-air-tickets-visa.jpg"
+                      alt="Balasuriya Group - Foreign Tours, Air Ticket Booking & Visa"
+                      className="h-full w-full object-cover rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-gold/20 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-gold border border-brand-gold/40">
+                      <Globe className="h-3 w-3" /> Official Division Portal
+                    </span>
+                    <h3 className="mt-1.5 font-display text-xl font-bold text-white sm:text-2xl">
+                      Foreign Tours • Air Ticket Booking • Visa Bureau
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-300 max-w-xl">
+                      Online visa processing for Tourist, Business & Transit journeys worldwide (Dubai, UK, Europe Schengen,
+                      USA, Australia, Asia). Includes an active editing window to update travel & passport details before embassy lodgement.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                  <button
+                    onClick={() => setActiveTab("visas")}
+                    className="btn-primary bg-brand-gold text-brand-navy hover:bg-brand-gold/90 text-xs py-2.5 px-5 shadow-lg flex items-center gap-2 font-bold"
+                  >
+                    <Globe className="h-4 w-4" /> Apply for Online Visa
+                  </button>
+                  <Link
+                    to="/air-ticketing"
+                    className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white hover:bg-white/20 transition flex items-center gap-2"
+                  >
+                    <Plane className="h-4 w-4" /> Flight Desk
+                  </Link>
                 </div>
               </div>
             </div>
@@ -424,6 +495,9 @@ export default function CustomerPortal() {
             </div>
           </div>
         )}
+
+        {/* Tab: Online Visa Bureau */}
+        {activeTab === "visas" && <CustomerVisaPortal user={user} />}
 
         {/* Tab 2: Quotes & Inquiries */}
         {activeTab === "quotes" && (
