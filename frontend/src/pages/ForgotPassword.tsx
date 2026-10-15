@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft,
   CheckCircle2,
+  ExternalLink,
   Eye,
   EyeOff,
   KeyRound,
@@ -213,23 +214,42 @@ export default function ForgotPassword() {
               </div>
             </div>
 
+            {/* Direct Gmail Shortcut Button */}
+            {email.toLowerCase().includes("@gmail.com") && (
+              <a
+                href="https://mail.google.com/mail/u/0/#search/from%3Asecurity%40balasuriyagroup.tech+in%3Aanywhere"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary w-full py-3 text-xs font-semibold flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Mail className="h-4 w-4" />
+                <span>Open Gmail &amp; View Reset Email</span>
+                <ExternalLink className="h-3.5 w-3.5 opacity-80" />
+              </a>
+            )}
+
             <div className="rounded-xl bg-gray-50 border border-gray-200/70 p-4 text-xs text-gray-700 space-y-3">
               <div className="font-semibold text-brand-navy flex items-center gap-2">
                 <Mail className="h-4 w-4 text-brand-navy" />
-                <span>Next Steps:</span>
+                <span>How to Complete Your Password Reset:</span>
               </div>
               <ol className="list-decimal list-inside space-y-1.5 text-gray-600 text-xs">
-                <li>Open your email inbox at <strong>{email}</strong>.</li>
+                <li>Open your email inbox for <strong>{email}</strong>.</li>
                 <li>Look for the email with subject: <strong>Reset your Balasuriya Group password</strong>.</li>
                 <li>Click the <strong>[ Reset My Password ]</strong> button inside the email.</li>
               </ol>
 
-              <div className="pt-2 border-t border-gray-200 text-[11px] text-gray-500 leading-relaxed">
-                <strong>Gmail Tip:</strong> If you do not see it in your Primary inbox, please check your <strong>Spam</strong> or <strong>Updates</strong> tab, or search <code>from:security@balasuriyagroup.tech</code> in Gmail.
+              <div className="pt-2 border-t border-gray-200 text-[11px] text-gray-600 leading-relaxed space-y-1">
+                <div className="font-semibold text-amber-800">
+                  ⚠️ Don&apos;t see it immediately?
+                </div>
+                <p>
+                  Gmail routes automated transactional emails into the <strong>Spam</strong> folder or <strong>Updates</strong> tab without ringing a push notification. Check your <strong>Spam folder</strong> or search <code>from:security@balasuriyagroup.tech</code> in Gmail.
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 pt-2">
+            <div className="flex flex-col gap-2 pt-1">
               <button
                 type="button"
                 disabled={countdown > 0 || submitting}
