@@ -69,6 +69,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       </div>
     `;
 
+    const timeTag = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Colombo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const emailSubject = `Balasuriya Group Security Code: ${code} [${timeTag}]`;
+
     // Attempt 1: Send directly to the target email from verified domain address
     try {
       const resVerified = await fetch("https://api.resend.com/emails", {
@@ -80,7 +83,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         body: JSON.stringify({
           from: VERIFIED_FROM_EMAIL,
           to: [normalized],
-          subject: `Balasuriya Group Security Code: ${code}`,
+          subject: emailSubject,
+          headers: {
+            "X-Entity-Ref-ID": `${Date.now()}`,
+          },
           html: emailHtml,
         }),
       });
@@ -110,7 +116,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           body: JSON.stringify({
             from: SANDBOX_FROM_EMAIL,
             to: [normalized],
-            subject: `Balasuriya Group Security Code: ${code}`,
+            subject: emailSubject,
+            headers: {
+              "X-Entity-Ref-ID": `${Date.now()}`,
+            },
             html: emailHtml,
           }),
         });
@@ -141,7 +150,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           body: JSON.stringify({
             from: SANDBOX_FROM_EMAIL,
             to: [RESEND_REGISTERED_EMAIL],
-            subject: `Balasuriya Group Security Code for ${normalized}: ${code}`,
+            subject: `Balasuriya Group Security Code for ${normalized}: ${code} [${timeTag}]`,
+            headers: {
+              "X-Entity-Ref-ID": `${Date.now()}`,
+            },
             html: emailHtml,
           }),
         });

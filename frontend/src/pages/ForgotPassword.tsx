@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, CheckCircle2, KeyRound, Mail, ShieldCheck } from "lucide-react";
@@ -16,15 +16,24 @@ export default function ForgotPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
-  async function handleRequestCode(e: FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  async function handleRequestCode(e?: FormEvent) {
+    if (e) e.preventDefault();
     if (!email) return;
     setSubmitting(true);
     try {
       const msg = await forgotPassword(email);
       toast.success(msg || "Reset code dispatched. Please check your inbox and spam folder.", { duration: 8000 });
       setStep("reset");
+      setCountdown(45);
     } catch (err) {
       toast.error(apiErrorMessage(err, "Failed to send reset code."));
     } finally {
@@ -127,6 +136,26 @@ export default function ForgotPassword() {
                 onChange={(e) => setCode(e.target.value.trim())}
                 className="input text-center text-lg font-mono tracking-widest"
               />
+              <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                <button
+                  type="button"
+                  disabled={countdown > 0 || submitting}
+                  onClick={() => handleRequestCode()}
+                  className="font-medium text-brand-accent hover:underline disabled:opacity-50"
+                >
+                  {countdown > 0 ? `Resend new code in ${countdown}s` : "Resend New Code"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep("request")}
+                  className="text-gray-400 hover:text-brand-navy"
+                >
+                  Change email
+                </button>
+              </div>
+              <p className="mt-1.5 text-[11px] text-gray-400">
+                Check inbox and Spam folder. If multiple codes were requested, use the most recent code.
+              </p>
             </div>
 
             <div>
