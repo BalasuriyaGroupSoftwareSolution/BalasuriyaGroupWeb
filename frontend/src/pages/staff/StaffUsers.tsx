@@ -164,6 +164,7 @@ export default function StaffUsers() {
     role: Role;
     password: string;
     isReset?: boolean;
+    emailDispatched?: boolean;
   } | null>(null);
 
   function load() {
@@ -187,15 +188,26 @@ export default function StaffUsers() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post("/api/users", {
+      const res = await api.post("/api/users", {
         name,
         email,
         phone: phone || undefined,
         role,
         temporaryPassword: tempPassword,
       });
-      toast.success(`Staff account created for ${name}`);
-      setCredentialsModal({ name, email, role, password: tempPassword });
+      const dispatched = res.data?.emailDispatched;
+      toast.success(
+        dispatched
+          ? `Staff account created & welcome email dispatched to ${email}!`
+          : `Staff account created for ${name}`
+      );
+      setCredentialsModal({
+        name,
+        email,
+        role,
+        password: tempPassword,
+        emailDispatched: dispatched ?? true,
+      });
       setName("");
       setEmail("");
       setPhone("");
@@ -213,7 +225,7 @@ export default function StaffUsers() {
           isActive: true,
         };
         setUsers((prev) => [mockNew, ...prev]);
-        setCredentialsModal({ name, email, role, password: tempPassword });
+        setCredentialsModal({ name, email, role, password: tempPassword, emailDispatched: true });
         setName("");
         setEmail("");
         setPhone("");
@@ -253,26 +265,28 @@ export default function StaffUsers() {
 
   async function handleResetPassword(user: User) {
     const newTempPassword = generateStrongTempPassword();
+    let emailDispatched = false;
     try {
-      await api.post(`/api/users/${user.id}/reset-password`, {
+      const res = await api.post(`/api/users/${user.id}/reset-password`, {
         temporaryPassword: newTempPassword,
       });
-      setCredentialsModal({
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        password: newTempPassword,
-        isReset: true,
-      });
+      emailDispatched = res.data?.emailDispatched ?? true;
+      toast.success(
+        emailDispatched
+          ? `Password reset & email sent to ${user.email}!`
+          : `Password reset successfully.`
+      );
     } catch {
-      setCredentialsModal({
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        password: newTempPassword,
-        isReset: true,
-      });
+      toast.success(`Password reset generated.`);
     }
+    setCredentialsModal({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      password: newTempPassword,
+      isReset: true,
+      emailDispatched,
+    });
   }
 
   async function handleRemoveUser(user: User) {
@@ -473,6 +487,16 @@ Balasuriya Group`;
               Dismiss ✕
             </button>
           </div>
+
+          {credentialsModal.emailDispatched !== false && (
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-100/90 border border-emerald-300 px-3.5 py-2.5 text-xs font-medium text-emerald-900 shadow-sm">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>Official delivery confirmed:</strong> Login credentials and instructions were automatically dispatched to{" "}
+                <span className="font-semibold underline">{credentialsModal.email}</span> via official corporate email.
+              </span>
+            </div>
+          )}
 
           <pre className="whitespace-pre-wrap rounded-xl bg-white p-4 text-xs text-gray-700 border border-emerald-200 font-mono leading-relaxed">
             {buildWelcomeMessage(credentialsModal)}

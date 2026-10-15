@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import crypto from "crypto";
 import fs from "fs";
+import path from "os";
 
 const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
 const ACCOUNTS_FILE = "/tmp/balasuriya_accounts.json";
@@ -76,11 +77,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const normalized = email.toLowerCase().trim();
 
-  // Strict whitelist: Only registered company accounts are permitted
+  // Strict whitelist: Only registered company accounts & registered staff are permitted
   const isCorporateDomain = normalized.endsWith("@balasuriyagroup.tech");
   const isExecutiveAccount = normalized === "clemonbalasuriyagroup@gmail.com";
+  let registeredStaffUser: any = null;
 
-  if (!isCorporateDomain && !isExecutiveAccount) {
+  try {
+    if (fs.existsSync("/tmp/balasuriya_staff_users.json")) {
+      const staffList = JSON.parse(fs.readFileSync("/tmp/balasuriya_staff_users.json", "utf-8"));
+      if (Array.isArray(staffList)) {
+        registeredStaffUser = staffList.find((s: any) => s.email?.toLowerCase() === normalized) || null;
+      }
+    }
+  } catch {}
+
+  const KNOWN_STAFF: Record<string, { name: string; role: string }> = {
+    "fonsekamigara@gmail.com": { name: "Mr. Migara Fonseka", role: "CONSTRUCTION_MANAGER" },
+    "pasinduhansana@gmail.com": { name: "Mr. Pasindu Hansana", role: "SOFTWARE_ENGINEER" },
+  };
+
+  if (!registeredStaffUser && KNOWN_STAFF[normalized]) {
+    registeredStaffUser = {
+      id: `usr_${normalized.split("@")[0]}`,
+      name: KNOWN_STAFF[normalized].name,
+      email: normalized,
+      role: KNOWN_STAFF[normalized].role,
+      phone: null,
+      isActive: true,
+    };
+  }
+
+  if (!isCorporateDomain && !isExecutiveAccount && !registeredStaffUser) {
     return res.status(403).json({
       message: "This email address is not registered for Balasuriya Group. Access denied.",
     });
@@ -137,14 +164,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const isExecutive = normalized.includes("clemon") || normalized.includes("balasuriya");
   const user = {
-    id: `usr_${Date.now()}`,
-    name: isExecutive ? "Clemon Balasuriya" : normalized.split("@")[0],
+    id: registeredStaffUser?.id || `usr_${Date.now()}`,
+    name: registeredStaffUser?.name || (isExecutive ? "Clemon Balasuriya" : normalized.split("@")[0]),
     email: normalized,
-    role: isExecutive ? "OWNER" : "CUSTOMER",
-    phone: null,
+    role: registeredStaffUser?.role || (isExecutive ? "OWNER" : "CUSTOMER"),
+    phone: registeredStaffUser?.phone || null,
     isActive: true,
   };
 
+  // Generate standard verifiable JWT
   const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
   const body = Buffer.from(
     JSON.stringify({

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import crypto from "crypto";
+import fs from "fs";
 
 const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
 const VERIFIED_FROM_EMAIL = process.env.FROM_EMAIL || "Balasuriya Group <security@balasuriyagroup.tech>";
@@ -13,14 +14,24 @@ if (!globalStore.otpStore) {
 }
 export const otpStore = globalStore.otpStore;
 
-// Strict whitelist: ONLY registered company accounts are permitted
+// Strict whitelist: ONLY registered company accounts and registered staff are permitted
 function isRegisteredCompanyAccount(email: string): boolean {
   const normalized = email.toLowerCase().trim();
   // 1. Corporate domain accounts
   if (normalized.endsWith("@balasuriyagroup.tech")) return true;
   // 2. Official Executive Company Owner Account
   if (normalized === "clemonbalasuriyagroup@gmail.com") return true;
-  // (avishkaclemon@gmail.com and other personal addresses are explicitly NOT registered)
+  // 3. Known registered staff
+  if (["fonsekamigara@gmail.com", "pasinduhansana@gmail.com"].includes(normalized)) return true;
+  // 4. Dynamic staff accounts registered via Staff Management
+  try {
+    if (fs.existsSync("/tmp/balasuriya_staff_users.json")) {
+      const staffList = JSON.parse(fs.readFileSync("/tmp/balasuriya_staff_users.json", "utf-8"));
+      if (Array.isArray(staffList) && staffList.some((s: any) => s.email?.toLowerCase() === normalized)) {
+        return true;
+      }
+    }
+  } catch {}
   return false;
 }
 

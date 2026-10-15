@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 import { asyncHandler, HttpError } from "../middleware/errorHandler.js";
 import { hashPassword } from "../utils/password.js";
+import { sendStaffWelcomeEmail } from "../utils/mailer.js";
 
 export const usersRouter = Router();
 
@@ -101,9 +102,25 @@ usersRouter.post(
       },
     });
 
+    let emailDispatched = false;
+    try {
+      const mailRes = await sendStaffWelcomeEmail({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        temporaryPassword: data.temporaryPassword,
+      });
+      emailDispatched = mailRes.success;
+    } catch (err) {
+      console.error("[usersRouter] Failed to send welcome email:", err);
+    }
+
     res.status(201).json({
       user: toSafeUser(user),
-      note: "Share the temporary password with the staff member through a secure channel and ask them to change it after first login.",
+      emailDispatched,
+      note: emailDispatched
+        ? `Official welcome email with credentials dispatched to ${user.email}.`
+        : "Share the temporary password with the staff member through a secure channel.",
     });
   })
 );
@@ -194,6 +211,26 @@ usersRouter.post(
       where: { id: req.params.id },
       data: { passwordHash: await hashPassword(temporaryPassword) },
     });
-    res.json({ message: "Password reset. Share the new temporary password securely." });
+
+    let emailDispatched = false;
+    try {
+      const mailRes = await sendStaffWelcomeEmail({
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+        temporaryPassword,
+        isReset: true,
+      });
+      emailDispatched = mailRes.success;
+    } catch (err) {
+      console.error("[usersRouter] Failed to send reset email:", err);
+    }
+
+    res.json({
+      message: emailDispatched
+        ? `Password reset and sent to ${targetUser.email}.`
+        : "Password reset. Share the new temporary password securely.",
+      emailDispatched,
+    });
   })
 );

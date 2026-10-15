@@ -22,6 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ message: "No token provided." });
   }
 
+  // Parse JWT
   try {
     if (token.includes(".")) {
       const parts = token.split(".");
@@ -47,6 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } catch {}
 
+  // Fallback for valid live/mock tokens
   if (token.startsWith("live_jwt_token_") || token.startsWith("bg_token_")) {
     return res.status(200).json({
       user: {
