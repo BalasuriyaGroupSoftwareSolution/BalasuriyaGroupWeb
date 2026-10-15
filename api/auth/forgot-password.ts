@@ -13,6 +13,22 @@ if (!globalStore.otpStore) {
 }
 export const otpStore = globalStore.otpStore;
 
+// Strict whitelist of company registered accounts allowed to perform password resets
+function isRegisteredCompanyAccount(email: string): boolean {
+  const normalized = email.toLowerCase().trim();
+  if (normalized.endsWith("@balasuriyagroup.tech")) return true;
+  const registeredCompanyEmails = [
+    "clemonbalasuriyagroup@gmail.com",
+    "balasuriyagroup.software@gmail.com",
+    "avishkaclemon@gmail.com",
+    "owner@balasuriyagroup.tech",
+    "admin@balasuriyagroup.tech",
+    "damian@balasuriyagroup.tech",
+    "migara@balasuriyagroup.tech",
+  ];
+  return registeredCompanyEmails.includes(normalized);
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -32,6 +48,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const normalized = email.toLowerCase().trim();
+
+  // Strict check: Only registered company accounts are permitted to reset password
+  if (!isRegisteredCompanyAccount(normalized)) {
+    return res.status(403).json({
+      message: "This email address is not registered for Balasuriya Group. Only registered company accounts can request a password reset.",
+    });
+  }
+
   const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins validity
   const code = String(crypto.randomInt(100000, 1000000));
 
@@ -165,11 +189,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         body: JSON.stringify({
           from: VERIFIED_FROM_EMAIL,
           to: [normalized],
+          reply_to: "security@balasuriyagroup.tech",
           subject: emailSubject,
           headers: {
             "X-Entity-Ref-ID": `${Date.now()}-${normalized}`,
           },
           html: emailHtml,
+          text: `BALASURIYA GROUP CORPORATE SECURITY\n\nPassword Reset Protocol\n\nA security request was initiated to reset the password for your registered corporate account: ${normalized}\n\nClick the link below to set your new password directly:\n${resetUrl}\n\nAlternatively, enter this 6-digit code manually: ${code}\n\nThis link expires in 15 minutes.\n\nBalasuriya Group Corporate Headquarters — Colombo, Sri Lanka`,
         }),
       });
 

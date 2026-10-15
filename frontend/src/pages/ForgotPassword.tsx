@@ -216,6 +216,9 @@ export default function ForgotPassword() {
                   <div className="text-blue-800 leading-relaxed">
                     A password reset link was sent to <strong className="font-semibold">{email}</strong>. Check your inbox and spam folder.
                   </div>
+                  <div className="mt-2 pt-2 border-t border-blue-200/60 text-[11px] text-blue-700">
+                    <strong>Gmail Tip:</strong> If not in Primary, check your <strong>Spam</strong> or <strong>Updates</strong> tab (or search <code>from:security@balasuriyagroup.tech</code>).
+                  </div>
                 </div>
 
                 <div>

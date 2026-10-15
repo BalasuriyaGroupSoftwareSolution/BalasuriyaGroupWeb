@@ -259,6 +259,28 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { email } = forgotPasswordSchema.parse(req.body);
     const normalized = email.toLowerCase().trim();
+
+    // Strict verification: only registered company accounts can request a reset
+    let registeredUser = null;
+    try {
+      registeredUser = await prisma.user.findUnique({ where: { email: normalized } });
+    } catch {}
+
+    const isCorporateDomain = normalized.endsWith("@balasuriyagroup.tech");
+    const isExecutiveAccount = [
+      "clemonbalasuriyagroup@gmail.com",
+      "balasuriyagroup.software@gmail.com",
+      "avishkaclemon@gmail.com",
+      "owner@balasuriyagroup.tech",
+      "admin@balasuriyagroup.tech",
+      "damian@balasuriyagroup.tech",
+      "migara@balasuriyagroup.tech",
+    ].includes(normalized);
+
+    if (!registeredUser && !isCorporateDomain && !isExecutiveAccount) {
+      throw new HttpError(403, "This email address is not registered for Balasuriya Group. Only registered company accounts can request a password reset.");
+    }
+
     const expiresAt = Date.now() + 15 * 60 * 1000;
 
     const linkSignature = crypto
