@@ -8,6 +8,7 @@ import { tourismRouter } from "./routes/tourism.routes.js";
 import { paymentsRouter } from "./routes/payments.routes.js";
 import { usersRouter } from "./routes/users.routes.js";
 import { inquiriesRouter } from "./routes/inquiries.routes.js";
+import { visasRouter } from "./routes/visas.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
@@ -43,6 +44,9 @@ export function createApp() {
 
   app.use("/api/inquiries", inquiriesRouter);
   app.use("/inquiries", inquiriesRouter);
+
+  app.use("/api/visas", visasRouter);
+  app.use("/visas", visasRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
