@@ -27,8 +27,13 @@ export default function StaffLayout() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
+  const userRoles = [user?.role, ...(user?.secondaryRoles || [])].filter(Boolean) as Role[];
   const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.roles || user?.role === "OWNER" || item.roles.includes(user!.role)
+    (item) =>
+      !item.roles ||
+      user?.role === "OWNER" ||
+      user?.role === "ADMIN" ||
+      item.roles.some((r) => userRoles.includes(r))
   );
 
   async function handlePasswordSubmit(e: FormEvent) {
@@ -69,9 +74,28 @@ export default function StaffLayout() {
               {user?.name}
             </p>
             <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-            <span className="mt-2 inline-block rounded-md bg-brand-navy px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-gold">
-              {user?.role.replace(/_/g, " ")}
-            </span>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="inline-block rounded-md bg-brand-navy px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-gold">
+                {user?.role.replace(/_/g, " ")}
+              </span>
+              {user?.secondaryRoles?.map((sr) => (
+                <span
+                  key={sr}
+                  className="inline-block rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-900"
+                  title="Cross-Section Leadership / Operations"
+                >
+                  + {sr.replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
+            {user?.department && (
+              <p className="mt-1.5 text-[11px] text-gray-500 font-medium">
+                {user.department}
+                {user.assignedDivisions && user.assignedDivisions.length > 1 && (
+                  <span className="text-brand-steel"> &bull; +{user.assignedDivisions.length - 1} sections</span>
+                )}
+              </p>
+            )}
           </div>
 
           <nav className="space-y-1">

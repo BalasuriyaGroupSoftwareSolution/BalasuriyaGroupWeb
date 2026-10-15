@@ -91,14 +91,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } catch {}
 
-  const KNOWN_STAFF: Record<string, { id: string; name: string; role: string; phone: string }> = {
-    "clemonbalasuriyagroup@gmail.com": { id: "usr_owner_1", name: "Mr. Clemon Balasuriya", role: "OWNER", phone: "+94 76 7171 938" },
-    "damianbalasuriyagroup@gmail.com": { id: "usr_md_2", name: "Mr. Damian Balasuriya", role: "ADMIN", phone: "+94 76 7171 938" },
-    "clavobalasuriyagroup@gmail.com": { id: "usr_ed_3", name: "Mr. Clavo Balasuriya", role: "FINANCE_APPROVER", phone: "+94 76 7171 938" },
-    "christinabalasuriyagroup@gmail.com": { id: "usr_dir_4", name: "Mrs. Christina Balasuriya", role: "ADMIN", phone: "+94 76 7171 938" },
-    "fonsekamigara@gmail.com": { id: "usr_migara_5", name: "Mr. Migara Fonseka", role: "CONSTRUCTION_MANAGER", phone: "+94 77 234 5678" },
-    "pasinduhansana@gmail.com": { id: "usr_pasindu_6", name: "Mr. Pasindu Hansana", role: "SOFTWARE_ENGINEER", phone: "+94 77 456 7890" },
-    "shenal@balasuriyagroup.tech": { id: "usr_shenal_7", name: "Mr. Shenal Fernando", role: "TICKET_AGENT", phone: "+94 77 567 8901" },
+  const KNOWN_STAFF: Record<string, { id: string; name: string; role: string; department?: string; jobTitle?: string; secondaryRoles?: string[]; assignedDivisions?: string[]; phone: string }> = {
+    "clemonbalasuriyagroup@gmail.com": { id: "usr_owner_1", name: "Mr. Clemon Balasuriya", role: "OWNER", department: "Executive Board", jobTitle: "Group Chairman & CEO", assignedDivisions: ["Executive Board", "Construction & Engineering", "Tourism & Travel", "Software Solutions", "Air Ticketing", "Finance & Accounts"], phone: "+94 76 7171 938" },
+    "damianbalasuriyagroup@gmail.com": { id: "usr_md_2", name: "Mr. Damian Balasuriya", role: "ADMIN", secondaryRoles: ["TOURISM_AGENT"], department: "Executive Board", jobTitle: "Managing Director & Head of Tourism", assignedDivisions: ["Executive Board", "Tourism & Travel"], phone: "+94 76 7171 938" },
+    "clavobalasuriyagroup@gmail.com": { id: "usr_ed_3", name: "Mr. Clavo Balasuriya", role: "FINANCE_APPROVER", department: "Finance & Accounts", jobTitle: "Executive Director & Finance", assignedDivisions: ["Executive Board", "Finance & Accounts"], phone: "+94 76 7171 938" },
+    "christinabalasuriyagroup@gmail.com": { id: "usr_dir_4", name: "Mrs. Christina Balasuriya", role: "ADMIN", department: "Executive Board", jobTitle: "Executive Director & Corporate Affairs", assignedDivisions: ["Executive Board"], phone: "+94 76 7171 938" },
+    "fonsekamigara@gmail.com": { id: "usr_migara_5", name: "Mr. Migara Fonseka", role: "CONSTRUCTION_MANAGER", department: "Construction & Engineering", jobTitle: "Head of Construction & Engineering", assignedDivisions: ["Construction & Engineering"], phone: "+94 77 234 5678" },
+    "pasinduhansana@gmail.com": { id: "usr_pasindu_6", name: "Mr. Pasindu Hansana", role: "SOFTWARE_ENGINEER", secondaryRoles: ["TICKET_AGENT"], department: "Software Solutions", jobTitle: "Head of Software & Aviation Tech Lead", assignedDivisions: ["Software Solutions", "Air Ticketing"], phone: "+94 77 456 7890" },
+    "shenal@balasuriyagroup.tech": { id: "usr_shenal_7", name: "Mr. Shenal Fernando", role: "TICKET_AGENT", department: "Air Ticketing", jobTitle: "Head of Air Ticketing & Global Desk", assignedDivisions: ["Air Ticketing"], phone: "+94 77 567 8901" },
   };
 
   if (!registeredStaffUser && KNOWN_STAFF[normalized]) {
@@ -107,6 +107,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       name: KNOWN_STAFF[normalized].name,
       email: normalized,
       role: KNOWN_STAFF[normalized].role,
+      department: KNOWN_STAFF[normalized].department,
+      jobTitle: KNOWN_STAFF[normalized].jobTitle,
+      secondaryRoles: KNOWN_STAFF[normalized].secondaryRoles || [],
+      assignedDivisions: KNOWN_STAFF[normalized].assignedDivisions || [],
       phone: KNOWN_STAFF[normalized].phone,
       isActive: true,
     };
@@ -174,6 +178,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     email: normalized,
     role: registeredStaffUser?.role || (isExecutive ? "OWNER" : "CUSTOMER"),
     phone: registeredStaffUser?.phone || null,
+    department: registeredStaffUser?.department || (isExecutive ? "Executive Board" : null),
+    jobTitle: registeredStaffUser?.jobTitle || (isExecutive ? "Executive Leadership" : null),
+    secondaryRoles: registeredStaffUser?.secondaryRoles || [],
+    assignedDivisions: registeredStaffUser?.assignedDivisions || [],
     isActive: true,
   };
 
@@ -185,6 +193,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       email: user.email,
       name: user.name,
       role: user.role,
+      secondaryRoles: user.secondaryRoles,
       exp: Math.floor(Date.now() / 1000) + 7 * 86400,
     })
   ).toString("base64url");

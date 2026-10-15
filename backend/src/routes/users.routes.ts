@@ -30,11 +30,21 @@ export const DIVISION_ROLES_MAP: Record<string, string[]> = {
   CHARTERED_ACCOUNTANT: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "FINANCE_STAFF"],
 };
 
-export function canManageRole(callerRole: string | undefined, targetRole: string): boolean {
-  if (callerRole === "OWNER" || callerRole === "ADMIN") return true;
-  if (!callerRole) return false;
-  const allowed = DIVISION_ROLES_MAP[callerRole];
-  return !!allowed && allowed.includes(targetRole);
+export function canManageRole(
+  caller: { role?: string; secondaryRoles?: string[] } | string | undefined,
+  targetRole: string
+): boolean {
+  if (!caller) return false;
+  const primaryRole = typeof caller === "string" ? caller : caller.role;
+  const secondaryRoles = typeof caller === "object" ? caller.secondaryRoles || [] : [];
+  if (primaryRole === "OWNER" || primaryRole === "ADMIN" || secondaryRoles.includes("ADMIN")) return true;
+
+  const allRoles = [primaryRole, ...secondaryRoles].filter(Boolean) as string[];
+  for (const r of allRoles) {
+    const allowed = DIVISION_ROLES_MAP[r];
+    if (allowed && allowed.includes(targetRole)) return true;
+  }
+  return false;
 }
 
 function toSafeUser(u: {
@@ -55,15 +65,17 @@ usersRouter.get(
   requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
     const callerRole = req.user?.role;
-    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
-    const allowed = callerRole && DIVISION_ROLES_MAP[callerRole];
+    const secondaryRoles = req.user?.secondaryRoles || [];
+    const allCallerRoles = [callerRole, ...secondaryRoles].filter(Boolean) as string[];
+    const isExecutive = allCallerRoles.includes("OWNER") || allCallerRoles.includes("ADMIN");
+    const allowed = allCallerRoles.flatMap((r) => DIVISION_ROLES_MAP[r] || []);
 
-    // Executive sees all users; Division Leader sees themselves and their division's section staff
+    // Executive sees all users; Division Leader sees themselves and their divisions' section staff
     const whereClause = isExecutive
       ? undefined
       : {
           OR: [
-            ...(allowed ? [{ role: { in: allowed as any } }] : []),
+            ...(allowed.length > 0 ? [{ role: { in: allowed as any } }] : []),
             { id: req.user?.id },
           ],
         };
@@ -104,12 +116,12 @@ usersRouter.post(
   authenticate,
   requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
-    const callerRole = req.user?.role;
+    const caller = req.user;
     const data = createStaffSchema.parse(req.body);
 
-    // Division leaders can only add staff within their division's roles
-    if (!canManageRole(callerRole, data.role)) {
-      throw new HttpError(403, `You can only add staff within your own division.`);
+    // Division leaders can only add staff within their assigned division roles
+    if (!canManageRole(caller, data.role)) {
+      throw new HttpError(403, `You can only add staff within your assigned divisions.`);
     }
 
     const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
@@ -178,19 +190,19 @@ usersRouter.patch(
   authenticate,
   requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
-    const callerRole = req.user?.role;
+    const caller = req.user;
     const data = updateUserSchema.parse(req.body);
 
     const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!targetUser) throw new HttpError(404, "User not found.");
 
-    // Division leaders can only modify staff in their own division
-    if (!canManageRole(callerRole, targetUser.role)) {
-      throw new HttpError(403, "You can only manage staff within your own division.");
+    // Division leaders can only modify staff in their assigned divisions
+    if (!canManageRole(caller, targetUser.role)) {
+      throw new HttpError(403, "You can only manage staff within your assigned divisions.");
     }
 
-    if (data.role && !canManageRole(callerRole, data.role)) {
-      throw new HttpError(403, "You cannot assign a role outside of your division.");
+    if (data.role && !canManageRole(caller, data.role)) {
+      throw new HttpError(403, "You cannot assign a role outside of your assigned divisions.");
     }
 
     if (data.email && data.email.toLowerCase() !== targetUser.email.toLowerCase()) {

@@ -22,6 +22,8 @@ export interface User {
   phone: string | null;
   department?: string | null;
   jobTitle?: string | null;
+  secondaryRoles?: Role[];
+  assignedDivisions?: string[];
   isActive?: boolean;
   createdAt?: string;
 }

@@ -19,6 +19,7 @@ import {
   Users,
   X,
   XCircle,
+  Layers,
 } from "lucide-react";
 import { api, apiErrorMessage } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
@@ -40,6 +41,7 @@ export const DIVISION_ROLES_MAP: Record<
   {
     department: string;
     divisionLabel: string;
+    leaderRole: Role;
     allowedRoles: Role[];
     defaultNewRole: Role;
   }
@@ -47,36 +49,42 @@ export const DIVISION_ROLES_MAP: Record<
   CONSTRUCTION_MANAGER: {
     department: "Construction & Engineering",
     divisionLabel: "Civil Engineering & Construction",
+    leaderRole: "CONSTRUCTION_MANAGER",
     allowedRoles: ["CONSTRUCTION_MANAGER", "CONSTRUCTION_STAFF"],
     defaultNewRole: "CONSTRUCTION_STAFF",
   },
   TOURISM_AGENT: {
     department: "Tourism & Travel",
     divisionLabel: "StayLanka & Foreign Tours",
+    leaderRole: "TOURISM_AGENT",
     allowedRoles: ["TOURISM_AGENT", "TOURISM_STAFF"],
     defaultNewRole: "TOURISM_STAFF",
   },
   SOFTWARE_ENGINEER: {
     department: "Software Solutions",
     divisionLabel: "Software & Technology Solutions",
+    leaderRole: "SOFTWARE_ENGINEER",
     allowedRoles: ["SOFTWARE_ENGINEER", "SOFTWARE_STAFF"],
     defaultNewRole: "SOFTWARE_STAFF",
   },
   TICKET_AGENT: {
     department: "Air Ticketing",
     divisionLabel: "Balasuriya Air Ticketing & Visa",
+    leaderRole: "TICKET_AGENT",
     allowedRoles: ["TICKET_AGENT", "TICKET_STAFF"],
     defaultNewRole: "TICKET_STAFF",
   },
   FINANCE_APPROVER: {
     department: "Finance & Accounts",
     divisionLabel: "Corporate Finance & Accounts",
+    leaderRole: "FINANCE_APPROVER",
     allowedRoles: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "FINANCE_STAFF"],
     defaultNewRole: "FINANCE_STAFF",
   },
   CHARTERED_ACCOUNTANT: {
     department: "Finance & Accounts",
     divisionLabel: "Corporate Finance & Accounts",
+    leaderRole: "CHARTERED_ACCOUNTANT",
     allowedRoles: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "FINANCE_STAFF"],
     defaultNewRole: "FINANCE_STAFF",
   },
@@ -229,6 +237,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "OWNER",
     department: "Executive Board",
     jobTitle: "Group Chairman & CEO",
+    assignedDivisions: ["Executive Board", "Construction & Engineering", "Tourism & Travel", "Software Solutions", "Air Ticketing", "Finance & Accounts"],
     isActive: true,
   },
   {
@@ -237,8 +246,10 @@ const INITIAL_DEMO_USERS: User[] = [
     email: "damianbalasuriyagroup@gmail.com",
     phone: "+94 76 7171 938",
     role: "ADMIN",
+    secondaryRoles: ["TOURISM_AGENT"],
     department: "Executive Board",
-    jobTitle: "Managing Director",
+    jobTitle: "Managing Director & Head of Tourism",
+    assignedDivisions: ["Executive Board", "Tourism & Travel"],
     isActive: true,
   },
   {
@@ -247,8 +258,9 @@ const INITIAL_DEMO_USERS: User[] = [
     email: "clavobalasuriyagroup@gmail.com",
     phone: "+94 76 7171 938",
     role: "FINANCE_APPROVER",
-    department: "Executive Board",
+    department: "Finance & Accounts",
     jobTitle: "Executive Director & Finance",
+    assignedDivisions: ["Executive Board", "Finance & Accounts"],
     isActive: true,
   },
   {
@@ -259,6 +271,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "ADMIN",
     department: "Executive Board",
     jobTitle: "Executive Director & Corporate Affairs",
+    assignedDivisions: ["Executive Board"],
     isActive: true,
   },
 
@@ -271,6 +284,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "CONSTRUCTION_MANAGER",
     department: "Construction & Engineering",
     jobTitle: "Head of Construction & Engineering",
+    assignedDivisions: ["Construction & Engineering"],
     isActive: true,
   },
   {
@@ -281,6 +295,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "CONSTRUCTION_STAFF",
     department: "Construction & Engineering",
     jobTitle: "Senior Civil Engineer & Site Supervisor",
+    assignedDivisions: ["Construction & Engineering"],
     isActive: true,
   },
   {
@@ -291,6 +306,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "CONSTRUCTION_STAFF",
     department: "Construction & Engineering",
     jobTitle: "Quantity Surveyor & Field Coordinator",
+    assignedDivisions: ["Construction & Engineering"],
     isActive: true,
   },
 
@@ -303,6 +319,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "TOURISM_AGENT",
     department: "Tourism & Travel",
     jobTitle: "Head of Tourism & Global Travel",
+    assignedDivisions: ["Tourism & Travel"],
     isActive: true,
   },
   {
@@ -313,6 +330,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "TOURISM_STAFF",
     department: "Tourism & Travel",
     jobTitle: "Senior Travel Consultant & Itinerary Planner",
+    assignedDivisions: ["Tourism & Travel"],
     isActive: true,
   },
   {
@@ -323,6 +341,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "TOURISM_STAFF",
     department: "Tourism & Travel",
     jobTitle: "Foreign Tours & Visa Officer",
+    assignedDivisions: ["Tourism & Travel"],
     isActive: true,
   },
 
@@ -333,8 +352,10 @@ const INITIAL_DEMO_USERS: User[] = [
     email: "pasinduhansana@gmail.com",
     phone: "+94 77 456 7890",
     role: "SOFTWARE_ENGINEER",
+    secondaryRoles: ["TICKET_AGENT"],
     department: "Software Solutions",
-    jobTitle: "Head of Software & Technology",
+    jobTitle: "Head of Software & Aviation Tech Lead",
+    assignedDivisions: ["Software Solutions", "Air Ticketing"],
     isActive: true,
   },
   {
@@ -345,6 +366,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "SOFTWARE_STAFF",
     department: "Software Solutions",
     jobTitle: "Senior Full-Stack Developer",
+    assignedDivisions: ["Software Solutions"],
     isActive: true,
   },
   {
@@ -355,6 +377,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "SOFTWARE_STAFF",
     department: "Software Solutions",
     jobTitle: "QA Engineer & UI/UX Specialist",
+    assignedDivisions: ["Software Solutions"],
     isActive: true,
   },
 
@@ -367,6 +390,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "TICKET_AGENT",
     department: "Air Ticketing",
     jobTitle: "Head of Air Ticketing & Global Desk",
+    assignedDivisions: ["Air Ticketing"],
     isActive: true,
   },
   {
@@ -377,6 +401,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "TICKET_STAFF",
     department: "Air Ticketing",
     jobTitle: "Senior GDS Reservations Officer",
+    assignedDivisions: ["Air Ticketing"],
     isActive: true,
   },
 
@@ -389,6 +414,7 @@ const INITIAL_DEMO_USERS: User[] = [
     role: "FINANCE_STAFF",
     department: "Finance & Accounts",
     jobTitle: "Senior Corporate Accounts Executive",
+    assignedDivisions: ["Finance & Accounts"],
     isActive: true,
   },
 ];
@@ -404,9 +430,17 @@ function generateStrongTempPassword() {
 
 export default function StaffUsers() {
   const { user: currentUser } = useAuth();
-  const isExecutive = currentUser?.role === "OWNER" || currentUser?.role === "ADMIN";
-  const callerDivision = currentUser?.role ? DIVISION_ROLES_MAP[currentUser.role] : null;
-  const isDivisionLeader = !isExecutive && !!callerDivision;
+  
+  // Extract all roles caller holds (primary role + secondary cross-section roles)
+  const callerRoles: Role[] = [currentUser?.role, ...(currentUser?.secondaryRoles || [])].filter(Boolean) as Role[];
+  const isExecutive = callerRoles.includes("OWNER") || callerRoles.includes("ADMIN");
+  
+  // Identify all corporate divisions caller leads
+  const callerLedDivisions = Object.values(DIVISION_ROLES_MAP).filter((div) =>
+    callerRoles.includes(div.leaderRole)
+  );
+  const isDivisionLeader = !isExecutive && callerLedDivisions.length > 0;
+  const isMultiDivisionLeader = !isExecutive && callerLedDivisions.length > 1;
 
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
@@ -415,12 +449,12 @@ export default function StaffUsers() {
   const [showNew, setShowNew] = useState(false);
 
   // Default role and department based on caller's division
-  const initialRole: Role = isDivisionLeader
-    ? callerDivision.defaultNewRole
-    : "CONSTRUCTION_STAFF";
   const initialDept: string = isDivisionLeader
-    ? callerDivision.department
+    ? callerLedDivisions[0].department
     : "Construction & Engineering";
+  const initialRole: Role = isDivisionLeader
+    ? callerLedDivisions[0].defaultNewRole
+    : "CONSTRUCTION_STAFF";
 
   // Create form state
   const [name, setName] = useState("");
@@ -429,6 +463,8 @@ export default function StaffUsers() {
   const [role, setRole] = useState<Role>(initialRole);
   const [department, setDepartment] = useState<string>(initialDept);
   const [jobTitle, setJobTitle] = useState("");
+  const [secondaryRoles, setSecondaryRoles] = useState<Role[]>([]);
+  const [assignedDivisions, setAssignedDivisions] = useState<string[]>([initialDept]);
   const [tempPassword, setTempPassword] = useState(generateStrongTempPassword());
   const [submitting, setSubmitting] = useState(false);
 
@@ -439,6 +475,8 @@ export default function StaffUsers() {
     role: Role;
     department?: string | null;
     jobTitle?: string | null;
+    secondaryRoles?: Role[];
+    assignedDivisions?: string[];
     password: string;
     isReset?: boolean;
     emailDispatched?: boolean;
@@ -452,6 +490,8 @@ export default function StaffUsers() {
   const [editRole, setEditRole] = useState<Role>("CONSTRUCTION_STAFF");
   const [editDepartment, setEditDepartment] = useState("");
   const [editJobTitle, setEditJobTitle] = useState("");
+  const [editSecondaryRoles, setEditSecondaryRoles] = useState<Role[]>([]);
+  const [editAssignedDivisions, setEditAssignedDivisions] = useState<string[]>([]);
   const [editIsActive, setEditIsActive] = useState(true);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
@@ -472,24 +512,30 @@ export default function StaffUsers() {
 
   useEffect(load, []);
 
-  // Check if current user can manage target user
+  // Check if current user can manage target user (supports cross-section leadership)
   function canManage(target: User): boolean {
     if (isExecutive) return true;
-    if (isDivisionLeader && callerDivision) {
-      return callerDivision.allowedRoles.includes(target.role);
+    if (isDivisionLeader) {
+      const allAllowedRoles = callerLedDivisions.flatMap((d) => d.allowedRoles);
+      const targetAllRoles = [target.role, ...(target.secondaryRoles || [])];
+      return targetAllRoles.some((r) => allAllowedRoles.includes(r));
     }
     return false;
   }
 
-  // Allowed roles for creation/editing by caller
+  // Allowed roles for creation/editing by caller based on selected department
+  const currentDeptDiv = Object.values(DIVISION_ROLES_MAP).find((d) => d.department === department);
   const availableRoles = isExecutive
     ? ROLE_HIERARCHY.filter((r) => r.role !== "CUSTOMER")
-    : ROLE_HIERARCHY.filter((r) => callerDivision?.allowedRoles.includes(r.role));
+    : currentDeptDiv
+    ? ROLE_HIERARCHY.filter((r) => currentDeptDiv.allowedRoles.includes(r.role))
+    : ROLE_HIERARCHY.filter((r) => callerLedDivisions.flatMap((d) => d.allowedRoles).includes(r.role));
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    const assignedDept = isDivisionLeader ? callerDivision.department : department;
+    const assignedDept = department;
+    const finalAssignedDivisions = Array.from(new Set([assignedDept, ...assignedDivisions]));
     try {
       const res = await api.post("/api/users", {
         name,
@@ -498,6 +544,8 @@ export default function StaffUsers() {
         role,
         department: assignedDept,
         jobTitle: jobTitle || undefined,
+        secondaryRoles,
+        assignedDivisions: finalAssignedDivisions,
         temporaryPassword: tempPassword,
       });
       const dispatched = res.data?.emailDispatched;
@@ -512,6 +560,8 @@ export default function StaffUsers() {
         role,
         department: assignedDept,
         jobTitle,
+        secondaryRoles,
+        assignedDivisions: finalAssignedDivisions,
         password: tempPassword,
         emailDispatched: dispatched ?? true,
       });
@@ -519,6 +569,8 @@ export default function StaffUsers() {
       setEmail("");
       setPhone("");
       setJobTitle("");
+      setSecondaryRoles([]);
+      setAssignedDivisions([initialDept]);
       setTempPassword(generateStrongTempPassword());
       setShowNew(false);
       load();
@@ -532,6 +584,8 @@ export default function StaffUsers() {
           role,
           department: assignedDept,
           jobTitle: jobTitle || null,
+          secondaryRoles,
+          assignedDivisions: finalAssignedDivisions,
           isActive: true,
         };
         setUsers((prev) => [mockNew, ...prev]);
@@ -541,6 +595,8 @@ export default function StaffUsers() {
           role,
           department: assignedDept,
           jobTitle,
+          secondaryRoles,
+          assignedDivisions: finalAssignedDivisions,
           password: tempPassword,
           emailDispatched: true,
         });
@@ -548,6 +604,8 @@ export default function StaffUsers() {
         setEmail("");
         setPhone("");
         setJobTitle("");
+        setSecondaryRoles([]);
+        setAssignedDivisions([initialDept]);
         setTempPassword(generateStrongTempPassword());
         setShowNew(false);
         toast.success(`Staff account created for ${name}`);
@@ -616,6 +674,8 @@ export default function StaffUsers() {
       role: user.role,
       department: user.department,
       jobTitle: user.jobTitle,
+      secondaryRoles: user.secondaryRoles,
+      assignedDivisions: user.assignedDivisions,
       password: newTempPassword,
       isReset: true,
       emailDispatched,
@@ -642,7 +702,7 @@ export default function StaffUsers() {
 
   function handleStartEdit(user: User) {
     if (!canManage(user)) {
-      toast.error("You can only edit staff in your division.");
+      toast.error("You can only edit staff in your assigned divisions.");
       return;
     }
     setEditingUser(user);
@@ -652,6 +712,8 @@ export default function StaffUsers() {
     setEditRole(user.role);
     setEditDepartment(user.department || "");
     setEditJobTitle(user.jobTitle || "");
+    setEditSecondaryRoles(user.secondaryRoles || []);
+    setEditAssignedDivisions(user.assignedDivisions || (user.department ? [user.department] : []));
     setEditIsActive(user.isActive !== false);
   }
 
@@ -667,6 +729,8 @@ export default function StaffUsers() {
         role: editRole,
         department: editDepartment || null,
         jobTitle: editJobTitle || null,
+        secondaryRoles: editSecondaryRoles,
+        assignedDivisions: editAssignedDivisions,
         isActive: editIsActive,
       });
       toast.success(`Staff member ${editName} updated successfully!`);
@@ -684,6 +748,8 @@ export default function StaffUsers() {
                 role: editRole,
                 department: editDepartment || null,
                 jobTitle: editJobTitle || null,
+                secondaryRoles: editSecondaryRoles,
+                assignedDivisions: editAssignedDivisions,
                 isActive: editIsActive,
               }
             : u
@@ -696,16 +762,41 @@ export default function StaffUsers() {
     }
   }
 
+  function toggleSecondaryRole(r: Role, currentList: Role[], setter: (val: Role[]) => void) {
+    if (currentList.includes(r)) {
+      setter(currentList.filter((item) => item !== r));
+    } else {
+      setter([...currentList, r]);
+    }
+  }
+
+  function toggleDivision(deptId: string, currentList: string[], setter: (val: string[]) => void) {
+    if (currentList.includes(deptId)) {
+      setter(currentList.filter((d) => d !== deptId));
+    } else {
+      setter([...currentList, deptId]);
+    }
+  }
+
   function buildWelcomeMessage(info: {
     name: string;
     email: string;
     role: Role;
     department?: string | null;
     jobTitle?: string | null;
+    secondaryRoles?: Role[];
+    assignedDivisions?: string[];
     password: string;
     isReset?: boolean;
   }) {
     const portalUrl = `${window.location.origin}/login`;
+    const secondaryStr = info.secondaryRoles && info.secondaryRoles.length > 0
+      ? `\nAdditional Roles: ${info.secondaryRoles.map((r) => r.replace(/_/g, " ")).join(", ")}`
+      : "";
+    const divisionsStr = info.assignedDivisions && info.assignedDivisions.length > 1
+      ? `\nAssigned Divisions: ${info.assignedDivisions.join(" | ")}`
+      : "";
+
     return `Dear ${info.name},
 
 ${
@@ -715,8 +806,8 @@ ${
 }
 
 Designation: ${info.jobTitle || "Official Staff"}
-Department / Division: ${info.department || "Balasuriya Group"}
-System Role: ${info.role.replace(/_/g, " ")}
+Primary Department: ${info.department || "Balasuriya Group"}
+Primary Role: ${info.role.replace(/_/g, " ")}${secondaryStr}${divisionsStr}
 Login Portal: ${portalUrl}
 Official Email: ${info.email}
 Temporary Password: ${info.password}
@@ -739,13 +830,17 @@ Balasuriya Group`;
     const matchesDept =
       selectedDept === "ALL" ||
       u.department?.toLowerCase() === selectedDept.toLowerCase() ||
-      (selectedDept === "Construction & Engineering" && u.department?.includes("Construction")) ||
-      (selectedDept === "Tourism & Travel" && (u.department?.includes("Tourism") || u.department?.includes("Travel"))) ||
-      (selectedDept === "Software Solutions" && (u.department?.includes("Software") || u.department?.includes("Technology"))) ||
-      (selectedDept === "Air Ticketing" && u.department?.includes("Ticketing")) ||
-      (selectedDept === "Finance & Accounts" && (u.department?.includes("Finance") || u.department?.includes("Accounts")));
+      (u.assignedDivisions && u.assignedDivisions.some((d) => d.toLowerCase() === selectedDept.toLowerCase())) ||
+      (selectedDept === "Construction & Engineering" && (u.department?.includes("Construction") || u.assignedDivisions?.some((d) => d.includes("Construction")))) ||
+      (selectedDept === "Tourism & Travel" && (u.department?.includes("Tourism") || u.department?.includes("Travel") || u.assignedDivisions?.some((d) => d.includes("Tourism") || d.includes("Travel")))) ||
+      (selectedDept === "Software Solutions" && (u.department?.includes("Software") || u.department?.includes("Technology") || u.assignedDivisions?.some((d) => d.includes("Software") || d.includes("Technology")))) ||
+      (selectedDept === "Air Ticketing" && (u.department?.includes("Ticketing") || u.assignedDivisions?.some((d) => d.includes("Ticketing")))) ||
+      (selectedDept === "Finance & Accounts" && (u.department?.includes("Finance") || u.department?.includes("Accounts") || u.assignedDivisions?.some((d) => d.includes("Finance") || d.includes("Accounts"))));
 
-    const matchesRole = roleFilter === "ALL" || u.role === roleFilter;
+    const matchesRole =
+      roleFilter === "ALL" ||
+      u.role === roleFilter ||
+      (u.secondaryRoles && u.secondaryRoles.includes(roleFilter as Role));
 
     return matchesSearch && matchesDept && matchesRole;
   });
@@ -762,7 +857,7 @@ Balasuriya Group`;
             Staff Hierarchy & Section Management
           </h1>
           <p className="text-xs text-gray-500 mt-1">
-            Organize staff across divisions, assign operational roles, send official credential emails, and manage section permissions.
+            Manage multi-divisional leaders, cross-section roles, operational staff, and send official credential notifications.
           </p>
         </div>
         <button
@@ -774,37 +869,39 @@ Balasuriya Group`;
         </button>
       </div>
 
-      {/* Division Leader Context Banner */}
-      {isDivisionLeader && callerDivision && (
+      {/* Multi-Division or Single Division Leader Context Banner */}
+      {isDivisionLeader && (
         <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-blue-600 p-2.5 text-white shadow-sm shrink-0">
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="font-display text-sm font-bold text-blue-950">
-                  Division Leader Console &bull; {callerDivision.divisionLabel}
+                  {isMultiDivisionLeader ? "Multi-Division Leader Console" : "Division Leader Console"} &bull;{" "}
+                  {callerLedDivisions.map((d) => d.divisionLabel).join(" & ")}
                 </span>
                 <span className="rounded-full bg-blue-200/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-900">
-                  Authorized Leader
+                  {isMultiDivisionLeader ? `${callerLedDivisions.length} Active Sections` : "Authorized Leader"}
                 </span>
               </div>
               <p className="text-xs text-blue-800/90 mt-0.5">
-                You have managerial authorization to add, view, edit details, and reset passwords for operational staff in the{" "}
-                <strong>{callerDivision.department}</strong> division.
+                {isMultiDivisionLeader
+                  ? `You hold leadership responsibility across ${callerLedDivisions.length} corporate divisions (${callerLedDivisions.map((d) => d.divisionLabel).join(", ")}). You can manage, provision, and review staff across all your led sections.`
+                  : `You have managerial authority to add, view, edit details, and reset passwords for operational staff in the ${callerLedDivisions[0].department} division.`}
               </p>
             </div>
           </div>
           <button
             onClick={() => {
-              setDepartment(callerDivision.department);
-              setRole(callerDivision.defaultNewRole);
+              setDepartment(callerLedDivisions[0].department);
+              setRole(callerLedDivisions[0].defaultNewRole);
               setShowNew(true);
             }}
             className="btn-primary bg-blue-700 hover:bg-blue-800 text-xs py-2 px-4 shrink-0 flex items-center gap-1.5"
           >
-            <UserPlus className="h-3.5 w-3.5" /> Add Division Staff
+            <UserPlus className="h-3.5 w-3.5" /> Add Section Staff
           </button>
         </div>
       )}
@@ -823,11 +920,11 @@ Balasuriya Group`;
               <div>
                 <h2 className="font-display text-base font-bold text-brand-navy">
                   {isDivisionLeader
-                    ? `Add Section Staff to ${callerDivision?.divisionLabel}`
+                    ? `Add Staff to ${isMultiDivisionLeader ? "Your Divisions" : callerLedDivisions[0].divisionLabel}`
                     : "Provision Official Staff Account"}
                 </h2>
                 <p className="text-[11px] text-gray-500">
-                  Assigns official designation, division, credentials & dispatches email notification
+                  Assign primary designation, cross-section duties, and dispatch official email credentials
                 </p>
               </div>
             </div>
@@ -875,22 +972,36 @@ Balasuriya Group`;
             </div>
 
             <div>
-              <label className="label">Corporate Division / Department *</label>
+              <label className="label">Primary Division / Department *</label>
               <select
                 className="input bg-white font-medium"
-                value={isDivisionLeader ? callerDivision?.department : department}
-                disabled={isDivisionLeader}
-                onChange={(e) => setDepartment(e.target.value)}
+                value={department}
+                onChange={(e) => {
+                  const newDept = e.target.value;
+                  setDepartment(newDept);
+                  const divMeta = Object.values(DIVISION_ROLES_MAP).find((d) => d.department === newDept);
+                  if (divMeta) {
+                    setRole(divMeta.defaultNewRole);
+                  }
+                }}
               >
-                {DEPARTMENTS.filter((d) => d.id !== "ALL").map((d) => (
+                {(isExecutive
+                  ? DEPARTMENTS.filter((d) => d.id !== "ALL")
+                  : callerLedDivisions.map((d) => ({ id: d.department, name: d.divisionLabel }))
+                ).map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name}
                   </option>
                 ))}
               </select>
-              {isDivisionLeader && (
+              {isDivisionLeader && !isMultiDivisionLeader && (
                 <span className="text-[10px] text-blue-700 font-medium mt-1 inline-block">
-                  Auto-locked to your division ({callerDivision?.divisionLabel})
+                  Auto-locked to your division ({callerLedDivisions[0].divisionLabel})
+                </span>
+              )}
+              {isMultiDivisionLeader && (
+                <span className="text-[10px] text-blue-700 font-medium mt-1 inline-block">
+                  Select which of your led divisions this member primarily belongs to
                 </span>
               )}
             </div>
@@ -927,7 +1038,7 @@ Balasuriya Group`;
             </div>
 
             <div className="sm:col-span-2 lg:col-span-3">
-              <label className="label">Assign System Access Role *</label>
+              <label className="label">Primary System Access Role *</label>
               <select
                 className="input bg-white font-medium"
                 value={role}
@@ -943,6 +1054,48 @@ Balasuriya Group`;
                 <strong>Access Scope:</strong>{" "}
                 {ROLE_HIERARCHY.find((r) => r.role === role)?.permissions}
               </p>
+            </div>
+
+            {/* Cross-Section & Dual Leadership Options */}
+            <div className="sm:col-span-2 lg:col-span-3 rounded-xl border border-gray-200 bg-white p-3.5 space-y-3">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-brand-navy" />
+                <h4 className="text-xs font-bold text-brand-navy">
+                  Cross-Section Leadership & Dual Assignment (Optional)
+                </h4>
+                <span className="text-[10px] bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded-full">
+                  Lead two sections or work across divisions
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500">
+                If this staff member or leader needs to lead or work across multiple sections, select their additional roles and assigned divisions below:
+              </p>
+
+              <div>
+                <span className="text-[11px] font-semibold text-gray-700 block mb-1.5">
+                  Additional Roles (Secondary):
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {ROLE_HIERARCHY.filter((r) => r.role !== "CUSTOMER" && r.role !== role).map((r) => {
+                    const isSelected = secondaryRoles.includes(r.role);
+                    return (
+                      <button
+                        type="button"
+                        key={r.role}
+                        onClick={() => toggleSecondaryRole(r.role, secondaryRoles, setSecondaryRoles)}
+                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition ${
+                          isSelected
+                            ? "border-blue-600 bg-blue-50 text-blue-900 font-bold"
+                            : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        {isSelected ? "✓ " : "+ "}
+                        {r.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1024,10 +1177,10 @@ Balasuriya Group`;
         </div>
       )}
 
-      {/* Edit Staff Details Modal */}
+      {/* Edit Staff Details Modal with Cross-Section Assignment */}
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-gray-100 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+          <div className="relative w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl border border-gray-100 space-y-5 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between border-b border-gray-100 pb-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-xl bg-blue-50 p-2.5 text-blue-700 border border-blue-100">
@@ -1035,10 +1188,10 @@ Balasuriya Group`;
                 </div>
                 <div>
                   <h3 className="font-display text-lg font-bold text-brand-navy">
-                    Edit Staff Member Details
+                    Edit Staff & Leadership Assignments
                   </h3>
                   <p className="text-xs text-gray-500">
-                    Update designation, contact info, division, or system permissions.
+                    Update designation, contact info, primary division, or assign secondary leadership roles.
                   </p>
                 </div>
               </div>
@@ -1061,7 +1214,7 @@ Balasuriya Group`;
                     className="input bg-gray-50/50 text-sm"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    placeholder="e.g. Mr. Kaveen Jayasinghe"
+                    placeholder="e.g. Mr. Damian Balasuriya"
                   />
                 </div>
 
@@ -1073,7 +1226,7 @@ Balasuriya Group`;
                     className="input bg-gray-50/50 text-sm"
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
-                    placeholder="e.g. kaveen@balasuriyagroup.tech"
+                    placeholder="e.g. staff@balasuriyagroup.tech"
                   />
                 </div>
 
@@ -1090,14 +1243,17 @@ Balasuriya Group`;
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="label text-xs font-semibold text-gray-700">Division / Department</label>
+                    <label className="label text-xs font-semibold text-gray-700">Primary Division</label>
                     <select
                       className="input bg-gray-50/50 text-sm font-medium"
                       value={editDepartment}
-                      disabled={isDivisionLeader}
+                      disabled={!isExecutive && !isMultiDivisionLeader}
                       onChange={(e) => setEditDepartment(e.target.value)}
                     >
-                      {DEPARTMENTS.filter((d) => d.id !== "ALL").map((d) => (
+                      {(isExecutive
+                        ? DEPARTMENTS.filter((d) => d.id !== "ALL")
+                        : callerLedDivisions.map((d) => ({ id: d.department, name: d.divisionLabel }))
+                      ).map((d) => (
                         <option key={d.id} value={d.id}>
                           {d.name}
                         </option>
@@ -1112,13 +1268,13 @@ Balasuriya Group`;
                       className="input bg-gray-50/50 text-sm"
                       value={editJobTitle}
                       onChange={(e) => setEditJobTitle(e.target.value)}
-                      placeholder="e.g. Site Supervisor"
+                      placeholder="e.g. Managing Director & Head of Tourism"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="label text-xs font-semibold text-gray-700">Department Role & Access Tier *</label>
+                  <label className="label text-xs font-semibold text-gray-700">Primary System Role *</label>
                   <select
                     className="input bg-gray-50/50 text-sm font-medium"
                     value={editRole}
@@ -1130,9 +1286,66 @@ Balasuriya Group`;
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-[11px] text-gray-500">
-                    {ROLE_HIERARCHY.find((r) => r.role === editRole)?.permissions}
+                </div>
+
+                {/* Cross-Section / Secondary Roles in Edit */}
+                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3.5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-brand-navy" />
+                    <span className="text-xs font-bold text-brand-navy">
+                      Lead / Work in Additional Sections
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Assign additional section leadership or operational roles to allow this person to access and lead multiple divisions:
                   </p>
+
+                  <div className="flex flex-wrap gap-2">
+                    {ROLE_HIERARCHY.filter((r) => r.role !== "CUSTOMER" && r.role !== editRole).map((r) => {
+                      const isSelected = editSecondaryRoles.includes(r.role);
+                      return (
+                        <button
+                          type="button"
+                          key={r.role}
+                          onClick={() => toggleSecondaryRole(r.role, editSecondaryRoles, setEditSecondaryRoles)}
+                          className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition ${
+                            isSelected
+                              ? "border-blue-600 bg-blue-100 text-blue-900 font-bold"
+                              : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {isSelected ? "✓ " : "+ "}
+                          {r.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-200">
+                    <span className="text-[11px] font-semibold text-gray-700 block mb-1.5">
+                      Assigned Divisions & Departments:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {DEPARTMENTS.filter((d) => d.id !== "ALL").map((d) => {
+                        const isAssigned = editAssignedDivisions.includes(d.id);
+                        return (
+                          <button
+                            type="button"
+                            key={d.id}
+                            onClick={() => toggleDivision(d.id, editAssignedDivisions, setEditAssignedDivisions)}
+                            className={`rounded-md border px-2 py-0.5 text-[10px] font-medium transition ${
+                              isAssigned
+                                ? "border-brand-navy bg-brand-navy text-white font-semibold"
+                                : "border-gray-200 bg-white text-gray-500 hover:bg-gray-100"
+                            }`}
+                          >
+                            {isAssigned ? "✓ " : "+ "}
+                            {d.short}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -1207,13 +1420,14 @@ Balasuriya Group`;
             dept.id === "ALL"
               ? users.length
               : users.filter((u) => {
-                  if (!u.department) return false;
-                  if (dept.id === "Construction & Engineering") return u.department.includes("Construction");
-                  if (dept.id === "Tourism & Travel") return u.department.includes("Tourism") || u.department.includes("Travel");
-                  if (dept.id === "Software Solutions") return u.department.includes("Software") || u.department.includes("Technology");
-                  if (dept.id === "Air Ticketing") return u.department.includes("Ticketing");
-                  if (dept.id === "Finance & Accounts") return u.department.includes("Finance") || u.department.includes("Accounts");
-                  return u.department === dept.id;
+                  if (u.department === dept.id) return true;
+                  if (u.assignedDivisions?.includes(dept.id)) return true;
+                  if (dept.id === "Construction & Engineering" && (u.department?.includes("Construction") || u.assignedDivisions?.some((d) => d.includes("Construction")))) return true;
+                  if (dept.id === "Tourism & Travel" && (u.department?.includes("Tourism") || u.department?.includes("Travel") || u.assignedDivisions?.some((d) => d.includes("Tourism") || d.includes("Travel")))) return true;
+                  if (dept.id === "Software Solutions" && (u.department?.includes("Software") || u.department?.includes("Technology") || u.assignedDivisions?.some((d) => d.includes("Software") || d.includes("Technology")))) return true;
+                  if (dept.id === "Air Ticketing" && (u.department?.includes("Ticketing") || u.assignedDivisions?.some((d) => d.includes("Ticketing")))) return true;
+                  if (dept.id === "Finance & Accounts" && (u.department?.includes("Finance") || u.department?.includes("Accounts") || u.assignedDivisions?.some((d) => d.includes("Finance") || d.includes("Accounts")))) return true;
+                  return false;
                 }).length;
 
           return (
@@ -1277,8 +1491,8 @@ Balasuriya Group`;
             <thead>
               <tr className="border-b bg-gray-50/80 text-[11px] uppercase tracking-wider text-gray-500">
                 <th className="py-3.5 px-4">Staff Member</th>
-                <th className="py-3.5 px-4">Department & Designation</th>
-                <th className="py-3.5 px-4">System Role & Access Tier</th>
+                <th className="py-3.5 px-4">Designation & Department</th>
+                <th className="py-3.5 px-4">Roles & Cross-Section Assignments</th>
                 <th className="py-3.5 px-4">Status</th>
                 <th className="py-3.5 px-4 text-right">Actions & Management</th>
               </tr>
@@ -1296,6 +1510,7 @@ Balasuriya Group`;
                 filteredUsers.map((u) => {
                   const roleMeta = ROLE_HIERARCHY.find((r) => r.role === u.role);
                   const isLeaderRole = roleMeta?.isLeader ?? false;
+                  const hasSecondaryRoles = u.secondaryRoles && u.secondaryRoles.length > 0;
                   const canAct = canManage(u);
 
                   return (
@@ -1308,6 +1523,11 @@ Balasuriya Group`;
                               Leader
                             </span>
                           )}
+                          {hasSecondaryRoles && (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-800">
+                              Multi-Section
+                            </span>
+                          )}
                         </div>
                         <div className="text-gray-500 text-xs">{u.email}</div>
                         {u.phone && <div className="text-[11px] text-gray-400">{u.phone}</div>}
@@ -1317,30 +1537,51 @@ Balasuriya Group`;
                         <div className="font-semibold text-gray-800">
                           {u.jobTitle || (isLeaderRole ? "Division Leader" : "Section Staff")}
                         </div>
-                        <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                        <div className="text-[11px] text-gray-500 flex flex-wrap items-center gap-1 mt-0.5">
                           <Building2 className="h-3 w-3 text-brand-steel" />
                           <span>{u.department || "Corporate"}</span>
+                          {u.assignedDivisions && u.assignedDivisions.length > 1 && (
+                            <span className="text-[10px] text-brand-gold font-semibold">
+                              (+{u.assignedDivisions.length - 1} more)
+                            </span>
+                          )}
                         </div>
                       </td>
 
                       <td className="py-3.5 px-4">
-                        {canAct && isExecutive ? (
-                          <select
-                            value={u.role}
-                            onChange={(e) => handleRoleChange(u, e.target.value as Role)}
-                            className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-brand-navy focus:border-brand-navy focus:outline-none"
-                          >
-                            {ROLE_HIERARCHY.filter((r) => r.role !== "CUSTOMER").map((r) => (
-                              <option key={r.role} value={r.role}>
-                                {r.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${roleMeta?.badgeColor || "bg-gray-100 text-gray-800"}`}>
-                            {roleMeta?.label || u.role.replace(/_/g, " ")}
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-1 items-center">
+                          {canAct && isExecutive ? (
+                            <select
+                              value={u.role}
+                              onChange={(e) => handleRoleChange(u, e.target.value as Role)}
+                              className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-brand-navy focus:border-brand-navy focus:outline-none"
+                            >
+                              {ROLE_HIERARCHY.filter((r) => r.role !== "CUSTOMER").map((r) => (
+                                <option key={r.role} value={r.role}>
+                                  {r.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${roleMeta?.badgeColor || "bg-gray-100 text-gray-800"}`}>
+                              {roleMeta?.label || u.role.replace(/_/g, " ")}
+                            </span>
+                          )}
+
+                          {u.secondaryRoles?.map((sr) => {
+                            const srMeta = ROLE_HIERARCHY.find((r) => r.role === sr);
+                            return (
+                              <span
+                                key={sr}
+                                className="inline-block rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-900"
+                                title={`Additional assignment: ${srMeta?.label || sr}`}
+                              >
+                                + {srMeta?.label || sr.replace(/_/g, " ")}
+                              </span>
+                            );
+                          })}
+                        </div>
+
                         {roleMeta && (
                           <div className="mt-1 text-[10px] text-gray-400 max-w-xs line-clamp-1">
                             {roleMeta.permissions}
@@ -1367,7 +1608,7 @@ Balasuriya Group`;
                               type="button"
                               onClick={() => handleStartEdit(u)}
                               className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50/80 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition shadow-2xs"
-                              title="Edit staff details"
+                              title="Edit staff and cross-section details"
                             >
                               <Pencil className="h-3 w-3" /> Edit
                             </button>
@@ -1424,7 +1665,7 @@ Balasuriya Group`;
             Balasuriya Group Corporate Hierarchy Matrix
           </h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Every staff member belongs to an operational division and is governed by strict Role-Based Access Control (RBAC). Division leaders supervise section staff within their scope.
+            Staff and leaders can hold cross-divisional responsibilities (e.g. heading multiple sections or holding operational roles across divisions) while remaining governed by strict RBAC security.
           </p>
         </div>
 

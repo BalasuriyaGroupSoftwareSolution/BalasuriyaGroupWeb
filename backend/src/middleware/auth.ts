@@ -50,7 +50,8 @@ export function requireRole(...roles: Role[]) {
     if (!req.user) {
       return res.status(401).json({ message: "Authentication required." });
     }
-    if (req.user.role === "OWNER" || roles.includes(req.user.role)) {
+    const userRoles = [req.user.role, ...(req.user.secondaryRoles || [])];
+    if (req.user.role === "OWNER" || roles.some((r) => userRoles.includes(r as any))) {
       return next();
     }
     return res.status(403).json({ message: "You don't have permission to do that." });
