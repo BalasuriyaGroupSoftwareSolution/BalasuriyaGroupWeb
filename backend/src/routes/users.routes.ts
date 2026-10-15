@@ -125,17 +125,28 @@ usersRouter.post(
     }
 
     const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
-    if (existing) throw new HttpError(409, "A user with that email already exists.");
-
-    const user = await prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email.toLowerCase(),
-        phone: data.phone || null,
-        role: data.role as any,
-        passwordHash: await hashPassword(data.temporaryPassword),
-      },
-    });
+    let user;
+    if (existing) {
+      user = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name: data.name,
+          phone: data.phone || null,
+          role: data.role as any,
+          passwordHash: await hashPassword(data.temporaryPassword),
+        },
+      });
+    } else {
+      user = await prisma.user.create({
+        data: {
+          name: data.name,
+          email: data.email.toLowerCase(),
+          phone: data.phone || null,
+          role: data.role as any,
+          passwordHash: await hashPassword(data.temporaryPassword),
+        },
+      });
+    }
 
     let emailDispatched = false;
     try {
@@ -227,13 +238,25 @@ usersRouter.delete(
   authenticate,
   requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
-    if (req.user?.id === req.params.id) {
+    if (req.user?.id === req.params.id || req.user?.sub === req.params.id) {
       throw new HttpError(400, "You cannot delete your own active account.");
     }
     const callerRole = req.user?.role;
 
     const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!targetUser) throw new HttpError(404, "User not found.");
+
+    if (
+      targetUser.id === req.user?.id ||
+      targetUser.id === req.user?.sub ||
+      (req.user?.email && targetUser.email.toLowerCase() === req.user.email.toLowerCase())
+    ) {
+      throw new HttpError(400, "You cannot delete your own active account.");
+    }
+
+    if (targetUser.role === "OWNER" || targetUser.email.toLowerCase() === "clemonbalasuriyagroup@gmail.com") {
+      throw new HttpError(403, "The root Executive Owner account is protected and cannot be deleted.");
+    }
 
     if (!canManageRole(callerRole, targetUser.role)) {
       throw new HttpError(403, "You can only remove staff within your own division.");

@@ -127,6 +127,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "DELETE") {
+    if (users[index].role === "OWNER" || users[index].email.toLowerCase() === "clemonbalasuriyagroup@gmail.com" || users[index].id === "usr_owner_1") {
+      return res.status(403).json({ message: "The root Executive Owner account is protected and cannot be deleted." });
+    }
     const removed = users.splice(index, 1)[0];
     saveUsers(users);
     return res.status(200).json({ message: `Staff member ${removed.name} removed permanently.` });

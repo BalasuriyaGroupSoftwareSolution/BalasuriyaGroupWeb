@@ -225,38 +225,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const normalized = email.toLowerCase().trim();
     const users = loadUsers();
-
-    if (users.some((u) => u.email.toLowerCase() === normalized)) {
-      return res.status(409).json({ message: "A staff account with that email already exists." });
-    }
+    const existingIndex = users.findIndex((u) => u.email.toLowerCase() === normalized);
 
     // Save temporary password so staff member can immediately log in
     savePassword(normalized, String(temporaryPassword));
 
-    const newUser: UserRecord = {
-      id: `usr_${Date.now()}`,
-      name: String(name).trim(),
-      email: normalized,
-      phone: phone ? String(phone).trim() : null,
-      role: String(role).trim(),
-      department: department ? String(department).trim() : null,
-      jobTitle: jobTitle ? String(jobTitle).trim() : null,
-      secondaryRoles: Array.isArray(secondaryRoles) ? secondaryRoles.map(String) : [],
-      assignedDivisions: Array.isArray(assignedDivisions) ? assignedDivisions.map(String) : (department ? [String(department)] : []),
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    users.unshift(newUser);
+    let targetUser: UserRecord;
+    if (existingIndex !== -1) {
+      targetUser = {
+        ...users[existingIndex],
+        name: String(name).trim(),
+        email: normalized,
+        phone: phone !== undefined ? (phone ? String(phone).trim() : null) : users[existingIndex].phone,
+        role: String(role).trim(),
+        department: department !== undefined ? (department ? String(department).trim() : null) : users[existingIndex].department,
+        jobTitle: jobTitle !== undefined ? (jobTitle ? String(jobTitle).trim() : null) : users[existingIndex].jobTitle,
+        secondaryRoles: Array.isArray(secondaryRoles) ? secondaryRoles.map(String) : (users[existingIndex].secondaryRoles || []),
+        assignedDivisions: Array.isArray(assignedDivisions) ? assignedDivisions.map(String) : (department ? [String(department)] : (users[existingIndex].assignedDivisions || [])),
+        isActive: true,
+      };
+      users[existingIndex] = targetUser;
+    } else {
+      targetUser = {
+        id: `usr_${Date.now()}`,
+        name: String(name).trim(),
+        email: normalized,
+        phone: phone ? String(phone).trim() : null,
+        role: String(role).trim(),
+        department: department ? String(department).trim() : null,
+        jobTitle: jobTitle ? String(jobTitle).trim() : null,
+        secondaryRoles: Array.isArray(secondaryRoles) ? secondaryRoles.map(String) : [],
+        assignedDivisions: Array.isArray(assignedDivisions) ? assignedDivisions.map(String) : (department ? [String(department)] : []),
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      };
+      users.unshift(targetUser);
+    }
     saveUsers(users);
 
     // Automatically dispatch welcome email via Resend
     let emailDispatched = false;
     try {
       emailDispatched = await sendStaffWelcomeEmail({
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
         temporaryPassword: String(temporaryPassword),
       });
     } catch (e) {
@@ -264,9 +277,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.status(201).json({
-      user: newUser,
+      user: targetUser,
       emailDispatched,
-      message: `Staff account successfully created${emailDispatched ? " and credentials emailed to " + normalized : ""}.`,
+      message: `Staff account successfully ${existingIndex !== -1 ? "re-provisioned" : "created"}${emailDispatched ? " and credentials emailed to " + normalized : ""}.`,
     });
   }
 

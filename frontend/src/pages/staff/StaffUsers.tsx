@@ -432,8 +432,21 @@ function getStoredUsers(): User[] {
   try {
     const raw = localStorage.getItem(LOCAL_USERS_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      let parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Ensure root executive owner is never missing from stored list
+        const hasOwner = parsed.some(
+          (u) =>
+            u.id === "usr_owner_1" ||
+            u.email?.toLowerCase() === "clemonbalasuriyagroup@gmail.com" ||
+            u.role === "OWNER"
+        );
+        if (!hasOwner && INITIAL_DEMO_USERS[0]) {
+          parsed = [INITIAL_DEMO_USERS[0], ...parsed];
+          persistUsers(parsed);
+        }
+        return parsed;
+      }
     }
   } catch {}
   return [];
@@ -479,6 +492,20 @@ function mergeUsers(remote: User[], local: User[]): User[] {
       if (l.id) added.add(l.id);
       if (l.email) added.add(l.email.toLowerCase());
     }
+  }
+
+  // Ensure root executive owner is always at the top of directory
+  const ownerIndex = merged.findIndex(
+    (u) =>
+      u.role === "OWNER" ||
+      u.email?.toLowerCase() === "clemonbalasuriyagroup@gmail.com" ||
+      u.id === "usr_owner_1"
+  );
+  if (ownerIndex > 0) {
+    const [owner] = merged.splice(ownerIndex, 1);
+    merged.unshift(owner);
+  } else if (ownerIndex === -1 && INITIAL_DEMO_USERS[0]) {
+    merged.unshift(INITIAL_DEMO_USERS[0]);
   }
 
   return merged;
@@ -590,6 +617,36 @@ export default function StaffUsers() {
   }
 
   useEffect(load, []);
+
+  // Defensive auto-recovery: If currentUser is logged in but missing from users list (e.g. accidentally removed), restore them immediately
+  useEffect(() => {
+    if (!currentUser?.email) return;
+    setUsers((prev) => {
+      const exists = prev.some(
+        (u) =>
+          (currentUser.id && u.id === currentUser.id) ||
+          u.email.toLowerCase() === currentUser.email.toLowerCase()
+      );
+      if (!exists) {
+        const restored: User = {
+          id: currentUser.id || `usr_${Date.now()}`,
+          name: currentUser.name || "Staff Member",
+          email: currentUser.email.toLowerCase(),
+          phone: currentUser.phone || "+94 76 7171 938",
+          role: currentUser.role,
+          department: currentUser.department || "Executive Board",
+          jobTitle: currentUser.jobTitle || (currentUser.role === "OWNER" ? "Group Chairman & CEO" : "Staff Member"),
+          assignedDivisions: currentUser.assignedDivisions || (currentUser.department ? [currentUser.department] : ["Executive Board"]),
+          secondaryRoles: currentUser.secondaryRoles || [],
+          isActive: true,
+        };
+        const next = [restored, ...prev];
+        persistUsers(next);
+        return next;
+      }
+      return prev;
+    });
+  }, [currentUser]);
 
   // Check if current user can manage target user (supports cross-section leadership)
   function canManage(target: User): boolean {
@@ -842,6 +899,24 @@ export default function StaffUsers() {
   }
 
   async function handleRemoveUser(user: User) {
+    const isSelf = Boolean(
+      (currentUser?.id && user.id === currentUser.id) ||
+      (currentUser?.email && user.email.toLowerCase() === currentUser.email.toLowerCase())
+    );
+    if (isSelf) {
+      toast.error("You cannot remove your own active staff account.");
+      return;
+    }
+
+    const isRootOwner =
+      user.role === "OWNER" ||
+      user.email.toLowerCase() === "clemonbalasuriyagroup@gmail.com" ||
+      user.id === "usr_owner_1";
+    if (isRootOwner) {
+      toast.error("The root Executive Owner account is protected and cannot be removed.");
+      return;
+    }
+
     if (!canManage(user)) {
       toast.error("You are not authorized to remove this staff member.");
       return;
@@ -1947,26 +2022,41 @@ Balasuriya Group`;
                               <KeyRound className="h-3 w-3 text-brand-gold" /> Reset
                             </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleToggleActive(u)}
-                              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium ${
-                                u.isActive
-                                  ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                                  : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                              }`}
-                            >
-                              {u.isActive ? "Suspend" : "Activate"}
-                            </button>
+                            {Boolean(
+                              (currentUser?.id && u.id === currentUser.id) ||
+                              (currentUser?.email && u.email.toLowerCase() === currentUser.email.toLowerCase())
+                            ) ? (
+                              <span className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-800">
+                                Current User (You)
+                              </span>
+                            ) : u.role === "OWNER" || u.email.toLowerCase() === "clemonbalasuriyagroup@gmail.com" || u.id === "usr_owner_1" ? (
+                              <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">
+                                Root Owner (Protected)
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleActive(u)}
+                                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium ${
+                                    u.isActive
+                                      ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                                      : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                                  }`}
+                                >
+                                  {u.isActive ? "Suspend" : "Activate"}
+                                </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveUser(u)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
-                              title="Permanently remove account"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveUser(u)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
+                                  title="Permanently remove account"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         ) : (
                           <span className="text-[11px] text-gray-400 italic">
