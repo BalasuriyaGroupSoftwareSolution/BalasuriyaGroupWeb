@@ -9,15 +9,33 @@ import { sendStaffWelcomeEmail } from "../utils/mailer.js";
 export const usersRouter = Router();
 
 // OWNER & ADMIN can manage any staff across all divisions.
-// Division Leaders (CONSTRUCTION_MANAGER, TOURISM_AGENT, SOFTWARE_ENGINEER, TICKET_AGENT)
-// can add, view, reset passwords, and manage staff in their respective divisions.
+// Division Leaders (CONSTRUCTION_MANAGER, TOURISM_AGENT, SOFTWARE_ENGINEER, TICKET_AGENT, FINANCE_APPROVER)
+// can add, view, reset passwords, and manage section staff in their respective divisions.
 const STAFF_MANAGEMENT_ROLES = [
   "ADMIN",
   "CONSTRUCTION_MANAGER",
   "TOURISM_AGENT",
   "SOFTWARE_ENGINEER",
   "TICKET_AGENT",
+  "FINANCE_APPROVER",
+  "CHARTERED_ACCOUNTANT",
 ] as const;
+
+export const DIVISION_ROLES_MAP: Record<string, string[]> = {
+  CONSTRUCTION_MANAGER: ["CONSTRUCTION_MANAGER", "CONSTRUCTION_STAFF"],
+  TOURISM_AGENT: ["TOURISM_AGENT", "TOURISM_STAFF"],
+  SOFTWARE_ENGINEER: ["SOFTWARE_ENGINEER", "SOFTWARE_STAFF"],
+  TICKET_AGENT: ["TICKET_AGENT", "TICKET_STAFF"],
+  FINANCE_APPROVER: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "FINANCE_STAFF"],
+  CHARTERED_ACCOUNTANT: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "FINANCE_STAFF"],
+};
+
+export function canManageRole(callerRole: string | undefined, targetRole: string): boolean {
+  if (callerRole === "OWNER" || callerRole === "ADMIN") return true;
+  if (!callerRole) return false;
+  const allowed = DIVISION_ROLES_MAP[callerRole];
+  return !!allowed && allowed.includes(targetRole);
+}
 
 function toSafeUser(u: {
   id: string;
@@ -38,13 +56,14 @@ usersRouter.get(
   asyncHandler(async (req, res) => {
     const callerRole = req.user?.role;
     const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
+    const allowed = callerRole && DIVISION_ROLES_MAP[callerRole];
 
-    // Executive sees all users; Division Leader sees themselves and their division's staff
+    // Executive sees all users; Division Leader sees themselves and their division's section staff
     const whereClause = isExecutive
       ? undefined
       : {
           OR: [
-            { role: callerRole as any },
+            ...(allowed ? [{ role: { in: allowed as any } }] : []),
             { id: req.user?.id },
           ],
         };
@@ -67,10 +86,15 @@ const createStaffSchema = z.object({
     "OWNER",
     "ADMIN",
     "CONSTRUCTION_MANAGER",
+    "CONSTRUCTION_STAFF",
     "TOURISM_AGENT",
+    "TOURISM_STAFF",
     "FINANCE_APPROVER",
+    "FINANCE_STAFF",
     "TICKET_AGENT",
+    "TICKET_STAFF",
     "SOFTWARE_ENGINEER",
+    "SOFTWARE_STAFF",
     "CHARTERED_ACCOUNTANT",
   ]),
 });
@@ -81,12 +105,11 @@ usersRouter.post(
   requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
     const callerRole = req.user?.role;
-    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
     const data = createStaffSchema.parse(req.body);
 
-    // If division leader, can only create accounts matching their division
-    if (!isExecutive && data.role !== callerRole) {
-      throw new HttpError(403, `You can only add staff to your own division (${callerRole}).`);
+    // Division leaders can only add staff within their division's roles
+    if (!canManageRole(callerRole, data.role)) {
+      throw new HttpError(403, `You can only add staff within your own division.`);
     }
 
     const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
@@ -97,7 +120,7 @@ usersRouter.post(
         name: data.name,
         email: data.email.toLowerCase(),
         phone: data.phone || null,
-        role: data.role,
+        role: data.role as any,
         passwordHash: await hashPassword(data.temporaryPassword),
       },
     });
@@ -135,10 +158,15 @@ const updateUserSchema = z.object({
       "OWNER",
       "ADMIN",
       "CONSTRUCTION_MANAGER",
+      "CONSTRUCTION_STAFF",
       "TOURISM_AGENT",
+      "TOURISM_STAFF",
       "FINANCE_APPROVER",
+      "FINANCE_STAFF",
       "TICKET_AGENT",
+      "TICKET_STAFF",
       "SOFTWARE_ENGINEER",
+      "SOFTWARE_STAFF",
       "CHARTERED_ACCOUNTANT",
       "CUSTOMER",
     ])
@@ -151,15 +179,18 @@ usersRouter.patch(
   requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
     const callerRole = req.user?.role;
-    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
     const data = updateUserSchema.parse(req.body);
 
     const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!targetUser) throw new HttpError(404, "User not found.");
 
     // Division leaders can only modify staff in their own division
-    if (!isExecutive && targetUser.role !== callerRole) {
+    if (!canManageRole(callerRole, targetUser.role)) {
       throw new HttpError(403, "You can only manage staff within your own division.");
+    }
+
+    if (data.role && !canManageRole(callerRole, data.role)) {
+      throw new HttpError(403, "You cannot assign a role outside of your division.");
     }
 
     if (data.email && data.email.toLowerCase() !== targetUser.email.toLowerCase()) {
@@ -171,6 +202,7 @@ usersRouter.patch(
       where: { id: req.params.id },
       data: {
         ...data,
+        role: data.role ? (data.role as any) : undefined,
         email: data.email ? data.email.toLowerCase() : undefined,
       },
     });
@@ -187,12 +219,11 @@ usersRouter.delete(
       throw new HttpError(400, "You cannot delete your own active account.");
     }
     const callerRole = req.user?.role;
-    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
 
     const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!targetUser) throw new HttpError(404, "User not found.");
 
-    if (!isExecutive && targetUser.role !== callerRole) {
+    if (!canManageRole(callerRole, targetUser.role)) {
       throw new HttpError(403, "You can only remove staff within your own division.");
     }
 
@@ -209,12 +240,11 @@ usersRouter.post(
   requireRole(...STAFF_MANAGEMENT_ROLES),
   asyncHandler(async (req, res) => {
     const callerRole = req.user?.role;
-    const isExecutive = callerRole === "OWNER" || callerRole === "ADMIN";
 
     const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!targetUser) throw new HttpError(404, "User not found.");
 
-    if (!isExecutive && targetUser.role !== callerRole) {
+    if (!canManageRole(callerRole, targetUser.role)) {
       throw new HttpError(403, "You can only reset passwords for staff in your division.");
     }
 

@@ -2,10 +2,15 @@ export type Role =
   | "OWNER"
   | "ADMIN"
   | "CONSTRUCTION_MANAGER"
+  | "CONSTRUCTION_STAFF"
   | "TOURISM_AGENT"
+  | "TOURISM_STAFF"
   | "FINANCE_APPROVER"
+  | "FINANCE_STAFF"
   | "TICKET_AGENT"
+  | "TICKET_STAFF"
   | "SOFTWARE_ENGINEER"
+  | "SOFTWARE_STAFF"
   | "CHARTERED_ACCOUNTANT"
   | "CUSTOMER";
 
@@ -15,6 +20,8 @@ export interface User {
   name: string;
   role: Role;
   phone: string | null;
+  department?: string | null;
+  jobTitle?: string | null;
   isActive?: boolean;
   createdAt?: string;
 }

@@ -71,10 +71,15 @@ export default function App() {
                 roles={[
                   "ADMIN",
                   "CONSTRUCTION_MANAGER",
+                  "CONSTRUCTION_STAFF",
                   "TOURISM_AGENT",
+                  "TOURISM_STAFF",
                   "FINANCE_APPROVER",
+                  "FINANCE_STAFF",
                   "TICKET_AGENT",
+                  "TICKET_STAFF",
                   "SOFTWARE_ENGINEER",
+                  "SOFTWARE_STAFF",
                   "CHARTERED_ACCOUNTANT",
                 ]}
                 redirectTo="/"
@@ -84,19 +89,19 @@ export default function App() {
             <Route path="/staff" element={<StaffLayout />}>
               <Route index element={<StaffDashboard />} />
 
-              <Route element={<ProtectedRoute roles={["CONSTRUCTION_MANAGER", "ADMIN"]} />}>
+              <Route element={<ProtectedRoute roles={["CONSTRUCTION_MANAGER", "CONSTRUCTION_STAFF", "ADMIN"]} />}>
                 <Route path="construction" element={<ConstructionStaff />} />
               </Route>
 
-              <Route element={<ProtectedRoute roles={["TOURISM_AGENT", "ADMIN"]} />}>
+              <Route element={<ProtectedRoute roles={["TOURISM_AGENT", "TOURISM_STAFF", "ADMIN"]} />}>
                 <Route path="tourism" element={<TourismStaff />} />
               </Route>
 
-              <Route element={<ProtectedRoute roles={["FINANCE_APPROVER", "ADMIN"]} />}>
+              <Route element={<ProtectedRoute roles={["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "FINANCE_STAFF", "ADMIN"]} />}>
                 <Route path="payments" element={<PaymentApprovals />} />
               </Route>
 
-              <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
+              <Route element={<ProtectedRoute roles={["ADMIN", "CONSTRUCTION_MANAGER", "TOURISM_AGENT", "SOFTWARE_ENGINEER", "TICKET_AGENT", "FINANCE_APPROVER"]} />}>
                 <Route path="users" element={<StaffUsers />} />
               </Route>
             </Route>

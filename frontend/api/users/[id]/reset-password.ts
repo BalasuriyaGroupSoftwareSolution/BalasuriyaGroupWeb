@@ -18,13 +18,33 @@ interface UserRecord {
 }
 
 const DEFAULT_USERS: UserRecord[] = [
+  // Executive Board / Corporate Leadership
   { id: "usr_owner_1", name: "Mr. Clemon Balasuriya", email: "clemonbalasuriyagroup@gmail.com", role: "OWNER", phone: "+94 76 7171 938", isActive: true, createdAt: "2026-09-01T00:00:00.000Z" },
   { id: "usr_md_2", name: "Mr. Damian Balasuriya", email: "damianbalasuriyagroup@gmail.com", role: "ADMIN", phone: "+94 76 7171 938", isActive: true, createdAt: "2026-09-02T00:00:00.000Z" },
   { id: "usr_ed_3", name: "Mr. Clavo Balasuriya", email: "clavobalasuriyagroup@gmail.com", role: "FINANCE_APPROVER", phone: "+94 76 7171 938", isActive: true, createdAt: "2026-09-03T00:00:00.000Z" },
   { id: "usr_dir_4", name: "Mrs. Christina Balasuriya", email: "christinabalasuriyagroup@gmail.com", role: "ADMIN", phone: "+94 76 7171 938", isActive: true, createdAt: "2026-09-04T00:00:00.000Z" },
+
+  // Construction & Civil Engineering Division
   { id: "usr_migara_5", name: "Mr. Migara Fonseka", email: "fonsekamigara@gmail.com", role: "CONSTRUCTION_MANAGER", phone: "+94 77 234 5678", isActive: true, createdAt: "2026-09-05T00:00:00.000Z" },
-  { id: "usr_pasindu_6", name: "Mr. Pasindu Hansana", email: "pasinduhansana@gmail.com", role: "SOFTWARE_ENGINEER", phone: "+94 77 456 7890", isActive: true, createdAt: "2026-09-06T00:00:00.000Z" },
-  { id: "usr_shenal_7", name: "Mr. Shenal Fernando", email: "shenal@balasuriyagroup.tech", role: "TICKET_AGENT", phone: "+94 77 567 8901", isActive: true, createdAt: "2026-09-07T00:00:00.000Z" },
+  { id: "usr_const_staff_1", name: "Mr. Kaveen Jayasinghe", email: "kaveen.construction@balasuriyagroup.tech", role: "CONSTRUCTION_STAFF", phone: "+94 77 312 4567", isActive: true, createdAt: "2026-09-10T00:00:00.000Z" },
+  { id: "usr_const_staff_2", name: "Mr. Nimal Perera", email: "nimal.projects@balasuriyagroup.tech", role: "CONSTRUCTION_STAFF", phone: "+94 77 423 5678", isActive: true, createdAt: "2026-09-12T00:00:00.000Z" },
+
+  // Tourism & Global Travel Division
+  { id: "usr_damian_tours", name: "Mr. Damian Balasuriya", email: "damian@balasuriyagroup.tech", role: "TOURISM_AGENT", phone: "+94 77 345 6789", isActive: true, createdAt: "2026-09-06T00:00:00.000Z" },
+  { id: "usr_tour_staff_1", name: "Ms. Rashmi Senanayake", email: "rashmi.tours@balasuriyagroup.tech", role: "TOURISM_STAFF", phone: "+94 77 534 6789", isActive: true, createdAt: "2026-09-15T00:00:00.000Z" },
+  { id: "usr_tour_staff_2", name: "Mr. Dinuka Silva", email: "dinuka.visa@balasuriyagroup.tech", role: "TOURISM_STAFF", phone: "+94 77 645 7890", isActive: true, createdAt: "2026-09-18T00:00:00.000Z" },
+
+  // Software Solutions & IT Division
+  { id: "usr_pasindu_6", name: "Mr. Pasindu Hansana", email: "pasinduhansana@gmail.com", role: "SOFTWARE_ENGINEER", phone: "+94 77 456 7890", isActive: true, createdAt: "2026-09-07T00:00:00.000Z" },
+  { id: "usr_soft_staff_1", name: "Mr. Thilina Bandara", email: "thilina.dev@balasuriyagroup.tech", role: "SOFTWARE_STAFF", phone: "+94 77 756 8901", isActive: true, createdAt: "2026-09-20T00:00:00.000Z" },
+  { id: "usr_soft_staff_2", name: "Ms. Sanduni Fernando", email: "sanduni.qa@balasuriyagroup.tech", role: "SOFTWARE_STAFF", phone: "+94 77 867 9012", isActive: true, createdAt: "2026-09-22T00:00:00.000Z" },
+
+  // Air Ticketing & Global Reservations Division
+  { id: "usr_shenal_7", name: "Mr. Shenal Fernando", email: "shenal@balasuriyagroup.tech", role: "TICKET_AGENT", phone: "+94 77 567 8901", isActive: true, createdAt: "2026-09-08T00:00:00.000Z" },
+  { id: "usr_ticket_staff_1", name: "Ms. Chathuri Wickramasinghe", email: "chathuri.flights@balasuriyagroup.tech", role: "TICKET_STAFF", phone: "+94 77 978 0123", isActive: true, createdAt: "2026-09-25T00:00:00.000Z" },
+
+  // Finance & Accounts Division
+  { id: "usr_fin_staff_1", name: "Mr. Sunil Wickrema", email: "sunil.accounts@balasuriyagroup.tech", role: "FINANCE_STAFF", phone: "+94 77 189 1234", isActive: true, createdAt: "2026-09-28T00:00:00.000Z" },
 ];
 
 function loadUsers(): UserRecord[] {

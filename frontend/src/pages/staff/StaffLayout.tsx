@@ -13,10 +13,10 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: "/staff", label: "Dashboard Overview" },
-  { to: "/staff/construction", label: "Construction Progress", roles: ["CONSTRUCTION_MANAGER", "ADMIN"] },
-  { to: "/staff/tourism", label: "Tourism Packages", roles: ["TOURISM_AGENT", "ADMIN"] },
-  { to: "/staff/payments", label: "Payment Approvals", roles: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "ADMIN"] },
-  { to: "/staff/users", label: "Staff & Access Hierarchy", roles: ["ADMIN", "CONSTRUCTION_MANAGER", "TOURISM_AGENT", "SOFTWARE_ENGINEER", "TICKET_AGENT"] },
+  { to: "/staff/construction", label: "Construction Progress", roles: ["CONSTRUCTION_MANAGER", "CONSTRUCTION_STAFF", "ADMIN"] },
+  { to: "/staff/tourism", label: "Tourism Packages", roles: ["TOURISM_AGENT", "TOURISM_STAFF", "ADMIN"] },
+  { to: "/staff/payments", label: "Payment Approvals", roles: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "FINANCE_STAFF", "ADMIN"] },
+  { to: "/staff/users", label: "Staff & Section Management", roles: ["ADMIN", "CONSTRUCTION_MANAGER", "TOURISM_AGENT", "SOFTWARE_ENGINEER", "TICKET_AGENT", "FINANCE_APPROVER"] },
 ];
 
 export default function StaffLayout() {
