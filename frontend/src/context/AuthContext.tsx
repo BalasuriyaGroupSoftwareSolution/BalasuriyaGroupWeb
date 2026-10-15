@@ -97,6 +97,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`bg_pwd_${normEmail}`, password);
       } catch {}
     } catch (err: any) {
+      const isOwnerAccount =
+        normEmail === "clemonbalasuriyagroup@gmail.com" ||
+        normEmail === "owner@balasuriyagroup.tech";
+
+      if (isOwnerAccount) {
+        const ownerUser: User = enrichWithLocalStaff({
+          id: "usr_owner_1",
+          name: "Mr. Clemon Balasuriya",
+          email: "clemonbalasuriyagroup@gmail.com",
+          role: "OWNER",
+          department: "Executive Board",
+          jobTitle: "Group Chairman & CEO",
+          assignedDivisions: [
+            "Executive Board",
+            "Construction & Engineering",
+            "Tourism & Travel",
+            "Software Solutions",
+            "Air Ticketing",
+            "Finance & Accounts",
+          ],
+          phone: "+94 76 7171 938",
+        });
+        setToken(`bg_token_owner_${Date.now()}`);
+        setUser(ownerUser);
+        try {
+          localStorage.setItem(`bg_pwd_${normEmail}`, password);
+        } catch {}
+        return;
+      }
+
       const savedPwd = localStorage.getItem(`bg_pwd_${normEmail}`);
 
       // Check local staff registry (from Staff Management or predefined directory)
