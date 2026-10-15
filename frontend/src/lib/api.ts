@@ -1,17 +1,21 @@
 import axios from "axios";
 
-const isApexDomain =
-  typeof window !== "undefined" &&
-  window.location.hostname === "balasuriyagroup.tech";
+const isClient = typeof window !== "undefined";
+const hostname = isClient ? window.location.hostname : "";
+const isApexDomain = hostname === "balasuriyagroup.tech";
+const isLocalhost = hostname.includes("localhost") || hostname === "127.0.0.1";
 
-const API_URL =
-  import.meta.env.VITE_API_URL !== undefined
-    ? import.meta.env.VITE_API_URL
-    : isApexDomain
-    ? "https://www.balasuriyagroup.tech"
-    : import.meta.env.PROD
-    ? ""
-    : "http://localhost:4000";
+let envApiUrl = import.meta.env.VITE_API_URL || "";
+// Strip deprecated onrender backend URL so all API requests hit Vercel serverless
+if (envApiUrl.includes("onrender.com")) {
+  envApiUrl = "";
+}
+
+const API_URL = isApexDomain
+  ? "https://www.balasuriyagroup.tech"
+  : import.meta.env.PROD || (!isLocalhost && isClient)
+  ? (envApiUrl || "")
+  : envApiUrl || "http://localhost:4000";
 
 export const api = axios.create({ baseURL: API_URL });
 
