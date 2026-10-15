@@ -86,9 +86,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       if (resVerified.ok) {
+        const data = (await resVerified.json().catch(() => ({}))) as { id?: string };
         emailSent = true;
         deliveredTo = normalized;
-        attemptLogs.push(`Attempt 1 OK: sent to ${normalized} via ${VERIFIED_FROM_EMAIL}`);
+        attemptLogs.push(`Attempt 1 OK: sent to ${normalized} via ${VERIFIED_FROM_EMAIL} (Resend ID: ${data?.id})`);
       } else {
         const errText = await resVerified.text();
         attemptLogs.push(`Attempt 1 failed (${VERIFIED_FROM_EMAIL} -> ${normalized}): ${errText}`);
@@ -115,9 +116,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         if (resSandboxDirect.ok) {
+          const data = (await resSandboxDirect.json().catch(() => ({}))) as { id?: string };
           emailSent = true;
           deliveredTo = normalized;
-          attemptLogs.push(`Attempt 2 OK: sent to ${normalized} via ${SANDBOX_FROM_EMAIL}`);
+          attemptLogs.push(`Attempt 2 OK: sent to ${normalized} via ${SANDBOX_FROM_EMAIL} (Resend ID: ${data?.id})`);
         } else {
           const errText = await resSandboxDirect.text();
           attemptLogs.push(`Attempt 2 failed (${SANDBOX_FROM_EMAIL} -> ${normalized}): ${errText}`);
@@ -145,9 +147,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         if (resFallback.ok) {
+          const data = (await resFallback.json().catch(() => ({}))) as { id?: string };
           emailSent = true;
           deliveredTo = RESEND_REGISTERED_EMAIL;
-          attemptLogs.push(`Attempt 3 OK: sent to fallback ${RESEND_REGISTERED_EMAIL}`);
+          attemptLogs.push(`Attempt 3 OK: sent to fallback ${RESEND_REGISTERED_EMAIL} (Resend ID: ${data?.id})`);
         } else {
           const errText = await resFallback.text();
           attemptLogs.push(`Attempt 3 failed: ${errText}`);
@@ -172,6 +175,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     delivered: emailSent,
     deliveredTo: emailSent ? deliveredTo : undefined,
     resetToken,
-    attemptLogs: deliveredTo !== normalized ? attemptLogs : undefined,
+    attemptLogs,
   });
 }
