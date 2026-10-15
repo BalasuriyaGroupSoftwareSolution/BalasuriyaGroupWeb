@@ -11,7 +11,7 @@ interface AuthContextValue {
   sendOtp: (identifier: string) => Promise<void>;
   verifyOtp: (identifier: string, code: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<string>;
-  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string, customResetToken?: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   updateProfile: (data: { name?: string; phone?: string }) => Promise<void>;
   demoLogin: (role: string) => Promise<void>;
@@ -120,11 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.data.message;
   }
 
-  async function resetPassword(email: string, code: string, newPassword: string): Promise<void> {
-    let resetToken: string | undefined;
-    try {
-      resetToken = sessionStorage.getItem(`reset_token_${email.toLowerCase().trim()}`) || undefined;
-    } catch {}
+  async function resetPassword(email: string, code: string, newPassword: string, customResetToken?: string): Promise<void> {
+    let resetToken = customResetToken;
+    if (!resetToken) {
+      try {
+        resetToken = sessionStorage.getItem(`reset_token_${email.toLowerCase().trim()}`) || undefined;
+      } catch {}
+    }
     const res = await api.post("/api/auth/reset-password", { email, code, newPassword, resetToken });
     setToken(res.data.token);
     setUser(res.data.user);

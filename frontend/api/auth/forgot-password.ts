@@ -34,18 +34,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const normalized = email.toLowerCase().trim();
   const code = String(crypto.randomInt(100000, 1000000));
-  const expiresAt = Date.now() + 10 * 60 * 1000;
+  const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins validity
+
+  // 1. One-click link token (cryptographically signed email + expiry)
+  const linkSignature = crypto
+    .createHmac("sha256", HMAC_SECRET)
+    .update(`reset_link:${normalized}:${expiresAt}`)
+    .digest("hex");
+  const linkToken = `${expiresAt}:${linkSignature}`;
+
+  // 2. 6-digit code token
+  const codeSignature = crypto
+    .createHmac("sha256", HMAC_SECRET)
+    .update(`reset_code:${normalized}:${code}:${expiresAt}`)
+    .digest("hex");
+  const codeToken = `${expiresAt}:${codeSignature}`;
 
   // In-memory store backup
   otpStore.set(normalized, { code, expiresAt });
-  console.log(`[OTP] Generated 6-digit security code for ${normalized}`);
 
-  // Stateless HMAC token so serverless instances never lose state
-  const signature = crypto
-    .createHmac("sha256", HMAC_SECRET)
-    .update(`${normalized}:${code}:${expiresAt}`)
-    .digest("hex");
-  const resetToken = `${expiresAt}:${signature}`;
+  const reqOrigin = (req.headers["origin"] as string) || (req.headers["referer"] as string) || "";
+  const baseUrl = reqOrigin.includes("localhost") ? "http://localhost:5173" : "https://www.balasuriyagroup.tech";
+  const resetUrl = `${baseUrl}/forgot-password?token=${encodeURIComponent(linkToken)}&email=${encodeURIComponent(normalized)}`;
 
   const resendApiKey = process.env.RESEND_API_KEY;
   let emailSent = false;
@@ -53,24 +63,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const attemptLogs: string[] = [];
 
   if (resendApiKey) {
+    const timeTag = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Colombo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const emailSubject = `Reset Your Balasuriya Group Password [${timeTag}]`;
+
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
         <h2 style="color: #0B1E3F; margin-top: 0;">Balasuriya Group Corporate Security</h2>
-        <p style="color: #334155;">Password reset verification code requested for account: <strong>${normalized}</strong></p>
-        <p style="color: #334155;">Your single-use 6-digit verification code is:</p>
-        <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1E3A6E; padding: 18px; background-color: #F4F6F9; border-radius: 8px; text-align: center; margin: 20px 0; font-family: monospace;">
+        <p style="color: #334155; font-size: 14px;">We received a request to reset the password for your account: <strong>${normalized}</strong></p>
+        <p style="color: #334155; font-size: 14px;">Click the button below to set your new password directly without needing any code:</p>
+
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${resetUrl}" style="background-color: #0B1E3F; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; border-radius: 8px; font-size: 15px; display: inline-block;">
+            Reset My Password
+          </a>
+        </div>
+
+        <p style="color: #64748b; font-size: 12px; line-height: 1.5; word-break: break-all;">
+          Or copy and paste this link in your browser:<br/>
+          <a href="${resetUrl}" style="color: #1E3A6E;">${resetUrl}</a>
+        </p>
+
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+
+        <p style="color: #64748b; font-size: 12px; margin-bottom: 6px;">
+          Alternatively, if you prefer entering a code manually:
+        </p>
+        <div style="font-size: 24px; font-weight: bold; letter-spacing: 6px; color: #1E3A6E; padding: 12px; background-color: #F4F6F9; border-radius: 8px; text-align: center; font-family: monospace;">
           ${code}
         </div>
-        <p style="color: #64748b; font-size: 13px;">This security code is strictly confidential, single-use, and valid for 10 minutes.</p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p style="font-size: 11px; color: #94a3b8; margin-bottom: 0;">Balasuriya Group Corporate Security Protocol</p>
+
+        <p style="color: #94a3b8; font-size: 11px; margin-top: 24px; margin-bottom: 0;">
+          This password reset link is valid for 15 minutes. If you did not request this reset, your account remains secure and you can safely ignore this email.
+        </p>
       </div>
     `;
 
-    const timeTag = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Colombo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    const emailSubject = `Balasuriya Group Security Code: ${code} [${timeTag}]`;
-
-    // Attempt 1: Send directly to the target email from verified domain address
+    // Attempt 1: Send directly from verified domain
     try {
       const resVerified = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -96,16 +124,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         attemptLogs.push(`Attempt 1 OK: sent to ${normalized} via ${VERIFIED_FROM_EMAIL} (Resend ID: ${data?.id})`);
       } else {
         const errText = await resVerified.text();
-        attemptLogs.push(`Attempt 1 failed (${VERIFIED_FROM_EMAIL} -> ${normalized}): ${errText}`);
+        attemptLogs.push(`Attempt 1 failed: ${errText}`);
       }
     } catch (e: any) {
       attemptLogs.push(`Attempt 1 exception: ${e.message}`);
     }
 
-    // Attempt 2: If Attempt 1 failed (e.g. domain pending), try sending from onboarding@resend.dev to target
+    // Attempt 2: Fallback to sandbox sender
     if (!emailSent) {
       try {
-        const resSandboxDirect = await fetch("https://api.resend.com/emails", {
+        const resSandbox = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${resendApiKey}`,
@@ -122,21 +150,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }),
         });
 
-        if (resSandboxDirect.ok) {
-          const data = (await resSandboxDirect.json().catch(() => ({}))) as { id?: string };
+        if (resSandbox.ok) {
+          const data = (await resSandbox.json().catch(() => ({}))) as { id?: string };
           emailSent = true;
           deliveredTo = normalized;
           attemptLogs.push(`Attempt 2 OK: sent to ${normalized} via ${SANDBOX_FROM_EMAIL} (Resend ID: ${data?.id})`);
         } else {
-          const errText = await resSandboxDirect.text();
-          attemptLogs.push(`Attempt 2 failed (${SANDBOX_FROM_EMAIL} -> ${normalized}): ${errText}`);
+          const errText = await resSandbox.text();
+          attemptLogs.push(`Attempt 2 failed: ${errText}`);
         }
       } catch (e: any) {
         attemptLogs.push(`Attempt 2 exception: ${e.message}`);
       }
     }
 
-    // Attempt 3: If target is not the sandbox owner and earlier attempts failed, deliver to registered owner mailbox
+    // Attempt 3: Sandbox fallback to registered owner mailbox
     if (!emailSent && normalized !== RESEND_REGISTERED_EMAIL) {
       try {
         const resFallback = await fetch("https://api.resend.com/emails", {
@@ -148,7 +176,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           body: JSON.stringify({
             from: SANDBOX_FROM_EMAIL,
             to: [RESEND_REGISTERED_EMAIL],
-            subject: `Balasuriya Group Security Code for ${normalized}: ${code} [${timeTag}]`,
+            subject: `Balasuriya Group Reset Link for ${normalized} [${timeTag}]`,
             headers: {
               "X-Entity-Ref-ID": `${Date.now()}`,
             },
@@ -161,9 +189,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           emailSent = true;
           deliveredTo = RESEND_REGISTERED_EMAIL;
           attemptLogs.push(`Attempt 3 OK: sent to fallback ${RESEND_REGISTERED_EMAIL} (Resend ID: ${data?.id})`);
-        } else {
-          const errText = await resFallback.text();
-          attemptLogs.push(`Attempt 3 failed: ${errText}`);
         }
       } catch (e: any) {
         attemptLogs.push(`Attempt 3 exception: ${e.message}`);
@@ -171,12 +196,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  let userMsg = "Verification code generated. Please check your inbox and spam folder.";
+  let userMsg = "Password reset link sent to your email.";
   if (emailSent) {
     if (deliveredTo === normalized) {
-      userMsg = `Verification code sent to ${normalized}. Please check inbox and spam folder.`;
+      userMsg = `Password reset link sent to ${normalized}. Please check your inbox or spam.`;
     } else {
-      userMsg = `Verification code sent to security mailbox (${deliveredTo}). Please check inbox or spam.`;
+      userMsg = `Password reset link sent to security mailbox (${deliveredTo}).`;
     }
   }
 
@@ -184,7 +209,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     message: userMsg,
     delivered: emailSent,
     deliveredTo: emailSent ? deliveredTo : undefined,
-    resetToken,
+    resetToken: linkToken,
+    codeToken,
+    resetUrl,
     attemptLogs,
   });
 }

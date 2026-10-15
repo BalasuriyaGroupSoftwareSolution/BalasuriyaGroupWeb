@@ -1,4 +1,5 @@
 import { Router } from "express";
+import crypto from "crypto";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma.js";
@@ -246,6 +247,8 @@ authRouter.post(
   })
 );
 
+const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
+
 const forgotPasswordSchema = z.object({
   email: z.string().email(),
 });
@@ -256,22 +259,36 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { email } = forgotPasswordSchema.parse(req.body);
     const normalized = email.toLowerCase().trim();
+    const expiresAt = Date.now() + 15 * 60 * 1000;
+
+    const linkSignature = crypto
+      .createHmac("sha256", HMAC_SECRET)
+      .update(`reset_link:${normalized}:${expiresAt}`)
+      .digest("hex");
+    const linkToken = `${expiresAt}:${linkSignature}`;
+
+    const reqOrigin = (req.headers["origin"] as string) || (req.headers["referer"] as string) || "";
+    const baseUrl = reqOrigin.includes("localhost") ? "http://localhost:5173" : "https://www.balasuriyagroup.tech";
+    const resetUrl = `${baseUrl}/forgot-password?token=${encodeURIComponent(linkToken)}&email=${encodeURIComponent(normalized)}`;
 
     try {
-      await createVerificationCode(normalized);
+      await createVerificationCode(normalized, resetUrl);
     } catch (err) {
-      console.error("[forgot-password] Code generation error:", err);
+      console.error("[forgot-password] Code/Email delivery error:", err);
     }
 
     res.json({
-      message: "A 6-digit verification code has been dispatched to your email address.",
+      message: `Password reset link sent to ${normalized}. Please check your inbox or spam.`,
+      resetToken: linkToken,
+      resetUrl,
     });
   })
 );
 
 const resetPasswordSchema = z.object({
   email: z.string().email(),
-  code: z.string().length(6),
+  code: z.string().optional(),
+  resetToken: z.string().optional(),
   newPassword: z.string().min(8, "Password must be at least 8 characters."),
 });
 
@@ -279,12 +296,45 @@ authRouter.post(
   "/reset-password",
   authLimiter,
   asyncHandler(async (req, res) => {
-    const { email, code, newPassword } = resetPasswordSchema.parse(req.body);
+    const { email, code, resetToken, newPassword } = resetPasswordSchema.parse(req.body);
     const normalized = email.toLowerCase().trim();
+    const cleanCode = code ? String(code).trim() : "";
+    let verified = false;
 
-    const ok = await consumeVerificationCode(normalized, code);
-    if (!ok) {
-      throw new HttpError(400, "Invalid or expired verification code. Please check your inbox or request a new code.");
+    // 1. Verify via stateless HMAC resetToken (either 1-click Link or 6-digit Code)
+    if (resetToken && typeof resetToken === "string" && resetToken.includes(":")) {
+      const [expiryStr, sig] = resetToken.split(":");
+      const expiry = parseInt(expiryStr, 10);
+      if (!isNaN(expiry) && Date.now() < expiry) {
+        // Direct link verification
+        const expectedLink = crypto
+          .createHmac("sha256", HMAC_SECRET)
+          .update(`reset_link:${normalized}:${expiry}`)
+          .digest("hex");
+        if (sig.length === expectedLink.length && crypto.timingSafeEqual(Buffer.from(expectedLink), Buffer.from(sig))) {
+          verified = true;
+        }
+
+        // Code verification
+        if (!verified && cleanCode && cleanCode.length === 6) {
+          const expectedCode = crypto
+            .createHmac("sha256", HMAC_SECRET)
+            .update(`reset_code:${normalized}:${cleanCode}:${expiry}`)
+            .digest("hex");
+          if (sig.length === expectedCode.length && crypto.timingSafeEqual(Buffer.from(expectedCode), Buffer.from(sig))) {
+            verified = true;
+          }
+        }
+      }
+    }
+
+    // 2. In-memory / DB fallback for 6-digit code
+    if (!verified && cleanCode && cleanCode.length === 6) {
+      verified = await consumeVerificationCode(normalized, cleanCode);
+    }
+
+    if (!verified) {
+      throw new HttpError(400, "Invalid or expired password reset link or verification code. Please request a new link.");
     }
 
     let user: any = null;

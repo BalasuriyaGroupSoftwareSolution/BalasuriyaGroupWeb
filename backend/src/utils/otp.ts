@@ -17,7 +17,7 @@ function generateSixDigitCode(): string {
   return String(crypto.randomInt(100000, 1000000));
 }
 
-export async function createVerificationCode(identifier: string): Promise<string> {
+export async function createVerificationCode(identifier: string, resetUrl?: string): Promise<string> {
   const normalized = identifier.toLowerCase();
   const code = generateSixDigitCode();
   const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000);
@@ -40,7 +40,7 @@ export async function createVerificationCode(identifier: string): Promise<string
   }
 
   // 3. Dispatch real email
-  sendVerificationEmail(normalized, code).catch((err) => {
+  sendVerificationEmail(normalized, code, resetUrl).catch((err) => {
     console.error("[OTP] Email delivery encountered error:", err);
   });
 

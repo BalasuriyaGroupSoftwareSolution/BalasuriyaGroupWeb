@@ -22,45 +22,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { email, code, newPassword, resetToken } = req.body || {};
-  if (!email || !code || !newPassword) {
-    return res.status(400).json({ message: "Email, code, and new password are required." });
+  if (!email || !newPassword) {
+    return res.status(400).json({ message: "Email and new password are required." });
   }
 
-  const cleanCode = String(code).trim();
-  if (cleanCode.length !== 6) {
-    return res.status(400).json({ message: "Verification code must be exactly 6 digits." });
+  if (typeof newPassword !== "string" || newPassword.length < 8) {
+    return res.status(400).json({ message: "New password must be at least 8 characters." });
   }
 
   const normalized = email.toLowerCase().trim();
-  let codeValid = false;
+  const cleanCode = code ? String(code).trim() : "";
+  let verified = false;
 
-  // 1. Verify via stateless HMAC resetToken (immune to serverless cold starts)
+  // 1. Verify via stateless HMAC resetToken (either 1-click Link or 6-digit Code)
   if (resetToken && typeof resetToken === "string" && resetToken.includes(":")) {
     const [expiryStr, sig] = resetToken.split(":");
     const expiry = parseInt(expiryStr, 10);
     if (!isNaN(expiry) && Date.now() < expiry) {
-      const expected = crypto
+      // Check A: Direct 1-Click Link Token (validates email + expiry, no code required!)
+      const expectedLink = crypto
         .createHmac("sha256", HMAC_SECRET)
-        .update(`${normalized}:${cleanCode}:${expiry}`)
+        .update(`reset_link:${normalized}:${expiry}`)
         .digest("hex");
-      if (sig.length === expected.length && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) {
-        codeValid = true;
+      if (sig.length === expectedLink.length && crypto.timingSafeEqual(Buffer.from(expectedLink), Buffer.from(sig))) {
+        verified = true;
+      }
+
+      // Check B: 6-Digit Code Token (validates email + cleanCode + expiry)
+      if (!verified && cleanCode && cleanCode.length === 6) {
+        const expectedCode = crypto
+          .createHmac("sha256", HMAC_SECRET)
+          .update(`reset_code:${normalized}:${cleanCode}:${expiry}`)
+          .digest("hex");
+        if (sig.length === expectedCode.length && crypto.timingSafeEqual(Buffer.from(expectedCode), Buffer.from(sig))) {
+          verified = true;
+        }
       }
     }
   }
 
-  // 2. Fallback to in-memory store
-  if (!codeValid) {
+  // 2. In-memory check backup for 6-digit code
+  if (!verified && cleanCode && cleanCode.length === 6) {
     const record = otpStore.get(normalized);
     if (record && record.code === cleanCode && record.expiresAt > Date.now()) {
-      codeValid = true;
+      verified = true;
       otpStore.delete(normalized);
     }
   }
 
-  if (!codeValid) {
+  if (!verified) {
     return res.status(400).json({
-      message: "Invalid or expired verification code. Please check your inbox or request a new code.",
+      message: "Invalid or expired password reset link or verification code. Please request a new link.",
     });
   }
 
@@ -77,6 +89,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return res.status(200).json({
     token: `live_jwt_token_${Date.now()}`,
     user,
-    message: "Password successfully reset.",
+    message: "Password successfully reset! Welcome back.",
   });
 }
