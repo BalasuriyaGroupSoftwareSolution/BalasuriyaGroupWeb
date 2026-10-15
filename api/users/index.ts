@@ -51,14 +51,43 @@ const DEFAULT_USERS: UserRecord[] = [
   { id: "usr_fin_staff_1", name: "Mr. Sunil Wickrema", email: "sunil.accounts@balasuriyagroup.tech", role: "FINANCE_STAFF", department: "Finance & Accounts", jobTitle: "Senior Corporate Accounts Executive", assignedDivisions: ["Finance & Accounts"], phone: "+94 77 189 1234", isActive: true, createdAt: "2026-09-28T00:00:00.000Z" },
 ];
 
+const REMOVED_FILE = "/tmp/balasuriya_removed_staff.json";
+
+function loadRemoved(): Set<string> {
+  try {
+    if (fs.existsSync(REMOVED_FILE)) {
+      const data = JSON.parse(fs.readFileSync(REMOVED_FILE, "utf-8"));
+      if (Array.isArray(data)) return new Set(data.map((s: string) => s.toLowerCase().trim()));
+    }
+  } catch {}
+  return new Set();
+}
+
+function unmarkRemoved(identifier: string): void {
+  try {
+    const set = loadRemoved();
+    set.delete(identifier.toLowerCase().trim());
+    fs.writeFileSync(REMOVED_FILE, JSON.stringify(Array.from(set)), "utf-8");
+  } catch {}
+}
+
 function loadUsers(): UserRecord[] {
+  const removed = loadRemoved();
   try {
     if (fs.existsSync(USERS_FILE)) {
       const data = JSON.parse(fs.readFileSync(USERS_FILE, "utf-8"));
-      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data)) {
+        return data.filter(
+          (u: UserRecord) =>
+            !removed.has(u.email.toLowerCase().trim()) && !removed.has(u.id.toLowerCase().trim())
+        );
+      }
     }
   } catch {}
-  return DEFAULT_USERS;
+  return DEFAULT_USERS.filter(
+    (u: UserRecord) =>
+      !removed.has(u.email.toLowerCase().trim()) && !removed.has(u.id.toLowerCase().trim())
+  );
 }
 
 function saveUsers(users: UserRecord[]): void {
@@ -262,6 +291,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       users.unshift(targetUser);
     }
     saveUsers(users);
+    unmarkRemoved(normalized);
 
     // Automatically dispatch welcome email via Resend
     let emailDispatched = false;

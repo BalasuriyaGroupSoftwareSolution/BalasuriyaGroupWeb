@@ -427,6 +427,45 @@ const INITIAL_DEMO_USERS: User[] = [
 ];
 
 const LOCAL_USERS_KEY = "bg_staff_users";
+const REMOVED_USERS_KEY = "bg_removed_staff_identifiers";
+
+function getRemovedIdentifiers(): Set<string> {
+  try {
+    const raw = localStorage.getItem(REMOVED_USERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.map((s) => String(s).toLowerCase().trim()));
+      }
+    }
+  } catch {}
+  return new Set();
+}
+
+function markIdentifierRemoved(id?: string | null, email?: string | null): void {
+  const set = getRemovedIdentifiers();
+  if (id) set.add(id.toLowerCase().trim());
+  if (email) set.add(email.toLowerCase().trim());
+  try {
+    localStorage.setItem(REMOVED_USERS_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
+function unmarkIdentifierRemoved(id?: string | null, email?: string | null): void {
+  const set = getRemovedIdentifiers();
+  if (id) set.delete(id.toLowerCase().trim());
+  if (email) set.delete(email.toLowerCase().trim());
+  try {
+    localStorage.setItem(REMOVED_USERS_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
+function isUserRemoved(u: { id?: string | null; email?: string | null }): boolean {
+  const removed = getRemovedIdentifiers();
+  if (u.id && removed.has(u.id.toLowerCase().trim())) return true;
+  if (u.email && removed.has(u.email.toLowerCase().trim())) return true;
+  return false;
+}
 
 function getStoredUsers(): User[] {
   try {
@@ -434,17 +473,20 @@ function getStoredUsers(): User[] {
     if (raw) {
       let parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // Discard any explicitly removed users
+        parsed = parsed.filter((u: User) => !isUserRemoved(u));
+
         // Ensure root executive owner is never missing from stored list
         const hasOwner = parsed.some(
-          (u) =>
+          (u: User) =>
             u.id === "usr_owner_1" ||
             u.email?.toLowerCase() === "clemonbalasuriyagroup@gmail.com" ||
             u.role === "OWNER"
         );
         if (!hasOwner && INITIAL_DEMO_USERS[0]) {
           parsed = [INITIAL_DEMO_USERS[0], ...parsed];
-          persistUsers(parsed);
         }
+        persistUsers(parsed);
         return parsed;
       }
     }
@@ -459,11 +501,15 @@ function persistUsers(list: User[]): void {
 }
 
 function mergeUsers(remote: User[], local: User[]): User[] {
-  if (!local || local.length === 0) return remote;
-  if (!remote || remote.length === 0) return local;
+  // Exclude any users marked as deleted in persistent storage
+  const safeRemote = (remote || []).filter((u) => !isUserRemoved(u));
+  const safeLocal = (local || []).filter((u) => !isUserRemoved(u));
+
+  if (!safeLocal || safeLocal.length === 0) return safeRemote;
+  if (!safeRemote || safeRemote.length === 0) return safeLocal;
 
   const localMap = new Map<string, User>();
-  for (const u of local) {
+  for (const u of safeLocal) {
     if (u.id) localMap.set(u.id, u);
     if (u.email) localMap.set(u.email.toLowerCase(), u);
   }
@@ -471,7 +517,7 @@ function mergeUsers(remote: User[], local: User[]): User[] {
   const merged: User[] = [];
   const added = new Set<string>();
 
-  for (const r of remote) {
+  for (const r of safeRemote) {
     const localMatch = (r.id && localMap.get(r.id)) || (r.email && localMap.get(r.email.toLowerCase()));
     if (localMatch) {
       const combined = { ...r, ...localMatch };
@@ -485,7 +531,7 @@ function mergeUsers(remote: User[], local: User[]): User[] {
     }
   }
 
-  for (const l of local) {
+  for (const l of safeLocal) {
     const already = (l.id && added.has(l.id)) || (l.email && added.has(l.email.toLowerCase()));
     if (!already) {
       merged.push(l);
@@ -536,7 +582,8 @@ export default function StaffUsers() {
 
   const [users, setUsers] = useState<User[]>(() => {
     const stored = getStoredUsers();
-    return stored.length > 0 ? stored : INITIAL_DEMO_USERS;
+    if (stored.length > 0) return stored;
+    return INITIAL_DEMO_USERS.filter((u) => !isUserRemoved(u));
   });
   const [search, setSearch] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("ALL");
@@ -594,25 +641,24 @@ export default function StaffUsers() {
     api
       .get<{ users: User[] }>("/api/users")
       .then((res) => {
-        if (res.data.users && res.data.users.length > 0) {
-          const stored = getStoredUsers();
-          const combined = mergeUsers(res.data.users, stored.length > 0 ? stored : INITIAL_DEMO_USERS);
+        const stored = getStoredUsers();
+        const fallbackBase = stored.length > 0 ? stored : INITIAL_DEMO_USERS.filter((u) => !isUserRemoved(u));
+        if (res.data?.users && res.data.users.length > 0) {
+          const combined = mergeUsers(res.data.users, fallbackBase);
           setUsers(combined);
           persistUsers(combined);
         } else {
-          const stored = getStoredUsers();
-          if (stored.length === 0) {
-            setUsers(INITIAL_DEMO_USERS);
-            persistUsers(INITIAL_DEMO_USERS);
-          }
+          const ensured = mergeUsers([], fallbackBase);
+          setUsers(ensured);
+          persistUsers(ensured);
         }
       })
       .catch(() => {
         const stored = getStoredUsers();
-        if (stored.length === 0) {
-          setUsers(INITIAL_DEMO_USERS);
-          persistUsers(INITIAL_DEMO_USERS);
-        }
+        const fallbackBase = stored.length > 0 ? stored : INITIAL_DEMO_USERS.filter((u) => !isUserRemoved(u));
+        const ensured = mergeUsers([], fallbackBase);
+        setUsers(ensured);
+        persistUsers(ensured);
       });
   }
 
@@ -741,6 +787,7 @@ export default function StaffUsers() {
         password: tempPassword,
         emailDispatched: dispatched ?? true,
       });
+      unmarkIdentifierRemoved(newUserObj.id, newUserObj.email);
       setUsers((prev) => {
         const next = [newUserObj, ...prev.filter((u) => u.email.toLowerCase() !== newUserObj.email.toLowerCase())];
         persistUsers(next);
@@ -764,6 +811,7 @@ export default function StaffUsers() {
       setShowNew(false);
     } catch (err: any) {
       if (err?.code === "ERR_NETWORK" || !err.response) {
+        unmarkIdentifierRemoved(newUserObj.id, newUserObj.email);
         setUsers((prev) => {
           const next = [newUserObj, ...prev.filter((u) => u.email.toLowerCase() !== newUserObj.email.toLowerCase())];
           persistUsers(next);
@@ -924,8 +972,16 @@ export default function StaffUsers() {
     if (!window.confirm(`Are you sure you want to remove ${user.name} (${user.email})?`)) {
       return;
     }
+
+    // Permanently mark as removed so refresh or remote re-fetches cannot resurrect them
+    markIdentifierRemoved(user.id, user.email);
+
     setUsers((prev) => {
-      const next = prev.filter((u) => u.id !== user.id);
+      const next = prev.filter(
+        (u) =>
+          u.id !== user.id &&
+          u.email.toLowerCase() !== user.email.toLowerCase()
+      );
       persistUsers(next);
       return next;
     });
@@ -939,7 +995,8 @@ export default function StaffUsers() {
     });
     toast.success(`${user.name} has been removed.`);
     try {
-      await api.delete(`/api/users/${user.id}`);
+      const deleteTarget = user.id || encodeURIComponent(user.email);
+      await api.delete(`/api/users/${deleteTarget}?email=${encodeURIComponent(user.email)}`);
     } catch {}
   }
 
