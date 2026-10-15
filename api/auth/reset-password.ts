@@ -111,6 +111,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     all[normalized] = { passwordHash, updatedAt: Date.now() };
     fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(all, null, 2), "utf-8");
+
+    const globalStore = globalThis as unknown as {
+      accountStore?: Map<string, { passwordHash: string; updatedAt: number }>;
+    };
+    if (!globalStore.accountStore) {
+      globalStore.accountStore = new Map();
+    }
+    globalStore.accountStore.set(normalized, { passwordHash, updatedAt: Date.now() });
   } catch (e) {
     console.error("Failed to persist updated password to /tmp:", e);
   }
