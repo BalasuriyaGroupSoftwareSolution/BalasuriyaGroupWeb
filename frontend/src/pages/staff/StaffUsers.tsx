@@ -23,7 +23,13 @@ import {
 } from "lucide-react";
 import { api, apiErrorMessage } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
-import type { Role, User } from "../../types";
+import {
+  DEPARTMENT_ROLES_MAP,
+  getEffectiveUserRoles,
+  isLeaderRole,
+  type Role,
+  type User,
+} from "../../types";
 import toast from "react-hot-toast";
 
 export const DEPARTMENTS = [
@@ -419,6 +425,64 @@ const INITIAL_DEMO_USERS: User[] = [
   },
 ];
 
+const LOCAL_USERS_KEY = "bg_staff_users";
+
+function getStoredUsers(): User[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_USERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
+function persistUsers(list: User[]): void {
+  try {
+    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+function mergeUsers(remote: User[], local: User[]): User[] {
+  if (!local || local.length === 0) return remote;
+  if (!remote || remote.length === 0) return local;
+
+  const localMap = new Map<string, User>();
+  for (const u of local) {
+    if (u.id) localMap.set(u.id, u);
+    if (u.email) localMap.set(u.email.toLowerCase(), u);
+  }
+
+  const merged: User[] = [];
+  const added = new Set<string>();
+
+  for (const r of remote) {
+    const localMatch = (r.id && localMap.get(r.id)) || (r.email && localMap.get(r.email.toLowerCase()));
+    if (localMatch) {
+      const combined = { ...r, ...localMatch };
+      merged.push(combined);
+      if (combined.id) added.add(combined.id);
+      if (combined.email) added.add(combined.email.toLowerCase());
+    } else {
+      merged.push(r);
+      if (r.id) added.add(r.id);
+      if (r.email) added.add(r.email.toLowerCase());
+    }
+  }
+
+  for (const l of local) {
+    const already = (l.id && added.has(l.id)) || (l.email && added.has(l.email.toLowerCase()));
+    if (!already) {
+      merged.push(l);
+      if (l.id) added.add(l.id);
+      if (l.email) added.add(l.email.toLowerCase());
+    }
+  }
+
+  return merged;
+}
+
 function generateStrongTempPassword() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
   let code = "BG-";
@@ -431,8 +495,8 @@ function generateStrongTempPassword() {
 export default function StaffUsers() {
   const { user: currentUser } = useAuth();
   
-  // Extract all roles caller holds (primary role + secondary cross-section roles)
-  const callerRoles: Role[] = [currentUser?.role, ...(currentUser?.secondaryRoles || [])].filter(Boolean) as Role[];
+  // Extract all roles caller holds (primary role + secondary cross-section roles + assigned division roles)
+  const callerRoles: Role[] = getEffectiveUserRoles(currentUser);
   const isExecutive = callerRoles.includes("OWNER") || callerRoles.includes("ADMIN");
   
   // Identify all corporate divisions caller leads
@@ -442,7 +506,10 @@ export default function StaffUsers() {
   const isDivisionLeader = !isExecutive && callerLedDivisions.length > 0;
   const isMultiDivisionLeader = !isExecutive && callerLedDivisions.length > 1;
 
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>(() => {
+    const stored = getStoredUsers();
+    return stored.length > 0 ? stored : INITIAL_DEMO_USERS;
+  });
   const [search, setSearch] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("ALL");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
@@ -500,13 +567,24 @@ export default function StaffUsers() {
       .get<{ users: User[] }>("/api/users")
       .then((res) => {
         if (res.data.users && res.data.users.length > 0) {
-          setUsers(res.data.users);
+          const stored = getStoredUsers();
+          const combined = mergeUsers(res.data.users, stored.length > 0 ? stored : INITIAL_DEMO_USERS);
+          setUsers(combined);
+          persistUsers(combined);
         } else {
-          setUsers(INITIAL_DEMO_USERS);
+          const stored = getStoredUsers();
+          if (stored.length === 0) {
+            setUsers(INITIAL_DEMO_USERS);
+            persistUsers(INITIAL_DEMO_USERS);
+          }
         }
       })
       .catch(() => {
-        setUsers(INITIAL_DEMO_USERS);
+        const stored = getStoredUsers();
+        if (stored.length === 0) {
+          setUsers(INITIAL_DEMO_USERS);
+          persistUsers(INITIAL_DEMO_USERS);
+        }
       });
   }
 
@@ -516,9 +594,19 @@ export default function StaffUsers() {
   function canManage(target: User): boolean {
     if (isExecutive) return true;
     if (isDivisionLeader) {
+      const targetEffectiveRoles = getEffectiveUserRoles(target);
+      if (targetEffectiveRoles.includes("OWNER") || targetEffectiveRoles.includes("ADMIN")) {
+        return false;
+      }
+      const callerLedDeptNames = callerLedDivisions.map((d) => d.department);
       const allAllowedRoles = callerLedDivisions.flatMap((d) => d.allowedRoles);
-      const targetAllRoles = [target.role, ...(target.secondaryRoles || [])];
-      return targetAllRoles.some((r) => allAllowedRoles.includes(r));
+
+      const inCallerDept =
+        (target.department && callerLedDeptNames.includes(target.department)) ||
+        target.assignedDivisions?.some((d) => callerLedDeptNames.includes(d));
+
+      const hasMatchingRole = targetEffectiveRoles.some((r) => allAllowedRoles.includes(r));
+      return Boolean(inCallerDept || hasMatchingRole);
     }
     return false;
   }
@@ -535,19 +623,49 @@ export default function StaffUsers() {
     e.preventDefault();
     setSubmitting(true);
     const assignedDept = department;
-    const finalAssignedDivisions = Array.from(new Set([assignedDept, ...assignedDivisions]));
+    const finalAssignedDivisions = Array.from(new Set([assignedDept, ...assignedDivisions].filter(Boolean) as string[]));
+
+    const isLeader = isLeaderRole(role);
+    const calculatedRoles = new Set<Role>(secondaryRoles);
+    for (const div of finalAssignedDivisions) {
+      const match = DEPARTMENT_ROLES_MAP[div];
+      if (match) {
+        const targetRole = isLeader ? match.leader : match.staff;
+        if (targetRole !== role) calculatedRoles.add(targetRole);
+      }
+    }
+    const finalSecondaryRoles = Array.from(calculatedRoles).filter((r) => r !== role);
+
+    const newUserObj: User = {
+      id: `usr_${Date.now()}`,
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      phone: phone ? phone.trim() : null,
+      role,
+      department: assignedDept,
+      jobTitle: jobTitle ? jobTitle.trim() : null,
+      secondaryRoles: finalSecondaryRoles,
+      assignedDivisions: finalAssignedDivisions,
+      isActive: true,
+    };
+
     try {
       const res = await api.post("/api/users", {
-        name,
-        email,
-        phone: phone || undefined,
-        role,
-        department: assignedDept,
-        jobTitle: jobTitle || undefined,
-        secondaryRoles,
-        assignedDivisions: finalAssignedDivisions,
+        name: newUserObj.name,
+        email: newUserObj.email,
+        phone: newUserObj.phone || undefined,
+        role: newUserObj.role,
+        department: newUserObj.department,
+        jobTitle: newUserObj.jobTitle || undefined,
+        secondaryRoles: newUserObj.secondaryRoles,
+        assignedDivisions: newUserObj.assignedDivisions,
         temporaryPassword: tempPassword,
       });
+
+      if (res.data?.user?.id) {
+        newUserObj.id = res.data.user.id;
+      }
+
       const dispatched = res.data?.emailDispatched;
       toast.success(
         dispatched
@@ -555,15 +673,20 @@ export default function StaffUsers() {
           : `Staff account created for ${name}`
       );
       setCredentialsModal({
-        name,
-        email,
-        role,
-        department: assignedDept,
-        jobTitle,
-        secondaryRoles,
-        assignedDivisions: finalAssignedDivisions,
+        name: newUserObj.name,
+        email: newUserObj.email,
+        role: newUserObj.role,
+        department: newUserObj.department,
+        jobTitle: newUserObj.jobTitle,
+        secondaryRoles: newUserObj.secondaryRoles,
+        assignedDivisions: newUserObj.assignedDivisions,
         password: tempPassword,
         emailDispatched: dispatched ?? true,
+      });
+      setUsers((prev) => {
+        const next = [newUserObj, ...prev.filter((u) => u.email.toLowerCase() !== newUserObj.email.toLowerCase())];
+        persistUsers(next);
+        return next;
       });
       setName("");
       setEmail("");
@@ -573,30 +696,21 @@ export default function StaffUsers() {
       setAssignedDivisions([initialDept]);
       setTempPassword(generateStrongTempPassword());
       setShowNew(false);
-      load();
     } catch (err: any) {
       if (err?.code === "ERR_NETWORK" || !err.response) {
-        const mockNew: User = {
-          id: `usr_${Date.now()}`,
-          name,
-          email,
-          phone: phone || null,
-          role,
-          department: assignedDept,
-          jobTitle: jobTitle || null,
-          secondaryRoles,
-          assignedDivisions: finalAssignedDivisions,
-          isActive: true,
-        };
-        setUsers((prev) => [mockNew, ...prev]);
+        setUsers((prev) => {
+          const next = [newUserObj, ...prev.filter((u) => u.email.toLowerCase() !== newUserObj.email.toLowerCase())];
+          persistUsers(next);
+          return next;
+        });
         setCredentialsModal({
-          name,
-          email,
-          role,
-          department: assignedDept,
-          jobTitle,
-          secondaryRoles,
-          assignedDivisions: finalAssignedDivisions,
+          name: newUserObj.name,
+          email: newUserObj.email,
+          role: newUserObj.role,
+          department: newUserObj.department,
+          jobTitle: newUserObj.jobTitle,
+          secondaryRoles: newUserObj.secondaryRoles,
+          assignedDivisions: newUserObj.assignedDivisions,
           password: tempPassword,
           emailDispatched: true,
         });
@@ -622,14 +736,16 @@ export default function StaffUsers() {
       toast.error("You are not authorized to modify this user's role.");
       return;
     }
+    const updated = { ...user, role: newRole };
+    setUsers((prev) => {
+      const next = prev.map((u) => (u.id === user.id ? updated : u));
+      persistUsers(next);
+      return next;
+    });
+    toast.success(`${user.name}'s role updated to ${newRole.replace(/_/g, " ")}`);
     try {
       await api.patch(`/api/users/${user.id}`, { role: newRole });
-      toast.success(`${user.name}'s role updated to ${newRole.replace(/_/g, " ")}`);
-      load();
-    } catch {
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u)));
-      toast.success(`${user.name}'s role updated to ${newRole.replace(/_/g, " ")}`);
-    }
+    } catch {}
   }
 
   async function handleToggleActive(user: User) {
@@ -638,14 +754,16 @@ export default function StaffUsers() {
       return;
     }
     const nextState = !user.isActive;
+    const updated = { ...user, isActive: nextState };
+    setUsers((prev) => {
+      const next = prev.map((u) => (u.id === user.id ? updated : u));
+      persistUsers(next);
+      return next;
+    });
+    toast.success(`${user.name} is now ${nextState ? "Active" : "Suspended"}`);
     try {
       await api.patch(`/api/users/${user.id}`, { isActive: nextState });
-      toast.success(`${user.name} is now ${nextState ? "Active" : "Suspended"}`);
-      load();
-    } catch {
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isActive: nextState } : u)));
-      toast.success(`${user.name} is now ${nextState ? "Active" : "Suspended"}`);
-    }
+    } catch {}
   }
 
   async function handleResetPassword(user: User) {
@@ -690,14 +808,15 @@ export default function StaffUsers() {
     if (!window.confirm(`Are you sure you want to remove ${user.name} (${user.email})?`)) {
       return;
     }
+    setUsers((prev) => {
+      const next = prev.filter((u) => u.id !== user.id);
+      persistUsers(next);
+      return next;
+    });
+    toast.success(`${user.name} has been removed.`);
     try {
       await api.delete(`/api/users/${user.id}`);
-      toast.success(`${user.name} has been removed.`);
-      load();
-    } catch {
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
-      toast.success(`${user.name} has been removed.`);
-    }
+    } catch {}
   }
 
   function handleStartEdit(user: User) {
@@ -717,46 +836,162 @@ export default function StaffUsers() {
     setEditIsActive(user.isActive !== false);
   }
 
+  function toggleEditDivision(deptId: string) {
+    const isCurrentlyAssigned = editAssignedDivisions.includes(deptId);
+    const nextDivisions = isCurrentlyAssigned
+      ? editAssignedDivisions.filter((d) => d !== deptId)
+      : [...editAssignedDivisions, deptId];
+
+    setEditAssignedDivisions(nextDivisions);
+
+    // Automatically synchronize secondary roles according to leadership tier
+    const isLeader = isLeaderRole(editRole);
+    const match = DEPARTMENT_ROLES_MAP[deptId];
+    if (match) {
+      const targetRole = isLeader ? match.leader : match.staff;
+      if (isCurrentlyAssigned) {
+        setEditSecondaryRoles((prev) =>
+          prev.filter((r) => r !== match.leader && r !== match.staff)
+        );
+      } else {
+        if (editRole !== targetRole) {
+          setEditSecondaryRoles((prev) => Array.from(new Set([...prev, targetRole])));
+        }
+      }
+    }
+  }
+
+  function handleEditRoleChange(newRole: Role) {
+    setEditRole(newRole);
+    const isLeader = isLeaderRole(newRole);
+    const updatedSecondary = new Set<Role>(editSecondaryRoles);
+
+    for (const div of editAssignedDivisions) {
+      const match = DEPARTMENT_ROLES_MAP[div];
+      if (match) {
+        if (isLeader) {
+          updatedSecondary.delete(match.staff);
+          if (newRole !== match.leader) updatedSecondary.add(match.leader);
+        } else {
+          updatedSecondary.delete(match.leader);
+          if (newRole !== match.staff) updatedSecondary.add(match.staff);
+        }
+      }
+    }
+    setEditSecondaryRoles(Array.from(updatedSecondary).filter((r) => r !== newRole));
+  }
+
+  function toggleCreateDivision(deptId: string) {
+    const isCurrentlyAssigned = assignedDivisions.includes(deptId);
+    const nextDivisions = isCurrentlyAssigned
+      ? assignedDivisions.filter((d) => d !== deptId)
+      : [...assignedDivisions, deptId];
+
+    setAssignedDivisions(nextDivisions);
+
+    const isLeader = isLeaderRole(role);
+    const match = DEPARTMENT_ROLES_MAP[deptId];
+    if (match) {
+      const targetRole = isLeader ? match.leader : match.staff;
+      if (isCurrentlyAssigned) {
+        setSecondaryRoles((prev) =>
+          prev.filter((r) => r !== match.leader && r !== match.staff)
+        );
+      } else {
+        if (role !== targetRole) {
+          setSecondaryRoles((prev) => Array.from(new Set([...prev, targetRole])));
+        }
+      }
+    }
+  }
+
+  function handleCreateRoleChange(newRole: Role) {
+    setRole(newRole);
+    const isLeader = isLeaderRole(newRole);
+    const updatedSecondary = new Set<Role>(secondaryRoles);
+
+    for (const div of assignedDivisions) {
+      const match = DEPARTMENT_ROLES_MAP[div];
+      if (match) {
+        if (isLeader) {
+          updatedSecondary.delete(match.staff);
+          if (newRole !== match.leader) updatedSecondary.add(match.leader);
+        } else {
+          updatedSecondary.delete(match.leader);
+          if (newRole !== match.staff) updatedSecondary.add(match.staff);
+        }
+      }
+    }
+    setSecondaryRoles(Array.from(updatedSecondary).filter((r) => r !== newRole));
+  }
+
   async function handleSaveEdit(e: FormEvent) {
     e.preventDefault();
     if (!editingUser) return;
     setEditSubmitting(true);
+
+    const finalDivisions = Array.from(
+      new Set([editDepartment, ...editAssignedDivisions].filter(Boolean) as string[])
+    );
+
+    const isLeader = isLeaderRole(editRole);
+    const calculatedRoles = new Set<Role>(editSecondaryRoles);
+    for (const div of finalDivisions) {
+      const match = DEPARTMENT_ROLES_MAP[div];
+      if (match) {
+        const targetRole = isLeader ? match.leader : match.staff;
+        if (targetRole !== editRole) {
+          calculatedRoles.add(targetRole);
+        }
+      }
+    }
+    const finalSecondaryRoles = Array.from(calculatedRoles).filter((r) => r !== editRole);
+
+    const updatedUser: User = {
+      ...editingUser,
+      name: editName.trim(),
+      email: editEmail.toLowerCase().trim(),
+      phone: editPhone ? editPhone.trim() : null,
+      role: editRole,
+      department: editDepartment || null,
+      jobTitle: editJobTitle ? editJobTitle.trim() : null,
+      secondaryRoles: finalSecondaryRoles,
+      assignedDivisions: finalDivisions,
+      isActive: editIsActive,
+    };
+
+    // 1. Immediately update UI state & persist to localStorage so it can never be lost
+    setUsers((prev) => {
+      const next = prev.map((u) => (u.id === editingUser.id ? updatedUser : u));
+      persistUsers(next);
+      return next;
+    });
+
+    // 2. Dispatch custom event so AuthContext updates the live logged-in user in real-time
+    try {
+      window.dispatchEvent(
+        new CustomEvent("bg_staff_user_updated", { detail: updatedUser })
+      );
+    } catch {}
+
+    toast.success(`Staff details for ${updatedUser.name} saved successfully!`);
+    setEditingUser(null);
+
+    // 3. Persist to API / serverless in the background
     try {
       await api.patch(`/api/users/${editingUser.id}`, {
-        name: editName,
-        email: editEmail,
-        phone: editPhone || null,
-        role: editRole,
-        department: editDepartment || null,
-        jobTitle: editJobTitle || null,
-        secondaryRoles: editSecondaryRoles,
-        assignedDivisions: editAssignedDivisions,
-        isActive: editIsActive,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        role: updatedUser.role,
+        department: updatedUser.department,
+        jobTitle: updatedUser.jobTitle,
+        secondaryRoles: updatedUser.secondaryRoles,
+        assignedDivisions: updatedUser.assignedDivisions,
+        isActive: updatedUser.isActive,
       });
-      toast.success(`Staff member ${editName} updated successfully!`);
-      setEditingUser(null);
-      load();
     } catch (err: any) {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === editingUser.id
-            ? {
-                ...u,
-                name: editName,
-                email: editEmail,
-                phone: editPhone || null,
-                role: editRole,
-                department: editDepartment || null,
-                jobTitle: editJobTitle || null,
-                secondaryRoles: editSecondaryRoles,
-                assignedDivisions: editAssignedDivisions,
-                isActive: editIsActive,
-              }
-            : u
-        )
-      );
-      toast.success(`Staff member ${editName} updated!`);
-      setEditingUser(null);
+      console.warn("Async remote sync completed with local fallback:", err);
     } finally {
       setEditSubmitting(false);
     }
@@ -1042,7 +1277,7 @@ Balasuriya Group`;
               <select
                 className="input bg-white font-medium"
                 value={role}
-                onChange={(e) => setRole(e.target.value as Role)}
+                onChange={(e) => handleCreateRoleChange(e.target.value as Role)}
               >
                 {availableRoles.map((r) => (
                   <option key={r.role} value={r.role}>
@@ -1091,6 +1326,35 @@ Balasuriya Group`;
                       >
                         {isSelected ? "✓ " : "+ "}
                         {r.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100">
+                <span className="text-[11px] font-semibold text-gray-700 block mb-1">
+                  Assigned Divisions & Departments:
+                </span>
+                <p className="text-[10px] text-gray-500 mb-2">
+                  Selecting a division automatically authorizes this user with leadership or operational access for that section based on their job role.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {DEPARTMENTS.filter((d) => d.id !== "ALL").map((d) => {
+                    const isAssigned = assignedDivisions.includes(d.id);
+                    return (
+                      <button
+                        type="button"
+                        key={d.id}
+                        onClick={() => toggleCreateDivision(d.id)}
+                        className={`rounded-md border px-2 py-0.5 text-[10px] font-medium transition ${
+                          isAssigned
+                            ? "border-brand-navy bg-brand-navy text-white font-semibold"
+                            : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        {isAssigned ? "✓ " : "+ "}
+                        {d.short}
                       </button>
                     );
                   })}
@@ -1278,7 +1542,7 @@ Balasuriya Group`;
                   <select
                     className="input bg-gray-50/50 text-sm font-medium"
                     value={editRole}
-                    onChange={(e) => setEditRole(e.target.value as Role)}
+                    onChange={(e) => handleEditRoleChange(e.target.value as Role)}
                   >
                     {availableRoles.map((r) => (
                       <option key={r.role} value={r.role}>
@@ -1322,9 +1586,12 @@ Balasuriya Group`;
                   </div>
 
                   <div className="pt-2 border-t border-gray-200">
-                    <span className="text-[11px] font-semibold text-gray-700 block mb-1.5">
+                    <span className="text-[11px] font-semibold text-gray-700 block mb-1">
                       Assigned Divisions & Departments:
                     </span>
+                    <p className="text-[10px] text-gray-500 mb-2">
+                      Selecting a division automatically authorizes this user with leadership or operational access for that section based on their job role.
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {DEPARTMENTS.filter((d) => d.id !== "ALL").map((d) => {
                         const isAssigned = editAssignedDivisions.includes(d.id);
@@ -1332,7 +1599,7 @@ Balasuriya Group`;
                           <button
                             type="button"
                             key={d.id}
-                            onClick={() => toggleDivision(d.id, editAssignedDivisions, setEditAssignedDivisions)}
+                            onClick={() => toggleEditDivision(d.id)}
                             className={`rounded-md border px-2 py-0.5 text-[10px] font-medium transition ${
                               isAssigned
                                 ? "border-brand-navy bg-brand-navy text-white font-semibold"

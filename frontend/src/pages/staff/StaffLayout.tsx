@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { NavLink, Outlet, Link } from "react-router-dom";
 import { KeyRound, LogOut, Shield, Lock, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import type { Role } from "../../types";
+import { getEffectiveUserRoles, type Role } from "../../types";
 import toast from "react-hot-toast";
 
 interface NavItem {
@@ -27,13 +27,13 @@ export default function StaffLayout() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const userRoles = [user?.role, ...(user?.secondaryRoles || [])].filter(Boolean) as Role[];
+  const effectiveRoles = getEffectiveUserRoles(user);
   const visibleItems = NAV_ITEMS.filter(
     (item) =>
       !item.roles ||
       user?.role === "OWNER" ||
       user?.role === "ADMIN" ||
-      item.roles.some((r) => userRoles.includes(r))
+      item.roles.some((r) => effectiveRoles.includes(r))
   );
 
   async function handlePasswordSubmit(e: FormEvent) {

@@ -20,6 +20,32 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function enrichWithLocalStaff(baseUser: User): User {
+  try {
+    const raw = localStorage.getItem("bg_staff_users");
+    if (raw) {
+      const list: User[] = JSON.parse(raw);
+      const found = list.find(
+        (u) =>
+          (u.id && u.id === baseUser.id) ||
+          (u.email && u.email.toLowerCase() === baseUser.email.toLowerCase())
+      );
+      if (found) {
+        return {
+          ...baseUser,
+          name: found.name || baseUser.name,
+          department: found.department ?? baseUser.department,
+          jobTitle: found.jobTitle ?? baseUser.jobTitle,
+          secondaryRoles: found.secondaryRoles ?? baseUser.secondaryRoles,
+          assignedDivisions: found.assignedDivisions ?? baseUser.assignedDivisions,
+          phone: found.phone ?? baseUser.phone,
+        };
+      }
+    }
+  } catch {}
+  return baseUser;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,9 +58,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     api
       .get<{ user: User }>("/api/auth/me")
-      .then((res) => setUser(res.data.user))
+      .then((res) => setUser(enrichWithLocalStaff(res.data.user)))
       .catch(() => clearToken())
       .finally(() => setLoading(false));
+
+    const handleStaffUpdate = (evt: Event) => {
+      const customEvt = evt as CustomEvent<User>;
+      const updated = customEvt.detail;
+      if (updated) {
+        setUser((prev) => {
+          if (!prev) return prev;
+          if (
+            (updated.id && updated.id === prev.id) ||
+            (updated.email && updated.email.toLowerCase() === prev.email.toLowerCase())
+          ) {
+            return { ...prev, ...updated };
+          }
+          return prev;
+        });
+      }
+    };
+
+    window.addEventListener("bg_staff_user_updated", handleStaffUpdate);
+    return () => {
+      window.removeEventListener("bg_staff_user_updated", handleStaffUpdate);
+    };
   }, []);
 
   async function login(email: string, password: string) {
@@ -42,19 +90,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const authHash = localStorage.getItem(`bg_auth_hash_${normEmail}`) || "";
     try {
       const res = await api.post("/api/auth/login", { email: normEmail, password, authHash });
+      const enriched = enrichWithLocalStaff(res.data.user);
       setToken(res.data.token);
-      setUser(res.data.user);
+      setUser(enriched);
     } catch (err: any) {
       const savedPwd = localStorage.getItem(`bg_pwd_${normEmail}`);
       if (savedPwd && savedPwd === password) {
         const isExecutive = normEmail.includes("clemon") || normEmail.includes("balasuriya");
-        const userObj: User = {
+        const userObj: User = enrichWithLocalStaff({
           id: `usr_local_${Date.now()}`,
           name: isExecutive ? "Clemon Balasuriya" : normEmail.split("@")[0],
           email: normEmail,
           role: isExecutive ? "OWNER" : "CUSTOMER",
+          department: isExecutive ? "Executive Board" : null,
+          jobTitle: isExecutive ? "Group Chairman & CEO" : null,
+          assignedDivisions: isExecutive ? ["Executive Board", "Construction & Engineering", "Tourism & Travel", "Software Solutions", "Air Ticketing", "Finance & Accounts"] : [],
           phone: null,
-        };
+        });
         setToken(`bg_token_${Date.now()}`);
         setUser(userObj);
         return;

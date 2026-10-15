@@ -28,6 +28,55 @@ export interface User {
   createdAt?: string;
 }
 
+export const DEPARTMENT_ROLES_MAP: Record<string, { leader: Role; staff: Role }> = {
+  "Construction & Engineering": { leader: "CONSTRUCTION_MANAGER", staff: "CONSTRUCTION_STAFF" },
+  "Civil Engineering & Construction": { leader: "CONSTRUCTION_MANAGER", staff: "CONSTRUCTION_STAFF" },
+  "Tourism & Travel": { leader: "TOURISM_AGENT", staff: "TOURISM_STAFF" },
+  "StayLanka & Foreign Tours": { leader: "TOURISM_AGENT", staff: "TOURISM_STAFF" },
+  "Software Solutions": { leader: "SOFTWARE_ENGINEER", staff: "SOFTWARE_STAFF" },
+  "Software & Technology Solutions": { leader: "SOFTWARE_ENGINEER", staff: "SOFTWARE_STAFF" },
+  "Air Ticketing": { leader: "TICKET_AGENT", staff: "TICKET_STAFF" },
+  "Balasuriya Air Ticketing & Visa": { leader: "TICKET_AGENT", staff: "TICKET_STAFF" },
+  "Finance & Accounts": { leader: "FINANCE_APPROVER", staff: "FINANCE_STAFF" },
+  "Corporate Finance & Accounts": { leader: "FINANCE_APPROVER", staff: "FINANCE_STAFF" },
+  "Executive Board": { leader: "ADMIN", staff: "ADMIN" },
+};
+
+export function isLeaderRole(role: Role): boolean {
+  return [
+    "OWNER",
+    "ADMIN",
+    "CONSTRUCTION_MANAGER",
+    "TOURISM_AGENT",
+    "SOFTWARE_ENGINEER",
+    "TICKET_AGENT",
+    "FINANCE_APPROVER",
+    "CHARTERED_ACCOUNTANT",
+  ].includes(role);
+}
+
+export function getEffectiveUserRoles(user: User | null | undefined): Role[] {
+  if (!user) return [];
+  const rolesSet = new Set<Role>();
+  if (user.role) rolesSet.add(user.role);
+  if (user.secondaryRoles && Array.isArray(user.secondaryRoles)) {
+    user.secondaryRoles.forEach((r) => rolesSet.add(r));
+  }
+
+  const leader = isLeaderRole(user.role) || (user.secondaryRoles && user.secondaryRoles.some(isLeaderRole));
+
+  if (user.assignedDivisions && Array.isArray(user.assignedDivisions)) {
+    user.assignedDivisions.forEach((dept) => {
+      const match = DEPARTMENT_ROLES_MAP[dept];
+      if (match) {
+        rolesSet.add(leader ? match.leader : match.staff);
+      }
+    });
+  }
+
+  return Array.from(rolesSet);
+}
+
 export type ProjectStatus = "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED";
 
 export interface ProgressUpdate {

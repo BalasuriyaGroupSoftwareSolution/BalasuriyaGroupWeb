@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import type { Role } from "../types";
+import { getEffectiveUserRoles, type Role } from "../types";
 
 interface Props {
   roles?: Role[];
@@ -21,13 +21,13 @@ export function ProtectedRoute({ roles, redirectTo = "/staff" }: Props) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const userRoles = [user.role, ...(user.secondaryRoles || [])];
+  const effectiveRoles = getEffectiveUserRoles(user);
   if (
     roles &&
     roles.length > 0 &&
     user.role !== "OWNER" &&
     user.role !== "ADMIN" &&
-    !roles.some((r) => userRoles.includes(r))
+    !roles.some((r) => effectiveRoles.includes(r))
   ) {
     return <Navigate to={redirectTo} replace />;
   }
