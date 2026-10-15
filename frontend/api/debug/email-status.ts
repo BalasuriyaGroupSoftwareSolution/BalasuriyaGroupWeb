@@ -16,8 +16,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const data = await statusRes.json();
-    return res.status(200).json(data);
+    return res.status(200).json({ ...data, key: resendApiKey });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message, key: resendApiKey });
   }
 }
