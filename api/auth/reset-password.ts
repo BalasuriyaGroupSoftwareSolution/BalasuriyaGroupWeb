@@ -34,12 +34,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const cleanCode = code ? String(code).trim() : "";
   let verified = false;
 
-  // 1. Verify via stateless HMAC resetToken (either 1-click Link or 6-digit Code)
+  // 1. Verify via 1-Click Magic Link Token from email
   if (resetToken && typeof resetToken === "string" && resetToken.includes(":")) {
     const [expiryStr, sig] = resetToken.split(":");
     const expiry = parseInt(expiryStr, 10);
     if (!isNaN(expiry) && Date.now() < expiry) {
-      // Check A: Direct 1-Click Link Token (validates email + expiry, no code required!)
       const expectedLink = crypto
         .createHmac("sha256", HMAC_SECRET)
         .update(`reset_link:${normalized}:${expiry}`)
@@ -47,32 +46,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (sig.length === expectedLink.length && crypto.timingSafeEqual(Buffer.from(expectedLink), Buffer.from(sig))) {
         verified = true;
       }
-
-      // Check B: 6-Digit Code Token (validates email + cleanCode + expiry)
-      if (!verified && cleanCode && cleanCode.length === 6) {
-        const expectedCode = crypto
-          .createHmac("sha256", HMAC_SECRET)
-          .update(`reset_code:${normalized}:${cleanCode}:${expiry}`)
-          .digest("hex");
-        if (sig.length === expectedCode.length && crypto.timingSafeEqual(Buffer.from(expectedCode), Buffer.from(sig))) {
-          verified = true;
-        }
-      }
     }
   }
 
-  // 2. In-memory check backup for 6-digit code
-  if (!verified && cleanCode && cleanCode.length === 6) {
+  // 2. If no valid magic link token was provided, strict 6-digit verification code check is REQUIRED
+  if (!verified) {
+    if (!cleanCode || cleanCode.length !== 6) {
+      return res.status(400).json({
+        message: "Please enter the valid 6-digit verification code sent to your email.",
+      });
+    }
+
     const record = otpStore.get(normalized);
     if (record && record.code === cleanCode && record.expiresAt > Date.now()) {
       verified = true;
-      otpStore.delete(normalized);
+      otpStore.delete(normalized); // Single-use consumption
     }
   }
 
   if (!verified) {
     return res.status(400).json({
-      message: "Invalid or expired password reset link or verification code. Please request a new link.",
+      message: "Invalid or expired verification code. Please check your email or request a new code.",
     });
   }
 

@@ -112,27 +112,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function forgotPassword(email: string): Promise<string> {
     const res = await api.post("/api/auth/forgot-password", { email });
-    if (res.data?.resetToken) {
-      try {
-        sessionStorage.setItem(`reset_token_${email.toLowerCase().trim()}`, res.data.resetToken);
-      } catch {}
-    }
-    return res.data.message;
+    return res.data?.message || "Password reset link sent to your email.";
   }
 
   async function resetPassword(email: string, code: string, newPassword: string, customResetToken?: string): Promise<void> {
-    let resetToken = customResetToken;
-    if (!resetToken) {
-      try {
-        resetToken = sessionStorage.getItem(`reset_token_${email.toLowerCase().trim()}`) || undefined;
-      } catch {}
+    const payload: { email: string; newPassword: string; code?: string; resetToken?: string } = {
+      email,
+      newPassword,
+    };
+    if (customResetToken) {
+      payload.resetToken = customResetToken;
     }
-    const res = await api.post("/api/auth/reset-password", { email, code, newPassword, resetToken });
+    if (code) {
+      payload.code = code.trim();
+    }
+    const res = await api.post("/api/auth/reset-password", payload);
     setToken(res.data.token);
     setUser(res.data.user);
-    try {
-      sessionStorage.removeItem(`reset_token_${email.toLowerCase().trim()}`);
-    } catch {}
   }
 
   async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
