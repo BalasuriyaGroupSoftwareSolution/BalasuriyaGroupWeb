@@ -2,23 +2,36 @@ import crypto from "crypto";
 
 const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
 
+function sendJson(res: any, status: number, data: any) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (typeof res.status === "function" && typeof res.json === "function") {
+    return res.status(status).json(data);
+  }
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  return res.end(JSON.stringify(data));
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    res.statusCode = 200;
+    return res.end();
   }
 
-  const authHeader = req.headers.authorization || "";
+  const authHeader = (req.headers && req.headers.authorization) || "";
   if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Missing or invalid authorization header." });
+    return sendJson(res, 401, { message: "Missing or invalid authorization header." });
   }
 
   const token = authHeader.replace(/^Bearer\s+/, "").trim();
   if (!token) {
-    return res.status(401).json({ message: "No token provided." });
+    return sendJson(res, 401, { message: "No token provided." });
   }
 
   try {
@@ -30,7 +43,7 @@ export default async function handler(req: any, res: any) {
         if (signature === expectedSig) {
           const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf-8"));
           if (!payload.exp || Date.now() / 1000 < payload.exp) {
-            return res.status(200).json({
+            return sendJson(res, 200, {
               user: {
                 id: payload.sub || `usr_live`,
                 email: payload.email,
@@ -52,7 +65,7 @@ export default async function handler(req: any, res: any) {
 
   // Fallback for valid live/mock tokens
   if (token.startsWith("live_jwt_token_") || token.startsWith("bg_token_")) {
-    return res.status(200).json({
+    return sendJson(res, 200, {
       user: {
         id: "usr_executive_clemon",
         email: "clemonbalasuriyagroup@gmail.com",
@@ -68,5 +81,5 @@ export default async function handler(req: any, res: any) {
     });
   }
 
-  return res.status(401).json({ message: "Session expired or invalid token." });
+  return sendJson(res, 401, { message: "Session expired or invalid token." });
 }

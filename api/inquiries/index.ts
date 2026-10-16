@@ -179,25 +179,54 @@ async function sendNotificationEmail(inquiry: InquiryRecord) {
   return { success: false, error: "Failed to dispatch email notification via Resend." };
 }
 
+function sendJson(res: any, status: number, data: any) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (typeof res.status === "function" && typeof res.json === "function") {
+    return res.status(status).json(data);
+  }
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  return res.end(JSON.stringify(data));
+}
+
+async function getBody(req: any): Promise<any> {
+  if (req.body && typeof req.body === "object") return req.body;
+  if (typeof req.body === "string") {
+    try { return JSON.parse(req.body); } catch {}
+  }
+  return new Promise((resolve) => {
+    let raw = "";
+    req.on("data", (chunk: any) => { raw += chunk; });
+    req.on("end", () => {
+      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
+    });
+    req.on("error", () => resolve({}));
+  });
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    res.statusCode = 200;
+    return res.end();
   }
 
   if (req.method === "GET") {
     const inquiries = loadInquiries();
-    return res.status(200).json({ inquiries });
+    return sendJson(res, 200, { inquiries });
   }
 
   if (req.method === "POST") {
-    const { division = "GENERAL", name, email, phone, subject, message, details } = req.body || {};
+    const bodyData = await getBody(req);
+    const { division = "GENERAL", name, email, phone, subject, message, details } = bodyData || {};
 
     if (!name || !email || !message) {
-      return res.status(400).json({ message: "Name, email and message are required." });
+      return sendJson(res, 400, { message: "Name, email and message are required." });
     }
 
     const id = `BG-INQ-${Date.now().toString().slice(-6)}`;
@@ -219,12 +248,12 @@ export default async function handler(req: any, res: any) {
 
     await sendNotificationEmail(newInquiry);
 
-    return res.status(201).json({
+    return sendJson(res, 201, {
       success: true,
       referenceId: id,
       message: `Thank you! Your inquiry has been dispatched to ${TARGET_NOTIFICATION_EMAIL}. Our team will contact you shortly.`,
     });
   }
 
-  return res.status(405).json({ message: "Method not allowed" });
+  return sendJson(res, 405, { message: "Method not allowed" });
 }

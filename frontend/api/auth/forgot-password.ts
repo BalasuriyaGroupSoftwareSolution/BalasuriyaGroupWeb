@@ -1,5 +1,4 @@
 import crypto from "crypto";
-
 import fs from "fs";
 
 const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
@@ -19,22 +18,51 @@ function getResendApiKey(): string {
   return "";
 }
 
+function sendJson(res: any, status: number, data: any) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (typeof res.status === "function" && typeof res.json === "function") {
+    return res.status(status).json(data);
+  }
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  return res.end(JSON.stringify(data));
+}
+
+async function getBody(req: any): Promise<any> {
+  if (req.body && typeof req.body === "object") return req.body;
+  if (typeof req.body === "string") {
+    try { return JSON.parse(req.body); } catch {}
+  }
+  return new Promise((resolve) => {
+    let raw = "";
+    req.on("data", (chunk: any) => { raw += chunk; });
+    req.on("end", () => {
+      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
+    });
+    req.on("error", () => resolve({}));
+  });
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    res.statusCode = 200;
+    return res.end();
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return sendJson(res, 405, { message: "Method not allowed" });
   }
 
-  const { email } = req.body || {};
+  const body = await getBody(req);
+  const email = body?.email;
   if (!email || typeof email !== "string" || !email.includes("@")) {
-    return res.status(400).json({ message: "A valid email address is required." });
+    return sendJson(res, 400, { message: "A valid email address is required." });
   }
 
   const normalized = email.toLowerCase().trim();
@@ -47,8 +75,8 @@ export default async function handler(req: any, res: any) {
     .digest("hex");
   const linkToken = `${expiresAt}:${linkSignature}`;
 
-  const reqOrigin = (req.headers["origin"] as string) || (req.headers["referer"] as string) || "";
-  const baseUrl = reqOrigin.includes("localhost") ? "http://localhost:5173" : "https://www.balasuriyagroup.tech";
+  const reqOrigin = (req.headers && (req.headers["origin"] || req.headers["referer"])) || "";
+  const baseUrl = String(reqOrigin).includes("localhost") ? "http://localhost:5173" : "https://www.balasuriyagroup.tech";
   const resetUrl = `${baseUrl}/forgot-password?token=${encodeURIComponent(linkToken)}&email=${encodeURIComponent(normalized)}`;
 
   let emailDispatched = false;
@@ -77,8 +105,6 @@ export default async function handler(req: any, res: any) {
           <tr>
             <td align="center">
               <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
-                
-                <!-- Corporate Header Banner -->
                 <tr>
                   <td style="background-color: #0B1E3F; padding: 32px 40px; text-align: center; border-bottom: 3px solid #D4AF37;">
                     <div style="color: #D4AF37; font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px;">
@@ -92,27 +118,20 @@ export default async function handler(req: any, res: any) {
                     </div>
                   </td>
                 </tr>
-
-                <!-- Content Body -->
                 <tr>
                   <td style="padding: 40px 40px 32px 40px;">
                     <h2 style="color: #0B1E3F; font-size: 19px; font-weight: 700; margin-top: 0; margin-bottom: 16px;">
                       Password Reset Request
                     </h2>
-                    
                     <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">
                       We received a request to reset the password for your account:
                     </p>
-
                     <div style="background-color: #f1f5f9; border-left: 4px solid #0B1E3F; padding: 12px 16px; border-radius: 4px; font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 24px;">
                       ${normalized}
                     </div>
-
                     <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 28px;">
                       Click the button below to directly choose your new password. No verification code is needed:
                     </p>
-
-                    <!-- Direct Action Button -->
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td align="center" style="padding-bottom: 28px;">
@@ -122,12 +141,10 @@ export default async function handler(req: any, res: any) {
                         </td>
                       </tr>
                     </table>
-
                     <p style="color: #64748b; font-size: 12px; line-height: 1.6; word-break: break-all; margin-bottom: 24px;">
                       If the button above does not open directly, copy and paste this link into your browser:<br/>
                       <a href="${resetUrl}" style="color: #1E3A6E; text-decoration: underline;">${resetUrl}</a>
                     </p>
-
                     <div style="background-color: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px;">
                       <p style="color: #92400E; font-size: 12px; line-height: 1.5; margin: 0;">
                         <strong>Security Notice:</strong> This password reset link will expire in <strong>15 minutes</strong> and can only be used once. If you did not make this request, please safely disregard this email. Your credentials remain protected.
@@ -135,8 +152,6 @@ export default async function handler(req: any, res: any) {
                     </div>
                   </td>
                 </tr>
-
-                <!-- Corporate Footer -->
                 <tr>
                   <td style="background-color: #f8fafc; padding: 24px 40px; text-align: center; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; line-height: 1.6;">
                     <strong>Balasuriya Group Corporate Headquarters</strong><br/>
@@ -144,7 +159,6 @@ export default async function handler(req: any, res: any) {
                     &copy; ${new Date().getFullYear()} Balasuriya Group. All Rights Reserved. Confidential Corporate Communication.
                   </td>
                 </tr>
-
               </table>
             </td>
           </tr>
@@ -187,7 +201,7 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  return res.status(200).json({
+  return sendJson(res, 200, {
     message: `A secure password reset link has been dispatched to ${normalized}. Please check your inbox and spam folder.`,
     resetToken: linkToken,
     resetUrl,

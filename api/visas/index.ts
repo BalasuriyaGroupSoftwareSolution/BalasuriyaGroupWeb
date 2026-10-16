@@ -112,32 +112,60 @@ function saveVisas(list: VisaRecord[]): void {
   } catch {}
 }
 
+function sendJson(res: any, status: number, data: any) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (typeof res.status === "function" && typeof res.json === "function") {
+    return res.status(status).json(data);
+  }
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  return res.end(JSON.stringify(data));
+}
+
+async function getBody(req: any): Promise<any> {
+  if (req.body && typeof req.body === "object") return req.body;
+  if (typeof req.body === "string") {
+    try { return JSON.parse(req.body); } catch {}
+  }
+  return new Promise((resolve) => {
+    let raw = "";
+    req.on("data", (chunk: any) => { raw += chunk; });
+    req.on("end", () => {
+      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
+    });
+    req.on("error", () => resolve({}));
+  });
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    res.statusCode = 200;
+    return res.end();
   }
 
   const visas = loadVisas();
 
   if (req.method === "GET") {
-    const { email } = req.query;
+    const email = req.query?.email;
     if (email) {
       const filtered = visas.filter(
         (v) => v.userEmail.toLowerCase().trim() === String(email).toLowerCase().trim()
       );
-      return res.status(200).json({ applications: filtered });
+      return sendJson(res, 200, { applications: filtered });
     }
-    return res.status(200).json({ applications: visas });
+    return sendJson(res, 200, { applications: visas });
   }
 
   if (req.method === "POST") {
-    const data = req.body || {};
+    const data = (await getBody(req)) || {};
     if (!data.country || !data.category || !data.passportNumber || !data.intendedArrivalDate) {
-      return res.status(400).json({
+      return sendJson(res, 400, {
         message: "Country, visa category, passport number, and travel arrival date are required.",
       });
     }
@@ -180,24 +208,24 @@ export default async function handler(req: any, res: any) {
     visas.unshift(newApp);
     saveVisas(visas);
 
-    return res.status(201).json({
+    return sendJson(res, 201, {
       application: newApp,
       message: `Online visa application lodged successfully. Tracking Ref: ${newApp.referenceNo}`,
     });
   }
 
   if (req.method === "PATCH") {
-    const data = req.body || {};
+    const data = (await getBody(req)) || {};
     const id = (req.query?.id as string) || data.id;
     const index = visas.findIndex((v) => v.id === id);
     if (index === -1) {
-      return res.status(404).json({ message: "Visa application not found." });
+      return sendJson(res, 404, { message: "Visa application not found." });
     }
     const updated = { ...visas[index], ...data, updatedAt: new Date().toISOString() };
     visas[index] = updated;
     saveVisas(visas);
-    return res.status(200).json({ application: updated, message: "Visa application updated successfully." });
+    return sendJson(res, 200, { application: updated, message: "Visa application updated successfully." });
   }
 
-  return res.status(405).json({ message: "Method not allowed." });
+  return sendJson(res, 405, { message: "Method not allowed." });
 }

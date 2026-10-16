@@ -10,26 +10,55 @@ if (!globalStore.consumedResetTokens) {
 }
 const consumedResetTokens = globalStore.consumedResetTokens;
 
+function sendJson(res: any, status: number, data: any) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (typeof res.status === "function" && typeof res.json === "function") {
+    return res.status(status).json(data);
+  }
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  return res.end(JSON.stringify(data));
+}
+
+async function getBody(req: any): Promise<any> {
+  if (req.body && typeof req.body === "object") return req.body;
+  if (typeof req.body === "string") {
+    try { return JSON.parse(req.body); } catch {}
+  }
+  return new Promise((resolve) => {
+    let raw = "";
+    req.on("data", (chunk: any) => { raw += chunk; });
+    req.on("end", () => {
+      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
+    });
+    req.on("error", () => resolve({}));
+  });
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    res.statusCode = 200;
+    return res.end();
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return sendJson(res, 405, { message: "Method not allowed" });
   }
 
-  const { email, code, newPassword, resetToken } = req.body || {};
+  const body = await getBody(req);
+  const { email, code, newPassword, resetToken } = body || {};
   if (!email || !newPassword) {
-    return res.status(400).json({ message: "Email and new password are required." });
+    return sendJson(res, 400, { message: "Email and new password are required." });
   }
 
   if (typeof newPassword !== "string" || newPassword.length < 8) {
-    return res.status(400).json({ message: "New password must be at least 8 characters." });
+    return sendJson(res, 400, { message: "New password must be at least 8 characters." });
   }
 
   const normalized = email.toLowerCase().trim();
@@ -65,7 +94,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (!verified) {
-    return res.status(400).json({
+    return sendJson(res, 400, {
       message: "Invalid or expired password reset link. Please request a new link.",
     });
   }
@@ -103,7 +132,7 @@ export default async function handler(req: any, res: any) {
     isActive: true,
   };
 
-  return res.status(200).json({
+  return sendJson(res, 200, {
     token: `live_jwt_token_${Date.now()}`,
     user,
     authHash,

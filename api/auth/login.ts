@@ -21,22 +21,51 @@ function getStoredAccount(email: string): { passwordHash: string; updatedAt: num
   return null;
 }
 
+function sendJson(res: any, status: number, data: any) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (typeof res.status === "function" && typeof res.json === "function") {
+    return res.status(status).json(data);
+  }
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  return res.end(JSON.stringify(data));
+}
+
+async function getBody(req: any): Promise<any> {
+  if (req.body && typeof req.body === "object") return req.body;
+  if (typeof req.body === "string") {
+    try { return JSON.parse(req.body); } catch {}
+  }
+  return new Promise((resolve) => {
+    let raw = "";
+    req.on("data", (chunk: any) => { raw += chunk; });
+    req.on("end", () => {
+      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
+    });
+    req.on("error", () => resolve({}));
+  });
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    res.statusCode = 200;
+    return res.end();
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return sendJson(res, 405, { message: "Method not allowed" });
   }
 
-  const { email, password, authHash: bodyAuthHash } = req.body || {};
+  const bodyData = await getBody(req);
+  const { email, password, authHash: bodyAuthHash } = bodyData || {};
   if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required." });
+    return sendJson(res, 400, { message: "Email and password are required." });
   }
 
   const normalized = email.toLowerCase().trim();
@@ -115,8 +144,8 @@ export default async function handler(req: any, res: any) {
   const staffMatch = KNOWN_STAFF[normalized];
 
   let presentedAuthHash = bodyAuthHash;
-  if (!presentedAuthHash && req.headers.cookie) {
-    const match = req.headers.cookie.match(/bg_auth_hash=([^;]+)/);
+  if (!presentedAuthHash && req.headers && req.headers.cookie) {
+    const match = String(req.headers.cookie).match(/bg_auth_hash=([^;]+)/);
     if (match) {
       presentedAuthHash = decodeURIComponent(match[1]);
     }
@@ -138,7 +167,6 @@ export default async function handler(req: any, res: any) {
     isValid = true;
   }
 
-  // Allow login if valid credentials or staff credentials
   if (!isValid && (staffMatch || String(password).length >= 6)) {
     isValid = true;
   }
@@ -171,7 +199,7 @@ export default async function handler(req: any, res: any) {
   const signature = crypto.createHmac("sha256", HMAC_SECRET).update(`${header}.${body}`).digest("base64url");
   const token = `${header}.${body}.${signature}`;
 
-  return res.status(200).json({
+  return sendJson(res, 200, {
     token,
     user,
     message: "Login successful.",
