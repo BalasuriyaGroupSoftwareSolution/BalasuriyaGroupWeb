@@ -1,64 +1,51 @@
 import fs from "fs";
-
-function getResendApiKey(): string {
-  if (process.env.RESEND_API_KEY) return process.env.RESEND_API_KEY.trim();
-  try {
-    for (const p of [".env", "backend/.env", "../backend/.env"]) {
-      if (fs.existsSync(p)) {
-        const text = fs.readFileSync(p, "utf-8");
-        const m = text.match(/RESEND_API_KEY\s*=\s*([^\r\n]+)/);
-        if (m && m[1]) return m[1].trim();
-      }
+function getResendApiKey() {
+    if (process.env.RESEND_API_KEY)
+        return process.env.RESEND_API_KEY.trim();
+    try {
+        for (const p of [".env", "backend/.env", "../backend/.env"]) {
+            if (fs.existsSync(p)) {
+                const text = fs.readFileSync(p, "utf-8");
+                const m = text.match(/RESEND_API_KEY\s*=\s*([^\r\n]+)/);
+                if (m && m[1])
+                    return m[1].trim();
+            }
+        }
     }
-  } catch {}
-  return "";
+    catch { }
+    return "";
 }
-
 const INQUIRIES_FILE = "/tmp/balasuriya_inquiries.json";
 const TARGET_NOTIFICATION_EMAIL = "balasuriyagroup.info@gmail.com";
 const VERIFIED_FROM_EMAIL = "Balasuriya Group Portal <portal@balasuriyagroup.tech>";
 const SANDBOX_FROM_EMAIL = "onboarding@resend.dev";
-
-export interface InquiryRecord {
-  id: string;
-  division: string;
-  name: string;
-  email: string;
-  phone?: string;
-  subject: string;
-  message: string;
-  details?: Record<string, any>;
-  createdAt: string;
-}
-
-function loadInquiries(): InquiryRecord[] {
-  try {
-    if (fs.existsSync(INQUIRIES_FILE)) {
-      const data = JSON.parse(fs.readFileSync(INQUIRIES_FILE, "utf-8"));
-      if (Array.isArray(data)) return data;
+function loadInquiries() {
+    try {
+        if (fs.existsSync(INQUIRIES_FILE)) {
+            const data = JSON.parse(fs.readFileSync(INQUIRIES_FILE, "utf-8"));
+            if (Array.isArray(data))
+                return data;
+        }
     }
-  } catch {}
-  return [];
+    catch { }
+    return [];
 }
-
-function saveInquiries(list: InquiryRecord[]): void {
-  try {
-    fs.writeFileSync(INQUIRIES_FILE, JSON.stringify(list, null, 2), "utf-8");
-  } catch {}
+function saveInquiries(list) {
+    try {
+        fs.writeFileSync(INQUIRIES_FILE, JSON.stringify(list, null, 2), "utf-8");
+    }
+    catch { }
 }
-
-async function sendNotificationEmail(inquiry: InquiryRecord) {
-  const resendApiKey = getResendApiKey();
-  if (!resendApiKey) return { success: false, reason: "No RESEND_API_KEY" };
-
-  const timeTag = new Date(inquiry.createdAt).toLocaleString("en-GB", { timeZone: "Asia/Colombo" });
-  const divisionLabel = inquiry.division.toUpperCase();
-
-  const customDetailsHtml = inquiry.details
-    ? Object.entries(inquiry.details)
-        .filter(([_, val]) => val !== undefined && val !== null && val !== "")
-        .map(
-          ([key, val]) => `
+async function sendNotificationEmail(inquiry) {
+    const resendApiKey = getResendApiKey();
+    if (!resendApiKey)
+        return { success: false, reason: "No RESEND_API_KEY" };
+    const timeTag = new Date(inquiry.createdAt).toLocaleString("en-GB", { timeZone: "Asia/Colombo" });
+    const divisionLabel = inquiry.division.toUpperCase();
+    const customDetailsHtml = inquiry.details
+        ? Object.entries(inquiry.details)
+            .filter(([_, val]) => val !== undefined && val !== null && val !== "")
+            .map(([key, val]) => `
             <tr>
               <td style="padding: 6px 12px; font-weight: bold; color: #475569; text-transform: capitalize; border-bottom: 1px solid #f1f5f9; width: 35%;">
                 ${key.replace(/([A-Z])/g, " $1")}
@@ -67,12 +54,10 @@ async function sendNotificationEmail(inquiry: InquiryRecord) {
                 ${typeof val === "object" ? JSON.stringify(val) : String(val)}
               </td>
             </tr>
-          `
-        )
-        .join("")
-    : "";
-
-  const html = `
+          `)
+            .join("")
+        : "";
+    const html = `
     <!DOCTYPE html>
     <html>
     <head><meta charset="utf-8"></head>
@@ -103,9 +88,8 @@ async function sendNotificationEmail(inquiry: InquiryRecord) {
                 <td style="padding: 4px 0; color: #64748b;">Email:</td>
                 <td style="padding: 4px 0;"><a href="mailto:${inquiry.email}" style="color: #1e3a8a; text-decoration: none; font-weight: 600;">${inquiry.email}</a></td>
               </tr>
-              ${
-                inquiry.phone
-                  ? `
+              ${inquiry.phone
+        ? `
               <tr>
                 <td style="padding: 4px 0; color: #64748b;">Phone / WhatsApp:</td>
                 <td style="padding: 4px 0; color: #0f172a; font-weight: 600;">
@@ -113,8 +97,7 @@ async function sendNotificationEmail(inquiry: InquiryRecord) {
                 </td>
               </tr>
               `
-                  : ""
-              }
+        : ""}
             </table>
           </div>
           <div style="margin-bottom: 24px;">
@@ -125,9 +108,8 @@ async function sendNotificationEmail(inquiry: InquiryRecord) {
               ${inquiry.message.replace(/\n/g, "<br/>")}
             </div>
           </div>
-          ${
-            customDetailsHtml
-              ? `
+          ${customDetailsHtml
+        ? `
           <div style="margin-bottom: 24px;">
             <h3 style="margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">
               Specific Details Submitted
@@ -137,8 +119,7 @@ async function sendNotificationEmail(inquiry: InquiryRecord) {
             </table>
           </div>
           `
-              : ""
-          }
+        : ""}
           <div style="text-align: center; margin-top: 32px;">
             <a href="mailto:${inquiry.email}?subject=RE: ${encodeURIComponent(inquiry.subject)}" style="background-color: #0B1E3F; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">
               Reply Directly to ${inquiry.name}
@@ -152,108 +133,103 @@ async function sendNotificationEmail(inquiry: InquiryRecord) {
     </body>
     </html>
   `;
-
-  for (const fromAddr of [VERIFIED_FROM_EMAIL, SANDBOX_FROM_EMAIL]) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: fromAddr,
-          to: [TARGET_NOTIFICATION_EMAIL],
-          reply_to: inquiry.email,
-          subject: `[${divisionLabel}] Inquiry from ${inquiry.name}: ${inquiry.subject}`,
-          html,
-        }),
-      });
-
-      if (res.ok) {
-        return { success: true };
-      }
-    } catch {}
-  }
-
-  return { success: false, error: "Failed to dispatch email notification via Resend." };
-}
-
-function sendJson(res: any, status: number, data: any) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  if (typeof res.status === "function" && typeof res.json === "function") {
-    return res.status(status).json(data);
-  }
-  res.statusCode = status;
-  res.setHeader("Content-Type", "application/json");
-  return res.end(JSON.stringify(data));
-}
-
-async function getBody(req: any): Promise<any> {
-  if (req.body && typeof req.body === "object") return req.body;
-  if (typeof req.body === "string") {
-    try { return JSON.parse(req.body); } catch {}
-  }
-  return new Promise((resolve) => {
-    let raw = "";
-    req.on("data", (chunk: any) => { raw += chunk; });
-    req.on("end", () => {
-      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
-    });
-    req.on("error", () => resolve({}));
-  });
-}
-
-export default async function handler(req: any, res: any) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    res.statusCode = 200;
-    return res.end();
-  }
-
-  if (req.method === "GET") {
-    const inquiries = loadInquiries();
-    return sendJson(res, 200, { inquiries });
-  }
-
-  if (req.method === "POST") {
-    const bodyData = await getBody(req);
-    const { division = "GENERAL", name, email, phone, subject, message, details } = bodyData || {};
-
-    if (!name || !email || !message) {
-      return sendJson(res, 400, { message: "Name, email and message are required." });
+    for (const fromAddr of [VERIFIED_FROM_EMAIL, SANDBOX_FROM_EMAIL]) {
+        try {
+            const res = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${resendApiKey}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    from: fromAddr,
+                    to: [TARGET_NOTIFICATION_EMAIL],
+                    reply_to: inquiry.email,
+                    subject: `[${divisionLabel}] Inquiry from ${inquiry.name}: ${inquiry.subject}`,
+                    html,
+                }),
+            });
+            if (res.ok) {
+                return { success: true };
+            }
+        }
+        catch { }
     }
-
-    const id = `BG-INQ-${Date.now().toString().slice(-6)}`;
-    const newInquiry: InquiryRecord = {
-      id,
-      division: division.toUpperCase(),
-      name: String(name).trim(),
-      email: String(email).trim().toLowerCase(),
-      phone: phone ? String(phone).trim() : undefined,
-      subject: subject ? String(subject).trim() : `General Inquiry from ${name}`,
-      message: String(message).trim(),
-      details,
-      createdAt: new Date().toISOString(),
-    };
-
-    const inquiries = loadInquiries();
-    inquiries.unshift(newInquiry);
-    saveInquiries(inquiries.slice(0, 200));
-
-    await sendNotificationEmail(newInquiry);
-
-    return sendJson(res, 201, {
-      success: true,
-      referenceId: id,
-      message: `Thank you! Your inquiry has been dispatched to ${TARGET_NOTIFICATION_EMAIL}. Our team will contact you shortly.`,
+    return { success: false, error: "Failed to dispatch email notification via Resend." };
+}
+function sendJson(res, status, data) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (typeof res.status === "function" && typeof res.json === "function") {
+        return res.status(status).json(data);
+    }
+    res.statusCode = status;
+    res.setHeader("Content-Type", "application/json");
+    return res.end(JSON.stringify(data));
+}
+async function getBody(req) {
+    if (req.body && typeof req.body === "object")
+        return req.body;
+    if (typeof req.body === "string") {
+        try {
+            return JSON.parse(req.body);
+        }
+        catch { }
+    }
+    return new Promise((resolve) => {
+        let raw = "";
+        req.on("data", (chunk) => { raw += chunk; });
+        req.on("end", () => {
+            try {
+                resolve(JSON.parse(raw));
+            }
+            catch {
+                resolve({});
+            }
+        });
+        req.on("error", () => resolve({}));
     });
-  }
-
-  return sendJson(res, 405, { message: "Method not allowed" });
+}
+export default async function handler(req, res) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (req.method === "OPTIONS") {
+        res.statusCode = 200;
+        return res.end();
+    }
+    if (req.method === "GET") {
+        const inquiries = loadInquiries();
+        return sendJson(res, 200, { inquiries });
+    }
+    if (req.method === "POST") {
+        const bodyData = await getBody(req);
+        const { division = "GENERAL", name, email, phone, subject, message, details } = bodyData || {};
+        if (!name || !email || !message) {
+            return sendJson(res, 400, { message: "Name, email and message are required." });
+        }
+        const id = `BG-INQ-${Date.now().toString().slice(-6)}`;
+        const newInquiry = {
+            id,
+            division: division.toUpperCase(),
+            name: String(name).trim(),
+            email: String(email).trim().toLowerCase(),
+            phone: phone ? String(phone).trim() : undefined,
+            subject: subject ? String(subject).trim() : `General Inquiry from ${name}`,
+            message: String(message).trim(),
+            details,
+            createdAt: new Date().toISOString(),
+        };
+        const inquiries = loadInquiries();
+        inquiries.unshift(newInquiry);
+        saveInquiries(inquiries.slice(0, 200));
+        await sendNotificationEmail(newInquiry);
+        return sendJson(res, 201, {
+            success: true,
+            referenceId: id,
+            message: `Thank you! Your inquiry has been dispatched to ${TARGET_NOTIFICATION_EMAIL}. Our team will contact you shortly.`,
+        });
+    }
+    return sendJson(res, 405, { message: "Method not allowed" });
 }
