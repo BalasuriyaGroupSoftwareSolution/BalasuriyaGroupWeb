@@ -3,16 +3,12 @@
   "outputDirectory": "frontend/dist",
   "rewrites": [
     {
-      "source": "/api/users/(.*)",
-      "destination": "/api/users"
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     },
     {
-      "source": "/api/visas/(.*)",
-      "destination": "/api/visas"
-    },
-    {
-      "source": "/api/inquiries/(.*)",
-      "destination": "/api/inquiries"
+      "source": "/api",
+      "destination": "/api/index.js"
     },
     {
       "source": "/((?!api).*)",

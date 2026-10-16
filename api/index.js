@@ -1,24 +1,32 @@
-export default function handler(req, res) {
+import { createApp } from "../backend/dist/app.js";
+
+let appInstance = null;
+
+function getApp() {
+  if (!appInstance) {
+    appInstance = createApp();
+  }
+  return appInstance;
+}
+
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
 
   if (req.method === "OPTIONS") {
     res.statusCode = 200;
     return res.end();
   }
 
-  const data = {
-    status: "ok",
-    service: "Balasuriya Group Unified API",
-    version: "2026.1",
-    timestamp: new Date().toISOString(),
-  };
-
-  if (typeof res.status === "function" && typeof res.json === "function") {
-    return res.status(200).json(data);
+  // Handle URL matching in Vercel serverless environment
+  const matchedPath = req.headers["x-matched-path"] || req.headers["x-forwarded-uri"] || req.headers["x-original-url"];
+  if (matchedPath && !matchedPath.startsWith("/api/index")) {
+    const qIndex = req.url ? req.url.indexOf("?") : -1;
+    const query = qIndex !== -1 ? req.url.slice(qIndex) : "";
+    req.url = matchedPath.includes("?") ? matchedPath : `${matchedPath}${query}`;
   }
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "application/json");
-  return res.end(JSON.stringify(data));
+
+  const app = getApp();
+  return app(req, res);
 }
