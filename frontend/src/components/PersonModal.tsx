@@ -19,9 +19,9 @@ export function PersonModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/70 p-4 sm:p-6 backdrop-blur-sm"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 p-4 sm:p-6 backdrop-blur-sm"
         >
-          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-8">
+          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}

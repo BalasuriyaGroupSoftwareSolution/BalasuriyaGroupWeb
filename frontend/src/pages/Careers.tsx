@@ -229,8 +229,8 @@ export default function Careers() {
 
       {/* Application Modal */}
       {selectedJob && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-3 sm:p-6 backdrop-blur-sm">
-          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 p-3 sm:p-6 backdrop-blur-sm">
+          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

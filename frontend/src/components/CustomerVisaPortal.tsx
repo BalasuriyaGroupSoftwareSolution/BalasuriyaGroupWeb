@@ -912,9 +912,9 @@ export default function CustomerVisaPortal({ user }: Props) {
 
       {/* NEW VISA APPLICATION MODAL */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-3 sm:p-6 backdrop-blur-xs">
-          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
-            <div className="relative w-full max-w-3xl rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)]">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 p-3 sm:p-6 backdrop-blur-sm">
+          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
+            <div className="relative w-full max-w-3xl my-auto rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-6rem)]">
               {/* Modal Header */}
               <div className="bg-brand-navy p-5 text-white flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
@@ -1272,9 +1272,9 @@ export default function CustomerVisaPortal({ user }: Props) {
 
       {/* EDIT VISA APPLICATION MODAL (User Edit Window) */}
       {editingVisa && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-3 sm:p-6 backdrop-blur-xs">
-          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
-            <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)]">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 p-3 sm:p-6 backdrop-blur-sm">
+          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
+            <div className="relative w-full max-w-2xl my-auto rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-6rem)]">
               {/* Header */}
               <div className="bg-brand-navy p-5 text-white flex items-center justify-between flex-shrink-0">
                 <div>
@@ -1460,9 +1460,9 @@ export default function CustomerVisaPortal({ user }: Props) {
 
       {/* OFFICIAL VISA APPLICATION SLIP MODAL (Printable Acknowledgement) */}
       {viewingSlip && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-3 sm:p-6 backdrop-blur-xs">
-          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
-            <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)] overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 p-3 sm:p-6 backdrop-blur-sm">
+          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
+            <div className="w-full max-w-2xl my-auto rounded-2xl bg-white shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-6rem)] overflow-y-auto">
               {/* Printable Slip Header */}
             <div className="flex items-center justify-between border-b-2 border-brand-navy pb-4">
               <div className="flex items-center gap-3">
@@ -1626,8 +1626,8 @@ export default function CustomerVisaPortal({ user }: Props) {
 
       {/* Express Inquiry Modal */}
       {isExpressModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm p-3 sm:p-6">
-          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 backdrop-blur-sm p-3 sm:p-6">
+          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
             <div className="relative w-full max-w-2xl my-auto">
               <button
                 onClick={() => setIsExpressModalOpen(false)}

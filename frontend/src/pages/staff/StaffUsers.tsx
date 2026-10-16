@@ -1643,9 +1643,9 @@ Balasuriya Group`;
 
       {/* Edit Staff Details Modal with Cross-Section Assignment */}
       {editingUser && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm p-3 sm:p-6">
-          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
-            <div className="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)]">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 backdrop-blur-sm p-3 sm:p-6">
+          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
+            <div className="relative w-full max-w-xl my-auto rounded-2xl bg-white shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-6rem)]">
               {/* Pinned Modal Header */}
               <div className="flex items-start justify-between border-b border-gray-100 p-5 sm:p-6 bg-white flex-shrink-0">
                 <div className="flex items-center gap-3">
