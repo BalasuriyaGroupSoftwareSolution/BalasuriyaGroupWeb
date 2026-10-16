@@ -1,4 +1,4 @@
-export default function handler(req: any, res: any) {
+export default function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -10,8 +10,7 @@ export default function handler(req: any, res: any) {
 
   const data = {
     status: "ok",
-    service: "Balasuriya Group Unified API",
-    version: "2026.1",
+    hasDb: Boolean(process.env.DATABASE_URL),
     timestamp: new Date().toISOString(),
   };
 

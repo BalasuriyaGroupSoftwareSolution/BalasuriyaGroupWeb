@@ -4,7 +4,7 @@ import fs from "fs";
 const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
 const VERIFIED_FROM_EMAIL = "Balasuriya Group Security <security@balasuriyagroup.tech>";
 
-function getResendApiKey(): string {
+function getResendApiKey() {
   if (process.env.RESEND_API_KEY) return process.env.RESEND_API_KEY.trim();
   try {
     for (const p of [".env", "backend/.env", "../backend/.env"]) {
@@ -18,7 +18,7 @@ function getResendApiKey(): string {
   return "";
 }
 
-function sendJson(res: any, status: number, data: any) {
+function sendJson(res, status, data) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -30,14 +30,14 @@ function sendJson(res: any, status: number, data: any) {
   return res.end(JSON.stringify(data));
 }
 
-async function getBody(req: any): Promise<any> {
+async function getBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
   if (typeof req.body === "string") {
     try { return JSON.parse(req.body); } catch {}
   }
   return new Promise((resolve) => {
     let raw = "";
-    req.on("data", (chunk: any) => { raw += chunk; });
+    req.on("data", (chunk) => { raw += chunk; });
     req.on("end", () => {
       try { resolve(JSON.parse(raw)); } catch { resolve({}); }
     });
@@ -45,7 +45,7 @@ async function getBody(req: any): Promise<any> {
   });
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -80,7 +80,7 @@ export default async function handler(req: any, res: any) {
   const resetUrl = `${baseUrl}/forgot-password?token=${encodeURIComponent(linkToken)}&email=${encodeURIComponent(normalized)}`;
 
   let emailDispatched = false;
-  let dispatchError: string | null = null;
+  let dispatchError = null;
 
   const resendApiKey = getResendApiKey();
   if (resendApiKey) {
@@ -195,7 +195,7 @@ export default async function handler(req: any, res: any) {
         console.error(`[forgot-password] Resend API error: ${errText}`);
         dispatchError = errText;
       }
-    } catch (e: any) {
+    } catch (e) {
       console.error("[forgot-password] Email dispatch failed:", e);
       dispatchError = e?.message || "Unknown error";
     }
