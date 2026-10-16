@@ -814,7 +814,12 @@ export default function StaffUsers() {
       setTempPassword(generateStrongTempPassword());
       setShowNew(false);
     } catch (err: any) {
-      if (err?.code === "ERR_NETWORK" || !err.response) {
+      if (
+        err?.code === "ERR_NETWORK" ||
+        !err.response ||
+        err.response?.status === 404 ||
+        err.response?.status >= 500
+      ) {
         try {
           localStorage.setItem(`bg_pwd_${newUserObj.email.toLowerCase()}`, tempPassword);
         } catch {}
