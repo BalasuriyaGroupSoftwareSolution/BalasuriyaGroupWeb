@@ -19,16 +19,17 @@ export function PersonModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/70 p-4 sm:p-6 backdrop-blur-sm"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 16 }}
-            transition={{ type: "spring", stiffness: 300, damping: 26 }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
-          >
+          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-8">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 16 }}
+              transition={{ type: "spring", stiffness: 300, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl my-auto"
+            >
             <button
               onClick={onClose}
               aria-label="Close"
@@ -51,8 +52,9 @@ export function PersonModal({
               )}
             </div>
           </motion.div>
-        </motion.div>
-      )}
+        </div>
+      </motion.div>
+    )}
     </AnimatePresence>
   );
 }

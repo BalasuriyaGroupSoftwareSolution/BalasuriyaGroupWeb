@@ -912,35 +912,36 @@ export default function CustomerVisaPortal({ user }: Props) {
 
       {/* NEW VISA APPLICATION MODAL */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="bg-brand-navy p-5 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <img
-                  src="/images/foreign-tours-air-tickets-visa.jpg"
-                  alt="Balasuriya Group Logo"
-                  className="h-10 w-auto rounded-lg bg-white p-0.5"
-                />
-                <div>
-                  <h3 className="font-display font-bold text-base">Online Visa Application Portal</h3>
-                  <p className="text-xs text-white/70">
-                    Balasuriya Group Foreign Tours, Air Ticket Booking & Visa Bureau
-                  </p>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-3 sm:p-6 backdrop-blur-xs">
+          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
+            <div className="relative w-full max-w-3xl rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)]">
+              {/* Modal Header */}
+              <div className="bg-brand-navy p-5 text-white flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="/images/foreign-tours-air-tickets-visa.jpg"
+                    alt="Balasuriya Group Logo"
+                    className="h-10 w-auto rounded-lg bg-white p-0.5"
+                  />
+                  <div>
+                    <h3 className="font-display font-bold text-base">Online Visa Application Portal</h3>
+                    <p className="text-xs text-white/70">
+                      Balasuriya Group Foreign Tours, Air Ticket Booking &amp; Visa Bureau
+                    </p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setIsNewModalOpen(false)}
+                  className="rounded-full bg-white/10 p-1.5 text-white/80 hover:bg-white/20 transition"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setIsNewModalOpen(false)}
-                className="rounded-full bg-white/10 p-1.5 text-white/80 hover:bg-white/20 transition"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleCreateVisaApplication} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
-              {/* Section 1: Destination & Visa Category */}
-              <div>
+              {/* Modal Body */}
+              <form onSubmit={handleCreateVisaApplication} className="p-6 space-y-6 flex-1 overflow-y-auto">
+                {/* Section 1: Destination & Visa Category */}
+                <div>
                 <h4 className="text-xs font-bold uppercase tracking-wider text-brand-accent flex items-center gap-1.5">
                   <Globe className="h-4 w-4" /> 1. Destination Country & Visa Category
                 </h4>
@@ -1266,35 +1267,37 @@ export default function CustomerVisaPortal({ user }: Props) {
             </form>
           </div>
         </div>
+      </div>
       )}
 
       {/* EDIT VISA APPLICATION MODAL (User Edit Window) */}
       {editingVisa && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="bg-brand-navy p-5 text-white flex items-center justify-between">
-              <div>
-                <span className="rounded bg-brand-gold/20 px-2 py-0.5 text-[10px] font-bold text-brand-gold">
-                  Ref: {editingVisa.referenceNo}
-                </span>
-                <h3 className="font-display font-bold text-base mt-1">
-                  Edit Visa Application Details — {editingVisa.country}
-                </h3>
-                <p className="text-xs text-white/70">
-                  Amend passport numbers, travel schedules, host details, or notes before embassy lodging.
-                </p>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-3 sm:p-6 backdrop-blur-xs">
+          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
+            <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)]">
+              {/* Header */}
+              <div className="bg-brand-navy p-5 text-white flex items-center justify-between flex-shrink-0">
+                <div>
+                  <span className="rounded bg-brand-gold/20 px-2 py-0.5 text-[10px] font-bold text-brand-gold">
+                    Ref: {editingVisa.referenceNo}
+                  </span>
+                  <h3 className="font-display font-bold text-base mt-1">
+                    Edit Visa Application Details — {editingVisa.country}
+                  </h3>
+                  <p className="text-xs text-white/70">
+                    Amend passport numbers, travel schedules, host details, or notes before embassy lodging.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setEditingVisa(null)}
+                  className="rounded-full bg-white/10 p-1.5 text-white/80 hover:bg-white/20 transition"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setEditingVisa(null)}
-                className="rounded-full bg-white/10 p-1.5 text-white/80 hover:bg-white/20 transition"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
 
-            {/* Edit Form */}
-            <form onSubmit={handleSaveEdit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+              {/* Edit Form */}
+              <form onSubmit={handleSaveEdit} className="p-6 space-y-5 flex-1 overflow-y-auto">
               <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800">
                 <p className="font-semibold">Amendment Window Open</p>
                 <p className="text-[11px] text-emerald-700 mt-0.5">
@@ -1452,13 +1455,15 @@ export default function CustomerVisaPortal({ user }: Props) {
             </form>
           </div>
         </div>
+      </div>
       )}
 
       {/* OFFICIAL VISA APPLICATION SLIP MODAL (Printable Acknowledgement) */}
       {viewingSlip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden my-8 p-8 space-y-6">
-            {/* Printable Slip Header */}
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-3 sm:p-6 backdrop-blur-xs">
+          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
+            <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)] overflow-y-auto">
+              {/* Printable Slip Header */}
             <div className="flex items-center justify-between border-b-2 border-brand-navy pb-4">
               <div className="flex items-center gap-3">
                 <img
@@ -1616,19 +1621,22 @@ export default function CustomerVisaPortal({ user }: Props) {
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* Express Inquiry Modal */}
       {isExpressModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-2xl my-8">
-            <button
-              onClick={() => setIsExpressModalOpen(false)}
-              className="absolute right-4 top-4 z-10 rounded-full bg-white/90 p-1.5 text-gray-400 hover:text-gray-700 shadow-md"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <QuickVisaInquiry compact onSuccess={() => setIsExpressModalOpen(false)} />
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm p-3 sm:p-6">
+          <div className="flex min-h-full items-start sm:items-center justify-center py-6 sm:py-10">
+            <div className="relative w-full max-w-2xl my-auto">
+              <button
+                onClick={() => setIsExpressModalOpen(false)}
+                className="absolute right-4 top-4 z-10 rounded-full bg-white/90 p-1.5 text-gray-400 hover:text-gray-700 shadow-md"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <QuickVisaInquiry compact onSuccess={() => setIsExpressModalOpen(false)} />
+            </div>
           </div>
         </div>
       )}
