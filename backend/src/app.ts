@@ -26,6 +26,7 @@ export function createApp() {
 
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+  app.get("/api", (_req, res) => res.json({ status: "ok", service: "Balasuriya Group API", version: "2026.1" }));
 
   app.use("/api/auth", authRouter);
   app.use("/auth", authRouter);
