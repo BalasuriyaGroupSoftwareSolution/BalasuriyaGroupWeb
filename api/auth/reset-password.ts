@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from "../_types.js";
 import crypto from "crypto";
 
 const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
@@ -11,7 +10,7 @@ if (!globalStore.consumedResetTokens) {
 }
 const consumedResetTokens = globalStore.consumedResetTokens;
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");

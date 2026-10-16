@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from "../_types.js";
 import fs from "fs";
 
 const VISAS_FILE = "/tmp/balasuriya_visa_applications.json";
@@ -113,7 +112,7 @@ function saveVisas(list: VisaRecord[]): void {
   } catch {}
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
