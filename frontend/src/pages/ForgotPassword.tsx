@@ -85,10 +85,12 @@ export default function ForgotPassword() {
       toast.success(msg || "Password reset link dispatched to your email.", { duration: 8000 });
       setStep("sent");
       setCountdown(45);
-    } catch {
-      toast.success(`Password reset ready for ${email}. Please set your new password.`);
-      setStep("sent");
-      setCountdown(45);
+    } catch (err: any) {
+      const errMsg = apiErrorMessage(
+        err,
+        "This email address is not registered in our system. Please check your spelling or register a new account."
+      );
+      toast.error(errMsg, { duration: 7000 });
     } finally {
       setSubmitting(false);
     }
@@ -96,7 +98,10 @@ export default function ForgotPassword() {
 
   async function handleResetPassword(e: FormEvent) {
     e.preventDefault();
-    const activeToken = linkToken || sessionStorage.getItem(`bg_reset_token_${email.toLowerCase().trim()}`) || "verified_session";
+    if (!linkToken) {
+      toast.error("No valid reset link detected. Please open the reset link sent to your email.");
+      return;
+    }
     if (newPassword.length < 8) {
       toast.error("Password must be at least 8 characters.");
       return;
@@ -107,18 +112,14 @@ export default function ForgotPassword() {
     }
     setSubmitting(true);
     try {
-      await resetPassword(email, "", newPassword, activeToken);
-      toast.success("Password reset successful! Welcome back to Balasuriya Group.");
-      if (email.toLowerCase().includes("clemon") || email.toLowerCase().includes("balasuriya")) {
-        navigate("/staff", { replace: true });
-      } else {
-        navigate("/portal", { replace: true });
-      }
+      await resetPassword(email, "", newPassword, linkToken);
+      toast.success("Password reset successful! Please sign in with your new password.");
+      navigate("/login", { replace: true });
     } catch (err) {
       toast.error(
         apiErrorMessage(
           err,
-          "Could not update password. Please try again."
+          "Could not update password. Your reset link may have expired (15 min validity). Please request a new link."
         )
       );
     } finally {
@@ -216,20 +217,6 @@ export default function ForgotPassword() {
                 {email}
               </div>
             </div>
-
-            {/* Direct Instant Action Button */}
-            <button
-              type="button"
-              onClick={() => {
-                const storedToken = sessionStorage.getItem(`bg_reset_token_${email.toLowerCase().trim()}`) || "verified_session";
-                setLinkToken(storedToken);
-                setStep("reset");
-              }}
-              className="btn-primary w-full py-3 text-xs font-semibold flex items-center justify-center gap-2 shadow-sm"
-            >
-              <KeyRound className="h-4 w-4" />
-              <span>Proceed to Set New Password Now</span>
-            </button>
 
             {/* Direct Gmail Shortcut Button */}
             {email.toLowerCase().includes("@gmail.com") && (

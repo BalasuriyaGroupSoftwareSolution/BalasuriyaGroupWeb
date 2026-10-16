@@ -293,79 +293,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function forgotPassword(email: string): Promise<string> {
     const normEmail = email.toLowerCase().trim();
-    try {
-      const res = await api.post("/api/auth/forgot-password", { email: normEmail });
-      if (res.data?.resetToken) {
-        try {
-          sessionStorage.setItem(`bg_reset_token_${normEmail}`, res.data.resetToken);
-        } catch {}
-      }
-      return res.data?.message || `Password reset link sent to ${normEmail}. Please check your inbox and spam folder.`;
-    } catch {
-      // Resilient fallback: store client-side reset token
-      const expiry = Date.now() + 15 * 60 * 1000;
-      const localToken = `${expiry}:local_fallback_${normEmail.replace(/[^a-z0-9]/g, "")}`;
-      try {
-        sessionStorage.setItem(`bg_reset_token_${normEmail}`, localToken);
-      } catch {}
-      return `Password reset link generated for ${normEmail}. You can now proceed to set your new password.`;
-    }
+    const res = await api.post("/api/auth/forgot-password", { email: normEmail });
+    return res.data?.message || `A secure password reset link has been dispatched to ${normEmail}. Please check your inbox.`;
   }
 
-  async function resetPassword(email: string, code: string, newPassword: string, customResetToken?: string): Promise<void> {
+  async function resetPassword(email: string, _code: string, newPassword: string, customResetToken?: string): Promise<void> {
     const normEmail = email.toLowerCase().trim();
-    let token = customResetToken;
-    if (!token) {
-      try {
-        token = sessionStorage.getItem(`bg_reset_token_${normEmail}`) || undefined;
-      } catch {}
+    if (!customResetToken || customResetToken.trim() === "") {
+      throw new Error("A valid password reset link from your email is required.");
     }
-    const payload: { email: string; newPassword: string; code?: string; resetToken?: string } = {
+    const payload = {
       email: normEmail,
       newPassword,
+      resetToken: customResetToken.trim(),
     };
-    if (token) {
-      payload.resetToken = token;
-    }
-    if (code) {
-      payload.code = code.trim();
-    }
+    const res = await api.post("/api/auth/reset-password", payload);
+    setToken(res.data.token);
+    setUser(enrichWithLocalStaff(res.data.user));
     try {
-      const res = await api.post("/api/auth/reset-password", payload);
-      setToken(res.data.token);
-      setUser(enrichWithLocalStaff(res.data.user));
-      try {
-        if (res.data?.authHash) {
-          localStorage.setItem(`bg_auth_hash_${normEmail}`, res.data.authHash);
-        }
-        localStorage.setItem(`bg_pwd_${normEmail}`, newPassword);
-      } catch {}
-    } catch (err: any) {
-      // Local fallback for users if network or server error occurs
-      let staffUser: User | null = null;
-      try {
-        const raw = localStorage.getItem("bg_staff_users");
-        if (raw) {
-          const list: User[] = JSON.parse(raw);
-          staffUser = list.find((u) => u.email && u.email.toLowerCase() === normEmail) || null;
-        }
-      } catch {}
-
-      const isExecutive = normEmail === "clemonbalasuriyagroup@gmail.com" || normEmail.includes("clemon") || normEmail.includes("balasuriya");
-      const fallbackUser: User = staffUser || {
-        id: `usr_${Date.now()}`,
-        name: isExecutive ? "Mr. Clemon Balasuriya" : normEmail.split("@")[0],
-        email: normEmail,
-        role: isExecutive ? "OWNER" : "CUSTOMER",
-        phone: isExecutive ? "+94 76 7171 938" : null,
-        department: isExecutive ? "Executive Board" : null,
-      };
-      try {
-        localStorage.setItem(`bg_pwd_${normEmail}`, newPassword);
-      } catch {}
-      setToken(`bg_token_${Date.now()}`);
-      setUser(enrichWithLocalStaff(fallbackUser));
-    }
+      if (res.data?.authHash) {
+        localStorage.setItem(`bg_auth_hash_${normEmail}`, res.data.authHash);
+      }
+      localStorage.setItem(`bg_pwd_${normEmail}`, newPassword);
+    } catch {}
   }
 
   async function changePassword(currentPassword: string, newPassword: string): Promise<void> {

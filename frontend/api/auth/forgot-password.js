@@ -1,8 +1,58 @@
 import crypto from "crypto";
 import fs from "fs";
+import os from "os";
+import path from "path";
 
 const HMAC_SECRET = process.env.JWT_SECRET || process.env.RESEND_API_KEY || "balasuriya_secure_otp_key_2026";
 const VERIFIED_FROM_EMAIL = "Balasuriya Group Security <security@balasuriyagroup.tech>";
+
+const KNOWN_STAFF = {
+  "clemonbalasuriyagroup@gmail.com": true,
+  "owner@balasuriyagroup.tech": true,
+  "damianbalasuriyagroup@gmail.com": true,
+  "damian@balasuriyagroup.tech": true,
+  "clavobalasuriyagroup@gmail.com": true,
+  "christinabalasuriyagroup@gmail.com": true,
+  "fonsekamigara@gmail.com": true,
+  "kaveen.construction@balasuriyagroup.tech": true,
+  "nimal.projects@balasuriyagroup.tech": true,
+  "rashmi.tours@balasuriyagroup.tech": true,
+  "dinuka.visa@balasuriyagroup.tech": true,
+  "pasinduhansana@gmail.com": true,
+  "thilina.dev@balasuriyagroup.tech": true,
+  "sanduni.qa@balasuriyagroup.tech": true,
+  "shenal@balasuriyagroup.tech": true,
+  "chathuri.flights@balasuriyagroup.tech": true,
+  "sunil.accounts@balasuriyagroup.tech": true,
+  "balasuriyagroup.info@gmail.com": true,
+};
+
+function isRegisteredEmail(email) {
+  const norm = String(email || "").toLowerCase().trim();
+  if (!norm) return false;
+  if (KNOWN_STAFF[norm]) return true;
+
+  const candidatePaths = [
+    path.join(os.tmpdir(), "balasuriya_accounts.json"),
+    "/tmp/balasuriya_accounts.json",
+    path.join(os.tmpdir(), "balasuriya_auth_users.json"),
+    "/tmp/balasuriya_auth_users.json"
+  ];
+
+  for (const p of candidatePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        const raw = fs.readFileSync(p, "utf-8");
+        const data = JSON.parse(raw);
+        if (data && data[norm]) return true;
+        if (Array.isArray(data) && data.some((u) => u.email && u.email.toLowerCase().trim() === norm)) {
+          return true;
+        }
+      }
+    } catch {}
+  }
+  return false;
+}
 
 function getResendApiKey() {
   if (process.env.RESEND_API_KEY) return process.env.RESEND_API_KEY.trim();
@@ -66,6 +116,14 @@ export default async function handler(req, res) {
   }
 
   const normalized = email.toLowerCase().trim();
+
+  // Strict check: only registered accounts can receive a password reset link
+  if (!isRegisteredEmail(normalized)) {
+    return sendJson(res, 404, {
+      message: "This email address is not registered in our system. Please verify your email or register a new account.",
+    });
+  }
+
   const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins validity
 
   // Cryptographically signed 1-click magic link token
@@ -80,7 +138,6 @@ export default async function handler(req, res) {
   const resetUrl = `${baseUrl}/forgot-password?token=${encodeURIComponent(linkToken)}&email=${encodeURIComponent(normalized)}`;
 
   let emailDispatched = false;
-  let dispatchError = null;
 
   const resendApiKey = getResendApiKey();
   if (resendApiKey) {
@@ -124,13 +181,13 @@ export default async function handler(req, res) {
                       Password Reset Request
                     </h2>
                     <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">
-                      We received a request to reset the password for your account:
+                      We received an official request to reset the password for your account:
                     </p>
                     <div style="background-color: #f1f5f9; border-left: 4px solid #0B1E3F; padding: 12px 16px; border-radius: 4px; font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 24px;">
                       ${normalized}
                     </div>
                     <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-bottom: 28px;">
-                      Click the button below to directly choose your new password. No verification code is needed:
+                      Click the secure button below to set your new password. This link is single-use and will expire in 15 minutes:
                     </p>
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
@@ -183,29 +240,21 @@ export default async function handler(req, res) {
             "X-Entity-Ref-ID": `${Date.now()}-${normalized}`,
           },
           html: emailHtml,
-          text: `BALASURIYA GROUP CORPORATE SECURITY\n\nPassword Reset Request\n\nWe received a request to reset the password for your account: ${normalized}\n\nClick the link below to directly set your new password:\n${resetUrl}\n\nThis single-use link expires in 15 minutes.\n\nBalasuriya Group Corporate Headquarters — Colombo, Sri Lanka`,
+          text: `BALASURIYA GROUP CORPORATE SECURITY\n\nPassword Reset Request\n\nWe received an official request to reset the password for your account: ${normalized}\n\nClick the link below to set your new password:\n${resetUrl}\n\nThis single-use link expires in 15 minutes.\n\nBalasuriya Group Corporate Headquarters — Colombo, Sri Lanka`,
         }),
       });
 
       if (resVerified.ok) {
         emailDispatched = true;
-        console.log(`[forgot-password] Email successfully dispatched to ${normalized}`);
-      } else {
-        const errText = await resVerified.text();
-        console.error(`[forgot-password] Resend API error: ${errText}`);
-        dispatchError = errText;
       }
     } catch (e) {
       console.error("[forgot-password] Email dispatch failed:", e);
-      dispatchError = e?.message || "Unknown error";
     }
   }
 
+  // Security: NEVER return the resetToken or resetUrl in the response payload!
   return sendJson(res, 200, {
-    message: `A secure password reset link has been dispatched to ${normalized}. Please check your inbox and spam folder.`,
-    resetToken: linkToken,
-    resetUrl,
+    message: `A secure password reset link has been dispatched to ${normalized}. Please check your inbox and open the link to set a new password.`,
     delivered: emailDispatched,
-    error: dispatchError,
   });
 }

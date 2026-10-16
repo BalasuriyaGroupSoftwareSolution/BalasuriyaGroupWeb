@@ -69,7 +69,36 @@ export default async function handler(req, res) {
         exp: Math.floor(Date.now() / 1000) + 7 * 86400,
     })).toString("base64url");
     const signature = crypto.createHmac("sha256", HMAC_SECRET).update(`${header}.${body}`).digest("base64url");
-    const token = `${header}.${body}.${signature}`;
+    const passwordHash = crypto.pbkdf2Sync(String(password), HMAC_SECRET, 10000, 64, "sha512").toString("hex");
+    try {
+        const os = await import("os");
+        const path = await import("path");
+        const fs = await import("fs");
+        const candidateAccountFiles = [
+            path.join(os.tmpdir(), "balasuriya_accounts.json"),
+            "/tmp/balasuriya_accounts.json",
+        ];
+        for (const acFile of candidateAccountFiles) {
+            try {
+                let all = {};
+                if (fs.existsSync(acFile)) {
+                    all = JSON.parse(fs.readFileSync(acFile, "utf-8"));
+                }
+                all[normalized] = {
+                    id: user.id,
+                    name: user.name,
+                    email: normalized,
+                    role: user.role,
+                    phone: user.phone,
+                    passwordHash,
+                    createdAt: Date.now(),
+                };
+                fs.writeFileSync(acFile, JSON.stringify(all, null, 2), "utf-8");
+                break;
+            } catch {}
+        }
+    } catch {}
+
     return sendJson(res, 201, {
         token,
         user,
