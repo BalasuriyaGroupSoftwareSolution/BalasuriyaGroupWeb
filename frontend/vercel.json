@@ -1,5 +1,20 @@
 {
   "rewrites": [
-    { "source": "/((?!api).*)", "destination": "/index.html" }
+    {
+      "source": "/api/users(.*)",
+      "destination": "/api/users"
+    },
+    {
+      "source": "/api/visas(.*)",
+      "destination": "/api/visas"
+    },
+    {
+      "source": "/api/inquiries(.*)",
+      "destination": "/api/inquiries"
+    },
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
+    }
   ]
 }
