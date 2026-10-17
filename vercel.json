@@ -3,15 +3,15 @@
   "outputDirectory": "frontend/dist",
   "rewrites": [
     {
-      "source": "/api/users/:path*",
+      "source": "/api/users(.*)",
       "destination": "/api/users"
     },
     {
-      "source": "/api/visas/:path*",
+      "source": "/api/visas(.*)",
       "destination": "/api/visas"
     },
     {
-      "source": "/api/inquiries/:path*",
+      "source": "/api/inquiries(.*)",
       "destination": "/api/inquiries"
     },
     {
