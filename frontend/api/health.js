@@ -8,9 +8,17 @@ export default function handler(req, res) {
     return res.end();
   }
 
+  let dbHost = null;
+  try {
+    if (process.env.DATABASE_URL) {
+      dbHost = new URL(process.env.DATABASE_URL).host;
+    }
+  } catch {}
+
   const data = {
     status: "ok",
     hasDb: Boolean(process.env.DATABASE_URL),
+    dbHost,
     timestamp: new Date().toISOString(),
   };
 
