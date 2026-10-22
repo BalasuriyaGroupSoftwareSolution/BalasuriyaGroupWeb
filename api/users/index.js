@@ -248,6 +248,7 @@ async function sendStaffWelcomeEmail(params) {
 }
 
 const INITIAL_DEMO_USERS = [
+  // Executive Board / Corporate Leadership
   {
     id: "usr_owner_1",
     name: "Mr. Clemon Balasuriya",
@@ -258,6 +259,7 @@ const INITIAL_DEMO_USERS = [
     jobTitle: "Group Chairman & CEO",
     assignedDivisions: ["Executive Board", "Construction & Engineering", "Tourism & Travel", "Software Solutions", "Air Ticketing", "Finance & Accounts"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_md_2",
@@ -270,6 +272,7 @@ const INITIAL_DEMO_USERS = [
     jobTitle: "Managing Director & Head of Tourism",
     assignedDivisions: ["Executive Board", "Tourism & Travel"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_ed_3",
@@ -281,6 +284,7 @@ const INITIAL_DEMO_USERS = [
     jobTitle: "Executive Director & Finance",
     assignedDivisions: ["Executive Board", "Finance & Accounts"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_dir_4",
@@ -292,7 +296,10 @@ const INITIAL_DEMO_USERS = [
     jobTitle: "Executive Director & Corporate Affairs",
     assignedDivisions: ["Executive Board"],
     isActive: true,
+    updatedAt: 1,
   },
+
+  // Construction & Civil Engineering Division
   {
     id: "usr_migara_5",
     name: "Mr. Migara Fonseka",
@@ -303,7 +310,72 @@ const INITIAL_DEMO_USERS = [
     jobTitle: "Head of Construction & Engineering",
     assignedDivisions: ["Construction & Engineering"],
     isActive: true,
+    updatedAt: 1,
   },
+  {
+    id: "usr_const_staff_1",
+    name: "Mr. Kaveen Jayasinghe",
+    email: "kaveen.construction@balasuriyagroup.tech",
+    phone: "+94 77 312 4567",
+    role: "CONSTRUCTION_STAFF",
+    department: "Construction & Engineering",
+    jobTitle: "Senior Civil Engineer & Site Supervisor",
+    assignedDivisions: ["Construction & Engineering"],
+    isActive: true,
+    updatedAt: 1,
+  },
+  {
+    id: "usr_const_staff_2",
+    name: "Mr. Nimal Perera",
+    email: "nimal.projects@balasuriyagroup.tech",
+    phone: "+94 77 423 5678",
+    role: "CONSTRUCTION_STAFF",
+    department: "Construction & Engineering",
+    jobTitle: "Quantity Surveyor & Field Coordinator",
+    assignedDivisions: ["Construction & Engineering"],
+    isActive: true,
+    updatedAt: 1,
+  },
+
+  // Tourism & Global Travel Division
+  {
+    id: "usr_damian_tours",
+    name: "Mr. Damian Balasuriya",
+    email: "damian@balasuriyagroup.tech",
+    phone: "+94 77 345 6789",
+    role: "TOURISM_AGENT",
+    department: "Tourism & Travel",
+    jobTitle: "Head of Tourism & Global Travel",
+    assignedDivisions: ["Tourism & Travel"],
+    isActive: true,
+    updatedAt: 1,
+  },
+  {
+    id: "usr_tour_staff_1",
+    name: "Ms. Rashmi Senanayake",
+    email: "rashmi.tours@balasuriyagroup.tech",
+    phone: "+94 77 534 6789",
+    role: "TOURISM_STAFF",
+    department: "Tourism & Travel",
+    jobTitle: "Senior Travel Consultant & Itinerary Planner",
+    assignedDivisions: ["Tourism & Travel"],
+    isActive: true,
+    updatedAt: 1,
+  },
+  {
+    id: "usr_tour_staff_2",
+    name: "Mr. Dinuka Silva",
+    email: "dinuka.visa@balasuriyagroup.tech",
+    phone: "+94 77 645 7890",
+    role: "TOURISM_STAFF",
+    department: "Tourism & Travel",
+    jobTitle: "Foreign Tours & Visa Officer",
+    assignedDivisions: ["Tourism & Travel"],
+    isActive: true,
+    updatedAt: 1,
+  },
+
+  // Software Solutions & IT Division
   {
     id: "usr_pasindu_6",
     name: "Mr. Pasindu Hansana",
@@ -315,7 +387,34 @@ const INITIAL_DEMO_USERS = [
     jobTitle: "Head of Software & Aviation Tech Lead",
     assignedDivisions: ["Software Solutions", "Air Ticketing"],
     isActive: true,
+    updatedAt: 1,
   },
+  {
+    id: "usr_soft_staff_1",
+    name: "Mr. Thilina Bandara",
+    email: "thilina.dev@balasuriyagroup.tech",
+    phone: "+94 77 756 8901",
+    role: "SOFTWARE_STAFF",
+    department: "Software Solutions",
+    jobTitle: "Senior Full-Stack Developer",
+    assignedDivisions: ["Software Solutions"],
+    isActive: true,
+    updatedAt: 1,
+  },
+  {
+    id: "usr_soft_staff_2",
+    name: "Ms. Sanduni Fernando",
+    email: "sanduni.qa@balasuriyagroup.tech",
+    phone: "+94 77 867 9012",
+    role: "SOFTWARE_STAFF",
+    department: "Software Solutions",
+    jobTitle: "QA Engineer & UI/UX Specialist",
+    assignedDivisions: ["Software Solutions"],
+    isActive: true,
+    updatedAt: 1,
+  },
+
+  // Air Ticketing & Global Reservations Division
   {
     id: "usr_shenal_7",
     name: "Mr. Shenal Fernando",
@@ -326,6 +425,33 @@ const INITIAL_DEMO_USERS = [
     jobTitle: "Head of Air Ticketing & Global Desk",
     assignedDivisions: ["Air Ticketing"],
     isActive: true,
+    updatedAt: 1,
+  },
+  {
+    id: "usr_ticket_staff_1",
+    name: "Ms. Chathuri Wickramasinghe",
+    email: "chathuri.flights@balasuriyagroup.tech",
+    phone: "+94 77 978 0123",
+    role: "TICKET_STAFF",
+    department: "Air Ticketing",
+    jobTitle: "Senior GDS Reservations Officer",
+    assignedDivisions: ["Air Ticketing"],
+    isActive: true,
+    updatedAt: 1,
+  },
+
+  // Finance & Accounts Division
+  {
+    id: "usr_fin_staff_1",
+    name: "Mr. Sunil Wickrema",
+    email: "sunil.accounts@balasuriyagroup.tech",
+    phone: "+94 77 189 1234",
+    role: "FINANCE_STAFF",
+    department: "Finance & Accounts",
+    jobTitle: "Senior Corporate Accounts Executive",
+    assignedDivisions: ["Finance & Accounts"],
+    isActive: true,
+    updatedAt: 1,
   },
 ];
 
@@ -361,7 +487,7 @@ export default async function handler(req, res) {
           id: u.id || existing.id || `usr_${Date.now()}`,
           name: u.name || existing.name || email.split("@")[0],
           email,
-          phone: u.phone || existing.phone || null,
+          phone: u.phone !== undefined ? u.phone : (existing.phone || null),
           role: u.role || existing.role || "STAFF",
           department: u.department || existing.department || null,
           jobTitle: u.jobTitle || existing.jobTitle || null,
@@ -369,6 +495,7 @@ export default async function handler(req, res) {
           assignedDivisions: u.assignedDivisions || existing.assignedDivisions || (u.department ? [u.department] : []),
           isActive: u.isActive !== false,
           createdAt: u.createdAt || existing.createdAt || new Date().toISOString(),
+          updatedAt: u.updatedAt || existing.updatedAt || Date.now(),
         });
       }
     }

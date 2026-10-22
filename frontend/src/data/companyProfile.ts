@@ -21,19 +21,19 @@ export const contactInfo = {
 
 export const testimonials = [
   {
-    name: "Ranil Wickramasinghe",
-    role: "CEO, Lanka Ventures",
-    text: "Balasuriya Construction delivered our headquarters on time and beyond expectations. Their attention to detail is remarkable.",
+    name: "Eng. Sanjeewa Wickramaratne",
+    role: "Project Director, Apex Commercial Developments",
+    text: "Balasuriya Construction delivered our multi-storey commercial facility on schedule and beyond expectations. Their engineering rigor and transparent progress tracking are exemplary.",
   },
   {
-    name: "Mohamed Rizwan",
-    role: "Travel Enthusiast",
-    text: "Best travel agency in Sri Lanka! They planned our entire family vacation perfectly.",
+    name: "Dr. K. M. Rizwan",
+    role: "Corporate Traveler & Delegate",
+    text: "Our international conference travel and family leisure tours were coordinated flawlessly by Balasuriya Tourism. Punctual airport transfers, premium accommodations, and zero hassle.",
   },
   {
     name: "Samantha Perera",
-    role: "Business Traveler",
-    text: "Booking flights through Balasuriya is effortless. Great deals and excellent customer service every time.",
+    role: "Senior Operations Lead, Global Logistics Ltd",
+    text: "Booking international flights and urgent visas through the Balasuriya Air Ticketing desk is effortless. Exceptional response times, verified itineraries, and 24/7 client support.",
   },
 ];
 
@@ -83,28 +83,28 @@ export const directors: TeamMember[] = [
 // Division Heads & Operational Leaders (without email addresses, per specification)
 export const operationalLeaders: TeamMember[] = [
   {
-    name: "Kevin",
-    role: "Software Leadership",
-    departmentScope: "Software & Solutions",
-    image: "kevin.jpg",
-  },
-  {
-    name: "Shenal",
-    role: "Software Operations & Marketing Execution",
-    departmentScope: "Software & Solutions",
-    image: "shenal.jpg",
-  },
-  {
-    name: "Migara",
-    role: "Construction Leadership",
-    departmentScope: "Construction",
+    name: "Migara Fonseka",
+    role: "Head of Construction & Engineering",
+    departmentScope: "Construction & Engineering",
     image: "migara.jpg",
   },
   {
-    name: "Pasindu",
-    role: "Construction Logistics & Marketing Execution",
-    departmentScope: "Construction",
+    name: "Pasindu Hansana",
+    role: "Head of Software & Aviation Tech Lead",
+    departmentScope: "Software Solutions & Aviation Technology",
     image: "pasindu.jpg",
+  },
+  {
+    name: "Shenal Fernando",
+    role: "Head of Air Ticketing & Global Desk",
+    departmentScope: "Air Ticketing & Global Bureau",
+    image: "shenal.jpg",
+  },
+  {
+    name: "Kevin",
+    role: "Software Leadership & Architecture",
+    departmentScope: "Software Solutions",
+    image: "kevin.jpg",
   },
 ];
 
@@ -117,36 +117,43 @@ export interface Department {
 
 export const departments: Department[] = [
   {
-    id: "software",
-    title: "Software & Solutions Operational Leadership",
-    description: "Enterprise software architecture, product engineering, scalable cloud operations, and marketing execution.",
+    id: "construction",
+    title: "Construction & Engineering Operational Leadership",
+    description: "Civil execution, structural engineering, supply chain logistics, and turnkey site development across Sri Lanka.",
     members: [
       {
-        name: "Kevin",
-        role: "Software Leadership",
-        image: "kevin.jpg",
-      },
-      {
-        name: "Shenal",
-        role: "Software Operations & Marketing Execution",
-        image: "shenal.jpg",
+        name: "Migara Fonseka",
+        role: "Head of Construction & Engineering",
+        image: "migara.jpg",
       },
     ],
   },
   {
-    id: "construction",
-    title: "Construction Operational Leadership",
-    description: "Site execution, structural engineering, supply chain logistics, and marketing execution across Sri Lanka.",
+    id: "software",
+    title: "Software Solutions & Technology Leadership",
+    description: "Enterprise cloud architecture, custom web platforms, mobile engineering, and corporate IT automation.",
     members: [
       {
-        name: "Migara",
-        role: "Construction Leadership",
-        image: "migara.jpg",
+        name: "Pasindu Hansana",
+        role: "Head of Software & Aviation Tech Lead",
+        image: "pasindu.jpg",
       },
       {
-        name: "Pasindu",
-        role: "Construction Logistics & Marketing Execution",
-        image: "pasindu.jpg",
+        name: "Kevin",
+        role: "Software Leadership & Architecture",
+        image: "kevin.jpg",
+      },
+    ],
+  },
+  {
+    id: "air-ticketing",
+    title: "Air Ticketing & Global Bureau Leadership",
+    description: "IATA flight ticketing, tourist and business visa assistance, GDS routing, and dedicated pre-embassy revision desk.",
+    members: [
+      {
+        name: "Shenal Fernando",
+        role: "Head of Air Ticketing & Global Desk",
+        image: "shenal.jpg",
       },
     ],
   },

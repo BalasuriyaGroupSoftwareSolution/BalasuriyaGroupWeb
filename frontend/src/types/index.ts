@@ -26,6 +26,7 @@ export interface User {
   assignedDivisions?: string[];
   isActive?: boolean;
   createdAt?: string;
+  updatedAt?: number;
 }
 
 export const DEPARTMENT_ROLES_MAP: Record<string, { leader: Role; staff: Role }> = {

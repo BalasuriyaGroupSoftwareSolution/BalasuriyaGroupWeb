@@ -22,6 +22,9 @@ import SoftwarePublic from "./pages/SoftwarePublic";
 import QuoteWizard from "./pages/QuoteWizard";
 import Careers from "./pages/Careers";
 import Sustainability from "./pages/Sustainability";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import BookingTerms from "./pages/BookingTerms";
 
 import StaffLayout from "./pages/staff/StaffLayout";
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -44,6 +47,9 @@ export default function App() {
           <Route path="/careers" element={<Careers />} />
           <Route path="/sustainability" element={<Sustainability />} />
           <Route path="/quote" element={<QuoteWizard />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/booking-terms" element={<BookingTerms />} />
 
           {/* Authentication & Security Routes */}
           <Route path="/login" element={<Login />} />

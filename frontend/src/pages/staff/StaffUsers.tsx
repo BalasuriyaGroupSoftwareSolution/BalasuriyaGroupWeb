@@ -4,6 +4,7 @@ import {
   Building2,
   CheckCircle2,
   Copy,
+  Download,
   Filter,
   KeyRound,
   Mail,
@@ -14,6 +15,7 @@ import {
   Shield,
   ShieldAlert,
   Trash2,
+  Upload,
   UserCheck,
   UserPlus,
   Users,
@@ -246,6 +248,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Group Chairman & CEO",
     assignedDivisions: ["Executive Board", "Construction & Engineering", "Tourism & Travel", "Software Solutions", "Air Ticketing", "Finance & Accounts"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_md_2",
@@ -258,6 +261,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Managing Director & Head of Tourism",
     assignedDivisions: ["Executive Board", "Tourism & Travel"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_ed_3",
@@ -269,6 +273,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Executive Director & Finance",
     assignedDivisions: ["Executive Board", "Finance & Accounts"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_dir_4",
@@ -280,6 +285,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Executive Director & Corporate Affairs",
     assignedDivisions: ["Executive Board"],
     isActive: true,
+    updatedAt: 1,
   },
 
   // Construction & Civil Engineering Division
@@ -293,6 +299,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Head of Construction & Engineering",
     assignedDivisions: ["Construction & Engineering"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_const_staff_1",
@@ -304,6 +311,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Senior Civil Engineer & Site Supervisor",
     assignedDivisions: ["Construction & Engineering"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_const_staff_2",
@@ -315,6 +323,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Quantity Surveyor & Field Coordinator",
     assignedDivisions: ["Construction & Engineering"],
     isActive: true,
+    updatedAt: 1,
   },
 
   // Tourism & Global Travel Division
@@ -328,6 +337,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Head of Tourism & Global Travel",
     assignedDivisions: ["Tourism & Travel"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_tour_staff_1",
@@ -339,6 +349,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Senior Travel Consultant & Itinerary Planner",
     assignedDivisions: ["Tourism & Travel"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_tour_staff_2",
@@ -350,6 +361,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Foreign Tours & Visa Officer",
     assignedDivisions: ["Tourism & Travel"],
     isActive: true,
+    updatedAt: 1,
   },
 
   // Software Solutions & IT Division
@@ -364,6 +376,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Head of Software & Aviation Tech Lead",
     assignedDivisions: ["Software Solutions", "Air Ticketing"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_soft_staff_1",
@@ -375,6 +388,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Senior Full-Stack Developer",
     assignedDivisions: ["Software Solutions"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_soft_staff_2",
@@ -386,6 +400,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "QA Engineer & UI/UX Specialist",
     assignedDivisions: ["Software Solutions"],
     isActive: true,
+    updatedAt: 1,
   },
 
   // Air Ticketing & Global Reservations Division
@@ -399,6 +414,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Head of Air Ticketing & Global Desk",
     assignedDivisions: ["Air Ticketing"],
     isActive: true,
+    updatedAt: 1,
   },
   {
     id: "usr_ticket_staff_1",
@@ -410,6 +426,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Senior GDS Reservations Officer",
     assignedDivisions: ["Air Ticketing"],
     isActive: true,
+    updatedAt: 1,
   },
 
   // Finance & Accounts Division
@@ -423,6 +440,7 @@ const INITIAL_DEMO_USERS: User[] = [
     jobTitle: "Senior Corporate Accounts Executive",
     assignedDivisions: ["Finance & Accounts"],
     isActive: true,
+    updatedAt: 1,
   },
 ];
 
@@ -520,7 +538,10 @@ function mergeUsers(remote: User[], local: User[]): User[] {
   for (const r of safeRemote) {
     const localMatch = (r.id && localMap.get(r.id)) || (r.email && localMap.get(r.email.toLowerCase()));
     if (localMatch) {
-      const combined = { ...r, ...localMatch };
+      const localTime = localMatch.updatedAt || 0;
+      const remoteTime = (r as any).updatedAt || 0;
+      // If local version has equal or newer timestamp, local edits take absolute priority!
+      const combined = (localTime >= remoteTime) ? { ...r, ...localMatch } : { ...localMatch, ...r };
       merged.push(combined);
       if (combined.id) added.add(combined.id);
       if (combined.email) added.add(combined.email.toLowerCase());
@@ -751,6 +772,7 @@ export default function StaffUsers() {
       secondaryRoles: finalSecondaryRoles,
       assignedDivisions: finalAssignedDivisions,
       isActive: true,
+      updatedAt: Date.now(),
     };
 
     try {
@@ -870,7 +892,7 @@ export default function StaffUsers() {
       toast.error("You are not authorized to modify this user's role.");
       return;
     }
-    const updated = { ...user, role: newRole };
+    const updated = { ...user, role: newRole, updatedAt: Date.now() };
     setUsers((prev) => {
       const next = prev.map((u) => (u.id === user.id ? updated : u));
       persistUsers(next);
@@ -896,7 +918,7 @@ export default function StaffUsers() {
       return;
     }
     const nextState = !user.isActive;
-    const updated = { ...user, isActive: nextState };
+    const updated = { ...user, isActive: nextState, updatedAt: Date.now() };
     setUsers((prev) => {
       const next = prev.map((u) => (u.id === user.id ? updated : u));
       persistUsers(next);
@@ -1154,6 +1176,7 @@ export default function StaffUsers() {
       secondaryRoles: finalSecondaryRoles,
       assignedDivisions: finalDivisions,
       isActive: editIsActive,
+      updatedAt: Date.now(),
     };
 
     // 1. Immediately update UI state & persist to localStorage so it can never be lost
@@ -1200,6 +1223,81 @@ export default function StaffUsers() {
     } finally {
       setEditSubmitting(false);
     }
+  }
+
+  function handleExportBackup() {
+    try {
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        version: "1.0",
+        users,
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `balasuriya_staff_roster_backup_${dateStr}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Staff roster backup downloaded successfully!");
+    } catch {
+      toast.error("Failed to generate backup file.");
+    }
+  }
+
+  function handleImportBackup(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const text = evt.target?.result as string;
+        const parsed = JSON.parse(text);
+        const importedUsers: User[] = Array.isArray(parsed)
+          ? parsed
+          : Array.isArray(parsed?.users)
+          ? parsed.users
+          : null;
+
+        if (!importedUsers || importedUsers.length === 0) {
+          toast.error("Invalid backup file: no staff user records found.");
+          return;
+        }
+
+        const validUsers = importedUsers
+          .filter((u) => u && u.email && u.name)
+          .map((u) => ({
+            ...u,
+            updatedAt: Date.now(),
+          }));
+
+        if (validUsers.length === 0) {
+          toast.error("No valid staff records found in the uploaded file.");
+          return;
+        }
+
+        const merged = mergeUsers(validUsers, users);
+        setUsers(merged);
+        persistUsers(merged);
+        toast.success(`Successfully restored ${validUsers.length} staff records from backup!`);
+
+        for (const u of validUsers) {
+          try {
+            await api.patch(`/api/users/${u.id || encodeURIComponent(u.email)}`, u);
+          } catch {}
+        }
+      } catch {
+        toast.error("Failed to read or parse the JSON backup file.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   }
 
   function toggleSecondaryRole(r: Role, currentList: Role[], setter: (val: Role[]) => void) {
@@ -1300,13 +1398,36 @@ Balasuriya Group`;
             Manage multi-divisional leaders, cross-section roles, operational staff, and send official credential notifications.
           </p>
         </div>
-        <button
-          onClick={() => setShowNew((s) => !s)}
-          className="btn-primary flex items-center gap-2 text-xs py-2.5 px-5 self-start shadow-sm"
-        >
-          <UserPlus className="h-4 w-4" />
-          {showNew ? "Close Form" : "Add Section Staff"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <label className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 cursor-pointer border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm" title="Restore staff directory from JSON backup file">
+            <Upload className="h-3.5 w-3.5 text-gray-500" />
+            Restore Backup
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleImportBackup}
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={handleExportBackup}
+            className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm"
+            title="Download JSON backup of current staff roster"
+          >
+            <Download className="h-3.5 w-3.5 text-gray-500" />
+            Backup Roster
+          </button>
+
+          <button
+            onClick={() => setShowNew((s) => !s)}
+            className="btn-primary flex items-center gap-2 text-xs py-2 px-4 shadow-sm"
+          >
+            <UserPlus className="h-4 w-4" />
+            {showNew ? "Close Form" : "Add Section Staff"}
+          </button>
+        </div>
       </div>
 
       {/* Multi-Division or Single Division Leader Context Banner */}
@@ -1648,9 +1769,8 @@ Balasuriya Group`;
 
       {/* Edit Staff Details Modal with Cross-Section Assignment */}
       {editingUser && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 backdrop-blur-sm p-3 sm:p-6">
-          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
-            <div className="relative w-full max-w-xl my-auto rounded-2xl bg-white shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-6rem)]">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 backdrop-blur-sm p-4 sm:p-6 flex items-start sm:items-center justify-center">
+          <div className="relative w-full max-w-xl my-4 sm:my-auto rounded-2xl bg-white shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)]">
               {/* Pinned Modal Header */}
               <div className="flex items-start justify-between border-b border-gray-100 p-5 sm:p-6 bg-white flex-shrink-0">
                 <div className="flex items-center gap-3">
@@ -1887,8 +2007,7 @@ Balasuriya Group`;
               </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Department Tabs Bar */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-gray-200 text-xs">

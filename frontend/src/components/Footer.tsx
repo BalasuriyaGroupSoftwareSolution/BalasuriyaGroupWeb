@@ -180,12 +180,12 @@ export function Footer() {
       <div className="border-t border-white/10 py-5 text-center text-xs text-white/50">
         <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-center justify-between gap-3 px-4">
           <p>© {new Date().getFullYear()} Balasuriya Group (Pvt) Ltd. All rights reserved.</p>
-          <div className="flex items-center gap-4 text-white/60">
-            <Link to="/about" className="hover:text-white">Privacy Policy</Link>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-white/60">
+            <Link to="/privacy" className="hover:text-white transition">Privacy Policy</Link>
             <span>•</span>
-            <Link to="/about" className="hover:text-white">Terms of Engagement</Link>
+            <Link to="/terms" className="hover:text-white transition">Terms of Engagement</Link>
             <span>•</span>
-            <Link to="/about" className="hover:text-white">Security Disclosures</Link>
+            <Link to="/booking-terms" className="hover:text-white transition">Ticketing &amp; Visa Policy</Link>
           </div>
         </div>
       </div>
