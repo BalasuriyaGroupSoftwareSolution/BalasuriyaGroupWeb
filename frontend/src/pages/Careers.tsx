@@ -229,13 +229,12 @@ export default function Careers() {
 
       {/* Application Modal */}
       {selectedJob && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 p-3 sm:p-6 backdrop-blur-sm">
-          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl my-auto"
-            >
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 p-4 sm:p-6 backdrop-blur-sm flex items-start sm:items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl my-4 sm:my-auto max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)] overflow-y-auto"
+          >
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <div>
                 <h3 className="font-display font-bold text-base text-brand-navy">Apply for Position</h3>
@@ -309,7 +308,6 @@ export default function Careers() {
             </form>
           </motion.div>
         </div>
-      </div>
       )}
     </div>
   );

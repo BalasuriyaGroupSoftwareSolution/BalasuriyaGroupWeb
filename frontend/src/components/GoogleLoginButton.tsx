@@ -147,9 +147,8 @@ export function GoogleLoginButton() {
 
       {/* Modal for Google Account Sign In when OAuth Client ID is not configured */}
       {showPromptModal && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 p-3 sm:p-6 backdrop-blur-sm">
-          <div className="flex min-h-full items-start justify-center pt-8 pb-12 sm:py-12">
-            <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/10 my-auto">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 p-4 sm:p-6 backdrop-blur-sm flex items-start sm:items-center justify-center">
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/10 my-4 sm:my-auto max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)] overflow-y-auto">
             <div className="flex items-center gap-3 border-b border-gray-100 pb-3 mb-4">
               <svg className="h-6 w-6" viewBox="0 0 24 24">
                 <path
@@ -219,7 +218,6 @@ export function GoogleLoginButton() {
             </form>
           </div>
         </div>
-      </div>
       )}
     </div>
   );
