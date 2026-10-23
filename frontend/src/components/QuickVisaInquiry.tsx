@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { api } from "../lib/api";
+import { api, apiErrorMessage } from "../lib/api";
 import { contactInfo } from "../data/companyProfile";
 import toast from "react-hot-toast";
 
@@ -127,17 +127,11 @@ export default function QuickVisaInquiry({
 
       const ref = res.data?.referenceId || `BG-VISA-INQ-${Date.now().toString().slice(-6)}`;
       setSubmittedRef(ref);
-      toast.success("Visa application emailed to balasuriyagroup.info@gmail.com!");
+      toast.success("Visa request received — our visa desk will contact you shortly.");
     } catch (err) {
-      // Fallback: Mailto link with applicant email CC'd
-      const subject = encodeURIComponent(`Online Visa Application: ${country} (${fullName})`);
-      const body = encodeURIComponent(
-        `APPLICANT EMAIL: ${email}\n` +
-        `APPLICANT PHONE: ${phone || "Not specified"}\n\n` +
-        generateSummaryText()
-      );
-      window.location.href = `mailto:${contactInfo.email}?cc=${encodeURIComponent(email)}&subject=${subject}&body=${body}`;
-      toast.success("Opening your email client to dispatch to balasuriyagroup.info@gmail.com");
+      // Don't silently open the visitor's mail app — tell them it failed so they can retry
+      // or choose "Send via email app" / WhatsApp themselves.
+      toast.error(apiErrorMessage(err, "Your visa request couldn't be sent. Please try again, or use WhatsApp."));
     } finally {
       setSubmittingEmail(false);
     }

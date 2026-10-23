@@ -138,7 +138,8 @@ visasRouter.post(
       }
     }
 
-    sendInquiryNotificationEmail({
+    // Awaited: on Vercel, work left running after the response is frozen and lost.
+    await sendInquiryNotificationEmail({
       division: "VISA",
       name: app!.userName,
       email: app!.userEmail,
@@ -147,7 +148,9 @@ visasRouter.post(
       // Passport number deliberately left out of email — staff see it in the portal.
       message: `Reference: ${app!.referenceNo}\nCountry: ${app!.country}\nCategory: ${app!.category}\nArrival: ${app!.intendedArrivalDate ?? "-"}\nStay: ${app!.stayDurationDays ?? "-"} days`,
       referenceId: app!.referenceNo,
-    }).catch(() => {});
+    }).then((m) => {
+      if (!m.success) console.error(`[visas] notification email failed for ${app!.referenceNo}: ${m.error}`);
+    });
 
     res.status(201).json({ success: true, application: toRecord(app), message: "Visa application submitted." });
   })

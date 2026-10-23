@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Reveal } from "../components/Reveal";
 import { contactInfo } from "../data/companyProfile";
-import { api } from "../lib/api";
+import { api, apiErrorMessage } from "../lib/api";
 import QuickVisaInquiry from "../components/QuickVisaInquiry";
 import toast from "react-hot-toast";
 
@@ -131,17 +131,11 @@ export default function AirTicketingPublic() {
       });
 
       const ref = res.data?.referenceId || `BG-FLIGHT-${Date.now().toString().slice(-6)}`;
-      toast.success(`Flight inquiry dispatched to ${contactInfo.email} (Ref: ${ref})!`);
+      toast.success(`Flight request received — our ticketing desk will contact you shortly (Ref: ${ref}).`);
     } catch (err) {
-      // Fallback: Mailto link with applicant CC'd
-      const subject = encodeURIComponent(`Air Ticket Inquiry: ${fromCity} to ${toCity} (${contactName})`);
-      const body = encodeURIComponent(
-        `APPLICANT EMAIL: ${contactEmail}\n` +
-        `APPLICANT PHONE: ${contactPhone || "Not specified"}\n\n` +
-        generateFlightSummaryText()
-      );
-      window.location.href = `mailto:${contactInfo.email}?cc=${encodeURIComponent(contactEmail)}&subject=${subject}&body=${body}`;
-      toast.success("Opening your email client to dispatch flight inquiry.");
+      // Don't silently open the visitor's mail app — tell them it failed so they can retry
+      // or choose "Send via email app" / WhatsApp themselves.
+      toast.error(apiErrorMessage(err, "Your flight request couldn't be sent. Please try again, or use WhatsApp."));
     } finally {
       setSubmitting(false);
     }

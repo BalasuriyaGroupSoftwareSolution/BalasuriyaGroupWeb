@@ -18,7 +18,13 @@ const inquirySchema = z.object({
   division: z.enum(["CONSTRUCTION", "TOURISM", "SOFTWARE", "AIR_TICKETING", "GENERAL", "VISA"]),
   name: z.string().min(2).max(120),
   email: z.string().email(),
-  phone: z.string().min(7).max(25).optional(),
+  // Forms send "" when the visitor leaves phone blank — treat that as "not given".
+  phone: z
+    .string()
+    .trim()
+    .max(25)
+    .optional()
+    .transform((v) => (v ? v : undefined)),
   subject: z.string().min(3).max(200),
   message: z.string().min(5).max(4000),
   details: z.record(z.any()).optional(),
@@ -83,8 +89,9 @@ inquiriesRouter.post(
       referenceId = booking.id;
     }
 
-    // Notify balasuriyagroup.info@gmail.com asynchronously
-    sendInquiryNotificationEmail({
+    // Send the email BEFORE replying. On Vercel the function is frozen as soon
+    // as the response is sent, so a "send in the background" email never leaves.
+    const mail = await sendInquiryNotificationEmail({
       division: data.division,
       name: data.name,
       email: data.email,
@@ -92,11 +99,15 @@ inquiriesRouter.post(
       subject: data.subject,
       message: data.message,
       referenceId,
-    }).catch((err) => console.error("[INQUIRIES_ROUTE] Mail notification error:", err));
+    });
+    if (!mail.success) {
+      console.error(`[inquiries] saved ${referenceId} but notification email failed: ${mail.error}`);
+    }
 
     res.status(201).json({
       success: true,
       referenceId,
+      emailSent: mail.success,
       message: "Thank you! Your inquiry and quote request has been received. Our team will contact you shortly.",
     });
   })

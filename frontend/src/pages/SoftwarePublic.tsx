@@ -20,7 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Reveal } from "../components/Reveal";
-import { api } from "../lib/api";
+import { api, apiErrorMessage } from "../lib/api";
 import toast from "react-hot-toast";
 
 const SERVICES = [
@@ -127,11 +127,9 @@ export default function SoftwarePublic() {
       setRfqPhone("");
       setRfqScope("");
     } catch (err) {
-      toast.success("Proposal request recorded for our engineering team!");
-      setRfqName("");
-      setRfqEmail("");
-      setRfqPhone("");
-      setRfqScope("");
+      // Don't silently open the visitor's mail app — tell them it failed so they can retry
+      // or choose "Send via email app" / WhatsApp themselves.
+      toast.error(apiErrorMessage(err, "Your proposal request couldn't be sent. Please try again, or use WhatsApp."));
     } finally {
       setSubmittingRfq(false);
     }
