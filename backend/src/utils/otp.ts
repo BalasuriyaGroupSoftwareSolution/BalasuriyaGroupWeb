@@ -1,89 +1,53 @@
 import crypto from "crypto";
 import { prisma } from "../lib/prisma.js";
-import { sendVerificationEmail } from "./mailer.js";
+import { sendOtpEmail } from "./mailer.js";
 
 const CODE_TTL_MINUTES = 10;
+const MAX_ACTIVE_CODES_PER_HOUR = 5;
 
-// High-reliability in-memory store to guarantee OTP works even if database connections fluctuate
-interface StoredCode {
-  code: string;
-  expiresAt: Date;
-  consumed: boolean;
-}
-const memoryOtpStore = new Map<string, StoredCode>();
-
-function generateSixDigitCode(): string {
-  // Cryptographically secure 6-digit random code (100000 - 999999)
-  return String(crypto.randomInt(100000, 1000000));
+function hashCode(identifier: string, code: string) {
+  // Store only a hash, so a database leak doesn't expose live codes.
+  return crypto.createHash("sha256").update(`${identifier}:${code}`).digest("hex");
 }
 
-export async function createVerificationCode(identifier: string, resetUrl?: string): Promise<string> {
-  const normalized = identifier.toLowerCase();
-  const code = generateSixDigitCode();
-  const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000);
+/** Creates a 6-digit code in the database (serverless-safe) and emails it. Never logs the code. */
+export async function createVerificationCode(identifier: string): Promise<void> {
+  const normalized = identifier.toLowerCase().trim();
 
-  // 1. Save in in-memory store
-  memoryOtpStore.set(normalized, { code, expiresAt, consumed: false });
+  const recent = await prisma.verificationCode.count({
+    where: { identifier: normalized, createdAt: { gt: new Date(Date.now() - 60 * 60 * 1000) } },
+  });
+  if (recent >= MAX_ACTIVE_CODES_PER_HOUR) return; // silently throttle
 
-  // 2. Persist to database if available
-  try {
-    await prisma.verificationCode.updateMany({
-      where: { identifier: normalized, consumed: false },
-      data: { consumed: true },
-    });
-
-    await prisma.verificationCode.create({
-      data: { identifier: normalized, code, expiresAt },
-    });
-  } catch (err) {
-    console.warn("[OTP] Database save skipped, active in-memory OTP valid:", err);
-  }
-
-  // 3. Dispatch real email
-  sendVerificationEmail(normalized, code, resetUrl).catch((err) => {
-    console.error("[OTP] Email delivery encountered error:", err);
+  const code = String(crypto.randomInt(100000, 1000000));
+  await prisma.verificationCode.updateMany({
+    where: { identifier: normalized, consumed: false },
+    data: { consumed: true },
+  });
+  await prisma.verificationCode.create({
+    data: {
+      identifier: normalized,
+      code: hashCode(normalized, code),
+      expiresAt: new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000),
+    },
   });
 
-  console.log(`[OTP] Generated 6-digit verification code for ${normalized}: ${code}`);
-  return code;
+  await sendOtpEmail(normalized, code);
 }
 
 export async function consumeVerificationCode(identifier: string, code: string): Promise<boolean> {
-  if (!code || code.length !== 6) return false;
-  const normalized = identifier.toLowerCase();
+  if (!/^\d{6}$/.test(code)) return false;
+  const normalized = identifier.toLowerCase().trim();
 
-  // 1. Check in-memory store
-  const memRecord = memoryOtpStore.get(normalized);
-  if (memRecord && memRecord.code === code && !memRecord.consumed) {
-    if (memRecord.expiresAt > new Date()) {
-      memRecord.consumed = true;
-      memoryOtpStore.set(normalized, memRecord);
-      return true;
-    }
-  }
-
-  // 2. Check database store
-  try {
-    const record = await prisma.verificationCode.findFirst({
-      where: {
-        identifier: normalized,
-        code,
-        consumed: false,
-        expiresAt: { gt: new Date() },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (record) {
-      await prisma.verificationCode.update({
-        where: { id: record.id },
-        data: { consumed: true },
-      });
-      return true;
-    }
-  } catch (err) {
-    console.warn("[OTP] Database lookup error in consumeVerificationCode:", err);
-  }
-
-  return false;
+  // Atomic: only one request can flip consumed=false -> true.
+  const result = await prisma.verificationCode.updateMany({
+    where: {
+      identifier: normalized,
+      code: hashCode(normalized, code),
+      consumed: false,
+      expiresAt: { gt: new Date() },
+    },
+    data: { consumed: true },
+  });
+  return result.count > 0;
 }

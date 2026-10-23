@@ -1,254 +1,198 @@
 import { Router } from "express";
-import fs from "fs";
+import crypto from "crypto";
+import { z } from "zod";
+import rateLimit from "express-rate-limit";
+import { prisma } from "../lib/prisma.js";
+import { authenticate, userRoles } from "../middleware/auth.js";
+import { asyncHandler, HttpError } from "../middleware/errorHandler.js";
 import { sendInquiryNotificationEmail } from "../utils/mailer.js";
 
 export const visasRouter = Router();
 
-const VISAS_FILE = "/tmp/balasuriya_visa_applications.json";
+/** Staff who handle visas. They see and update every application. */
+const VISA_STAFF = ["OWNER", "ADMIN", "TOURISM_AGENT", "TOURISM_STAFF", "TICKET_AGENT", "TICKET_STAFF"];
+const isVisaStaff = (u: Express.Request["user"]) => userRoles(u).some((r) => VISA_STAFF.includes(r));
 
-export interface VisaRecord {
-  id: string;
-  referenceNo: string;
-  userEmail: string;
-  userName: string;
-  phone: string;
-  country: string;
-  countryFlag: string;
-  category: "TOURIST" | "BUSINESS" | "TRANSIT" | "STUDENT" | "CONFERENCE";
-  visaTypeLabel: string;
-  entryType: "SINGLE" | "MULTIPLE";
-  passportNumber: string;
-  passportExpiry: string;
-  passportIssueDate?: string;
-  nationality: string;
-  dateOfBirth?: string;
-  gender?: "MALE" | "FEMALE" | "OTHER";
-  occupation?: string;
-  employerName?: string;
-  intendedArrivalDate: string;
-  intendedDepartureDate?: string;
-  stayDurationDays?: number;
-  destinationAddress?: string;
-  sponsorCompany?: string;
-  sponsorContact?: string;
-  meetingPurpose?: string;
-  notes?: string;
-  documentSummary?: string;
-  status: "SUBMITTED" | "UNDER_REVIEW" | "DOCS_REQUIRED" | "EMBASSY_PROCESSING" | "APPROVED" | "REJECTED";
-  statusNotes?: string;
-  submittedAt: string;
-  updatedAt: string;
-  canEdit?: boolean;
+/** Applicants may only edit while the application is still with us. */
+const APPLICANT_EDITABLE = new Set(["SUBMITTED", "DOCS_REQUIRED"]);
+
+const submitLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  message: { message: "Too many applications from this connection. Please try again later." },
+});
+
+const str = (max = 200) => z.string().trim().max(max).optional().nullable();
+
+// Fields an applicant fills in. Status fields are deliberately absent.
+const applicantFields = z.object({
+  userName: z.string().trim().min(2).max(120),
+  phone: z.string().trim().min(7).max(25),
+  country: z.string().trim().min(2).max(120),
+  countryFlag: str(16),
+  category: z.enum(["TOURIST", "BUSINESS", "TRANSIT", "STUDENT", "CONFERENCE"]),
+  visaTypeLabel: str(),
+  entryType: z.enum(["SINGLE", "MULTIPLE"]).default("SINGLE"),
+  passportNumber: z.string().trim().min(5).max(20).transform((s) => s.toUpperCase()),
+  passportExpiry: str(20),
+  passportIssueDate: str(20),
+  nationality: str(80),
+  dateOfBirth: str(20),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional().nullable(),
+  occupation: str(),
+  employerName: str(),
+  intendedArrivalDate: str(20),
+  intendedDepartureDate: str(20),
+  stayDurationDays: z.coerce.number().int().min(1).max(3650).optional().nullable(),
+  destinationAddress: str(400),
+  sponsorCompany: str(),
+  sponsorContact: str(),
+  meetingPurpose: str(1000),
+  notes: str(2000),
+  documentSummary: str(1000),
+});
+
+const createSchema = applicantFields.extend({ userEmail: z.string().email().optional() });
+
+/** Strip unknown keys a client may send (id, status, submittedAt…). */
+function toRecord(app: any) {
+  return {
+    ...app,
+    submittedAt: app.submittedAt instanceof Date ? app.submittedAt.toISOString() : app.submittedAt,
+    updatedAt: app.updatedAt instanceof Date ? app.updatedAt.toISOString() : app.updatedAt,
+    canEdit: APPLICANT_EDITABLE.has(app.status),
+  };
 }
 
-const DEFAULT_VISAS: VisaRecord[] = [
-  {
-    id: "visa_demo_1",
-    referenceNo: "BG-VISA-2026-8812",
-    userEmail: "client@balasuriyagroup.tech",
-    userName: "Deshamanya Rohan De Silva",
-    phone: "+94 77 123 4567",
-    country: "United Arab Emirates (Dubai)",
-    countryFlag: "🇦🇪",
-    category: "TOURIST",
-    visaTypeLabel: "30-Day Express Tourist eVisa",
-    entryType: "SINGLE",
-    passportNumber: "N8921456",
-    passportExpiry: "2029-11-20",
-    passportIssueDate: "2019-11-21",
-    nationality: "Sri Lankan",
-    dateOfBirth: "1984-06-14",
-    gender: "MALE",
-    occupation: "Managing Director",
-    employerName: "De Silva Logistics Ltd",
-    intendedArrivalDate: "2026-11-20",
-    intendedDepartureDate: "2026-12-05",
-    stayDurationDays: 15,
-    destinationAddress: "Atlantis The Royal, Palm Jumeirah, Dubai",
-    status: "UNDER_REVIEW",
-    statusNotes: "Preliminary documents verified. Submitting to UAE Immigration portal.",
-    submittedAt: "2026-10-12T09:00:00Z",
-    updatedAt: "2026-10-14T11:30:00Z",
-  },
-  {
-    id: "visa_demo_2",
-    referenceNo: "BG-VISA-2026-4409",
-    userEmail: "client@balasuriyagroup.tech",
-    userName: "Niluka Jayawardene",
-    phone: "+94 71 987 6543",
-    country: "United Kingdom (UK)",
-    countryFlag: "🇬🇧",
-    category: "BUSINESS",
-    visaTypeLabel: "Standard Visitor Business Visa",
-    entryType: "MULTIPLE",
-    passportNumber: "N7612984",
-    passportExpiry: "2031-04-10",
-    passportIssueDate: "2021-04-11",
-    nationality: "Sri Lankan",
-    dateOfBirth: "1988-02-18",
-    gender: "FEMALE",
-    occupation: "Senior Consultant",
-    employerName: "Apex FinTech Solutions",
-    intendedArrivalDate: "2026-12-01",
-    intendedDepartureDate: "2026-12-14",
-    stayDurationDays: 14,
-    destinationAddress: "Hilton London Bankside, Great Suffolk St",
-    sponsorCompany: "Global Trade Partnerships UK Ltd",
-    sponsorContact: "+44 20 7946 0192",
-    meetingPurpose: "Annual Bilateral Trade Expo & Tech Partnership Delegation",
-    status: "DOCS_REQUIRED",
-    statusNotes: "Please upload the official UK Sponsor Letter signed by director before embassy submission.",
-    submittedAt: "2026-10-10T14:15:00Z",
-    updatedAt: "2026-10-13T10:00:00Z",
-  },
-];
+async function findOwned(req: Express.Request, idOrRef: string) {
+  const app = await prisma.visaApplication.findFirst({
+    where: { OR: [{ id: idOrRef }, { referenceNo: idOrRef }] },
+  });
+  if (!app) throw new HttpError(404, "Visa application not found.");
+  const user = req.user!;
+  const owns = app.userId === user.id || app.userEmail === user.email.toLowerCase();
+  if (!owns && !isVisaStaff(user)) throw new HttpError(404, "Visa application not found.");
+  return { app, owns };
+}
 
-function loadVisas(): VisaRecord[] {
-  try {
-    if (fs.existsSync(VISAS_FILE)) {
-      const data = fs.readFileSync(VISAS_FILE, "utf-8");
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+function newReference() {
+  return `BG-VISA-${new Date().getFullYear()}-${crypto.randomInt(100000, 1000000)}`;
+}
+
+// All visa routes require a signed-in user: these records hold passport data.
+visasRouter.use(authenticate);
+
+// Applicant: own applications. Visa staff: everything (optionally ?status=).
+visasRouter.get(
+  "/",
+  asyncHandler(async (req, res) => {
+    const user = req.user!;
+    const staff = isVisaStaff(user);
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    const apps = await prisma.visaApplication.findMany({
+      where: staff
+        ? status
+          ? { status: status as any }
+          : undefined
+        : { OR: [{ userId: user.id }, { userEmail: user.email.toLowerCase() }] },
+      orderBy: { submittedAt: "desc" },
+    });
+    res.json({ applications: apps.map(toRecord) });
+  })
+);
+
+visasRouter.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const { app } = await findOwned(req, req.params.id);
+    res.json({ application: toRecord(app) });
+  })
+);
+
+visasRouter.post(
+  "/",
+  submitLimiter,
+  asyncHandler(async (req, res) => {
+    const user = req.user!;
+    const data = createSchema.parse(req.body);
+    // Customers always file under their own email; staff may file on a customer's behalf.
+    const userEmail = (isVisaStaff(user) && data.userEmail ? data.userEmail : user.email).toLowerCase();
+    const { userEmail: _ignored, ...fields } = data;
+
+    let app;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        app = await prisma.visaApplication.create({
+          data: {
+            ...fields,
+            referenceNo: newReference(),
+            userId: userEmail === user.email.toLowerCase() ? user.id : null,
+            userEmail,
+            status: "SUBMITTED",
+            statusNotes: "Application received. Our visa desk will review it shortly.",
+          },
+        });
+        break;
+      } catch (err: any) {
+        if (err?.code !== "P2002" || attempt === 2) throw err; // reference collision → retry
+      }
     }
-  } catch (err) {
-    console.error("[VISAS] Failed reading storage:", err);
-  }
-  return DEFAULT_VISAS;
-}
 
-function saveVisas(records: VisaRecord[]) {
-  try {
-    fs.writeFileSync(VISAS_FILE, JSON.stringify(records, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[VISAS] Failed writing storage:", err);
-  }
-}
+    sendInquiryNotificationEmail({
+      division: "VISA",
+      name: app!.userName,
+      email: app!.userEmail,
+      phone: app!.phone,
+      subject: `New visa application ${app!.referenceNo}: ${app!.country}`,
+      // Passport number deliberately left out of email — staff see it in the portal.
+      message: `Reference: ${app!.referenceNo}\nCountry: ${app!.country}\nCategory: ${app!.category}\nArrival: ${app!.intendedArrivalDate ?? "-"}\nStay: ${app!.stayDurationDays ?? "-"} days`,
+      referenceId: app!.referenceNo,
+    }).catch(() => {});
 
-// GET /api/visas
-visasRouter.get("/", (req, res) => {
-  const { email } = req.query;
-  const all = loadVisas();
-  if (email && typeof email === "string") {
-    const filtered = all.filter((v) => v.userEmail.toLowerCase() === email.toLowerCase());
-    return res.json({ applications: filtered });
-  }
-  return res.json({ applications: all });
+    res.status(201).json({ success: true, application: toRecord(app), message: "Visa application submitted." });
+  })
+);
+
+const staffUpdateSchema = applicantFields.partial().extend({
+  status: z.enum(["SUBMITTED", "UNDER_REVIEW", "DOCS_REQUIRED", "EMBASSY_PROCESSING", "APPROVED", "REJECTED"]).optional(),
+  statusNotes: str(2000),
 });
 
-// GET /api/visas/:id
-visasRouter.get("/:id", (req, res) => {
-  const all = loadVisas();
-  const found = all.find((v) => v.id === req.params.id || v.referenceNo === req.params.id);
-  if (!found) {
-    return res.status(404).json({ message: "Visa application not found." });
-  }
-  return res.json({ application: found });
-});
+visasRouter.patch(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const user = req.user!;
+    const { app, owns } = await findOwned(req, req.params.id);
 
-// POST /api/visas
-visasRouter.post("/", async (req, res) => {
-  const body = req.body;
-  if (!body.country || !body.passportNumber) {
-    return res.status(400).json({ message: "Destination country and passport number are required." });
-  }
+    let data;
+    if (isVisaStaff(user)) {
+      data = staffUpdateSchema.parse(req.body);
+    } else {
+      if (!owns) throw new HttpError(404, "Visa application not found.");
+      if (!APPLICANT_EDITABLE.has(app.status)) {
+        throw new HttpError(409, "This application is already being processed and can no longer be edited. Please contact us.");
+      }
+      data = {
+        ...applicantFields.partial().parse(req.body),
+        statusNotes: `Updated by applicant on ${new Date().toISOString().slice(0, 10)}.`,
+      };
+    }
 
-  const all = loadVisas();
-  const id = `visa_${Date.now()}`;
-  const refNo = `BG-VISA-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const updated = await prisma.visaApplication.update({ where: { id: app.id }, data });
+    res.json({ success: true, application: toRecord(updated), message: "Visa application updated." });
+  })
+);
 
-  const newApp: VisaRecord = {
-    id,
-    referenceNo: refNo,
-    userEmail: body.userEmail || "client@balasuriyagroup.tech",
-    userName: body.userName || "Client Applicant",
-    phone: body.phone || "+94 77 000 0000",
-    country: body.country,
-    countryFlag: body.countryFlag || "🌐",
-    category: body.category || "TOURIST",
-    visaTypeLabel: body.visaTypeLabel || "Tourist eVisa",
-    entryType: body.entryType || "SINGLE",
-    passportNumber: String(body.passportNumber).toUpperCase().trim(),
-    passportExpiry: body.passportExpiry || "2029-12-31",
-    passportIssueDate: body.passportIssueDate || "2020-01-01",
-    nationality: body.nationality || "Sri Lankan",
-    dateOfBirth: body.dateOfBirth,
-    gender: body.gender || "MALE",
-    occupation: body.occupation,
-    employerName: body.employerName,
-    intendedArrivalDate: body.intendedArrivalDate || "2026-11-20",
-    intendedDepartureDate: body.intendedDepartureDate,
-    stayDurationDays: Number(body.stayDurationDays) || 15,
-    destinationAddress: body.destinationAddress || "",
-    sponsorCompany: body.sponsorCompany,
-    sponsorContact: body.sponsorContact,
-    meetingPurpose: body.meetingPurpose,
-    notes: body.notes || "",
-    documentSummary: body.documentSummary || "Passport bio-page + Digital Photo",
-    status: "SUBMITTED",
-    statusNotes: "Application received and queued for officer verification. Details remain editable by applicant.",
-    submittedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  all.unshift(newApp);
-  saveVisas(all);
-
-  // Notify balasuriyagroup.info@gmail.com asynchronously
-  sendInquiryNotificationEmail({
-    division: "VISA",
-    name: newApp.userName,
-    email: newApp.userEmail,
-    phone: newApp.phone,
-    subject: `New Online Visa Application [${refNo}]: ${newApp.country} (${newApp.userName})`,
-    message: `Reference: ${refNo}\nCountry: ${newApp.country}\nCategory: ${newApp.category}\nPassport No: ${newApp.passportNumber} (Expiry: ${newApp.passportExpiry})\nArrival: ${newApp.intendedArrivalDate}\nStay: ${newApp.stayDurationDays} Days\nSponsor/Stay: ${newApp.destinationAddress || newApp.sponsorCompany || "N/A"}\nNotes: ${newApp.notes || "None"}`,
-    referenceId: refNo,
-    details: {
-      referenceNo: refNo,
-      country: newApp.country,
-      category: newApp.category,
-      passportNumber: newApp.passportNumber,
-      intendedArrivalDate: newApp.intendedArrivalDate,
-    },
-  }).catch((err) => console.error("[VISAS] Mail notification error:", err));
-
-  return res.status(201).json({
-    success: true,
-    application: newApp,
-    message: "Visa application submitted successfully.",
-  });
-});
-
-// PATCH /api/visas/:id
-visasRouter.patch("/:id", (req, res) => {
-  const all = loadVisas();
-  const idx = all.findIndex((v) => v.id === req.params.id || v.referenceNo === req.params.id);
-  if (idx === -1) {
-    return res.status(404).json({ message: "Visa application not found." });
-  }
-
-  const existing = all[idx];
-  const body = req.body;
-
-  const updated: VisaRecord = {
-    ...existing,
-    ...body,
-    updatedAt: new Date().toISOString(),
-  };
-
-  all[idx] = updated;
-  saveVisas(all);
-
-  return res.json({
-    success: true,
-    application: updated,
-    message: "Visa application updated successfully.",
-  });
-});
-
-// DELETE /api/visas/:id
-visasRouter.delete("/:id", (req, res) => {
-  const all = loadVisas();
-  const filtered = all.filter((v) => v.id !== req.params.id && v.referenceNo !== req.params.id);
-  saveVisas(filtered);
-  return res.json({ success: true, message: "Visa application removed." });
-});
+visasRouter.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const user = req.user!;
+    const { app, owns } = await findOwned(req, req.params.id);
+    const applicantWithdraw = owns && app.status === "SUBMITTED";
+    if (!isVisaStaff(user) && !applicantWithdraw) {
+      throw new HttpError(403, "Only applications that haven't been reviewed yet can be withdrawn.");
+    }
+    await prisma.visaApplication.delete({ where: { id: app.id } });
+    res.json({ success: true, message: "Visa application removed." });
+  })
+);

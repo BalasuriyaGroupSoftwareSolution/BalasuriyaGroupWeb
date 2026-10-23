@@ -6,7 +6,7 @@ import { asyncHandler, HttpError } from "../middleware/errorHandler.js";
 
 export const tourismRouter = Router();
 
-const STAFF_ROLES = ["TOURISM_AGENT", "ADMIN"] as const;
+const STAFF_ROLES = ["TOURISM_AGENT", "TOURISM_STAFF", "ADMIN"] as const;
 
 // --- Public: browse packages & active promotions ---
 

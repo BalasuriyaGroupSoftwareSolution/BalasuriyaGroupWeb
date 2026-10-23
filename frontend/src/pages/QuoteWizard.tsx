@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { api } from "../lib/api";
+import { api, apiErrorMessage } from "../lib/api";
 import { contactInfo } from "../data/companyProfile";
 import toast from "react-hot-toast";
 
@@ -62,16 +62,12 @@ export default function QuoteWizard() {
           tourDays: division === "TOURISM" ? tourDays : undefined,
         },
       });
-      const ref = res.data.referenceId ? `#${res.data.referenceId.slice(0, 8).toUpperCase()}` : `#BG-${Math.floor(1000 + Math.random() * 9000)}`;
+      const ref = res.data.referenceId ? `#${res.data.referenceId.slice(0, 8).toUpperCase()}` : "";
       setGeneratedRef(ref);
       setStep(3);
       toast.success("Quote request generated successfully!");
     } catch (err) {
-      // Mock fallback
-      const ref = `#BG-${Math.floor(1000 + Math.random() * 9000)}`;
-      setGeneratedRef(ref);
-      setStep(3);
-      toast.success("Quote request logged successfully!");
+      toast.error(apiErrorMessage(err, "Your request couldn't be sent. Please try again, or contact us on WhatsApp."));
     } finally {
       setSubmitting(false);
     }

@@ -1,5 +1,5 @@
 # Local development database only. Run: docker compose up -d
-# Then point backend/.env's DATABASE_URL at it (see backend/.env.example).
+# Then set DATABASE_URL and DATABASE_URL_UNPOOLED in .env (see .env.example).
 services:
   postgres:
     image: postgres:16-alpine

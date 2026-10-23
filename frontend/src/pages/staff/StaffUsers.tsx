@@ -15,7 +15,6 @@ import {
   Shield,
   ShieldAlert,
   Trash2,
-  Upload,
   UserCheck,
   UserPlus,
   Users,
@@ -236,359 +235,17 @@ const ROLE_HIERARCHY: {
   },
 ];
 
-const INITIAL_DEMO_USERS: User[] = [
-  // Executive Board / Corporate Leadership
-  {
-    id: "usr_owner_1",
-    name: "Mr. Clemon Balasuriya",
-    email: "clemonbalasuriyagroup@gmail.com",
-    phone: "+94 76 7171 938",
-    role: "OWNER",
-    department: "Executive Board",
-    jobTitle: "Group Chairman & CEO",
-    assignedDivisions: ["Executive Board", "Construction & Engineering", "Tourism & Travel", "Software Solutions", "Air Ticketing", "Finance & Accounts"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_md_2",
-    name: "Mr. Damian Balasuriya",
-    email: "damianbalasuriyagroup@gmail.com",
-    phone: "+94 76 7171 938",
-    role: "ADMIN",
-    secondaryRoles: ["TOURISM_AGENT"],
-    department: "Executive Board",
-    jobTitle: "Managing Director & Head of Tourism",
-    assignedDivisions: ["Executive Board", "Tourism & Travel"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_ed_3",
-    name: "Mr. Clavo Balasuriya",
-    email: "clavobalasuriyagroup@gmail.com",
-    phone: "+94 76 7171 938",
-    role: "FINANCE_APPROVER",
-    department: "Finance & Accounts",
-    jobTitle: "Executive Director & Finance",
-    assignedDivisions: ["Executive Board", "Finance & Accounts"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_dir_4",
-    name: "Mrs. Christina Balasuriya",
-    email: "christinabalasuriyagroup@gmail.com",
-    phone: "+94 76 7171 938",
-    role: "ADMIN",
-    department: "Executive Board",
-    jobTitle: "Executive Director & Corporate Affairs",
-    assignedDivisions: ["Executive Board"],
-    isActive: true,
-    updatedAt: 1,
-  },
-
-  // Construction & Civil Engineering Division
-  {
-    id: "usr_migara_5",
-    name: "Mr. Migara Fonseka",
-    email: "fonsekamigara@gmail.com",
-    phone: "+94 77 234 5678",
-    role: "CONSTRUCTION_MANAGER",
-    department: "Construction & Engineering",
-    jobTitle: "Head of Construction & Engineering",
-    assignedDivisions: ["Construction & Engineering"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_const_staff_1",
-    name: "Mr. Kaveen Jayasinghe",
-    email: "kaveen.construction@balasuriyagroup.tech",
-    phone: "+94 77 312 4567",
-    role: "CONSTRUCTION_STAFF",
-    department: "Construction & Engineering",
-    jobTitle: "Senior Civil Engineer & Site Supervisor",
-    assignedDivisions: ["Construction & Engineering"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_const_staff_2",
-    name: "Mr. Nimal Perera",
-    email: "nimal.projects@balasuriyagroup.tech",
-    phone: "+94 77 423 5678",
-    role: "CONSTRUCTION_STAFF",
-    department: "Construction & Engineering",
-    jobTitle: "Quantity Surveyor & Field Coordinator",
-    assignedDivisions: ["Construction & Engineering"],
-    isActive: true,
-    updatedAt: 1,
-  },
-
-  // Tourism & Global Travel Division
-  {
-    id: "usr_damian_tours",
-    name: "Mr. Damian Balasuriya",
-    email: "damian@balasuriyagroup.tech",
-    phone: "+94 77 345 6789",
-    role: "TOURISM_AGENT",
-    department: "Tourism & Travel",
-    jobTitle: "Head of Tourism & Global Travel",
-    assignedDivisions: ["Tourism & Travel"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_tour_staff_1",
-    name: "Ms. Rashmi Senanayake",
-    email: "rashmi.tours@balasuriyagroup.tech",
-    phone: "+94 77 534 6789",
-    role: "TOURISM_STAFF",
-    department: "Tourism & Travel",
-    jobTitle: "Senior Travel Consultant & Itinerary Planner",
-    assignedDivisions: ["Tourism & Travel"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_tour_staff_2",
-    name: "Mr. Dinuka Silva",
-    email: "dinuka.visa@balasuriyagroup.tech",
-    phone: "+94 77 645 7890",
-    role: "TOURISM_STAFF",
-    department: "Tourism & Travel",
-    jobTitle: "Foreign Tours & Visa Officer",
-    assignedDivisions: ["Tourism & Travel"],
-    isActive: true,
-    updatedAt: 1,
-  },
-
-  // Software Solutions & IT Division
-  {
-    id: "usr_pasindu_6",
-    name: "Mr. Pasindu Hansana",
-    email: "pasinduhansana@gmail.com",
-    phone: "+94 77 456 7890",
-    role: "SOFTWARE_ENGINEER",
-    secondaryRoles: ["TICKET_AGENT"],
-    department: "Software Solutions",
-    jobTitle: "Head of Software & Aviation Tech Lead",
-    assignedDivisions: ["Software Solutions", "Air Ticketing"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_soft_staff_1",
-    name: "Mr. Thilina Bandara",
-    email: "thilina.dev@balasuriyagroup.tech",
-    phone: "+94 77 756 8901",
-    role: "SOFTWARE_STAFF",
-    department: "Software Solutions",
-    jobTitle: "Senior Full-Stack Developer",
-    assignedDivisions: ["Software Solutions"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_soft_staff_2",
-    name: "Ms. Sanduni Fernando",
-    email: "sanduni.qa@balasuriyagroup.tech",
-    phone: "+94 77 867 9012",
-    role: "SOFTWARE_STAFF",
-    department: "Software Solutions",
-    jobTitle: "QA Engineer & UI/UX Specialist",
-    assignedDivisions: ["Software Solutions"],
-    isActive: true,
-    updatedAt: 1,
-  },
-
-  // Air Ticketing & Global Reservations Division
-  {
-    id: "usr_shenal_7",
-    name: "Mr. Shenal Fernando",
-    email: "shenal@balasuriyagroup.tech",
-    phone: "+94 77 567 8901",
-    role: "TICKET_AGENT",
-    department: "Air Ticketing",
-    jobTitle: "Head of Air Ticketing & Global Desk",
-    assignedDivisions: ["Air Ticketing"],
-    isActive: true,
-    updatedAt: 1,
-  },
-  {
-    id: "usr_ticket_staff_1",
-    name: "Ms. Chathuri Wickramasinghe",
-    email: "chathuri.flights@balasuriyagroup.tech",
-    phone: "+94 77 978 0123",
-    role: "TICKET_STAFF",
-    department: "Air Ticketing",
-    jobTitle: "Senior GDS Reservations Officer",
-    assignedDivisions: ["Air Ticketing"],
-    isActive: true,
-    updatedAt: 1,
-  },
-
-  // Finance & Accounts Division
-  {
-    id: "usr_fin_staff_1",
-    name: "Mr. Sunil Wickrema",
-    email: "sunil.accounts@balasuriyagroup.tech",
-    phone: "+94 77 189 1234",
-    role: "FINANCE_STAFF",
-    department: "Finance & Accounts",
-    jobTitle: "Senior Corporate Accounts Executive",
-    assignedDivisions: ["Finance & Accounts"],
-    isActive: true,
-    updatedAt: 1,
-  },
-];
-
-const LOCAL_USERS_KEY = "bg_staff_users";
-const REMOVED_USERS_KEY = "bg_removed_staff_identifiers";
-
-function getRemovedIdentifiers(): Set<string> {
-  try {
-    const raw = localStorage.getItem(REMOVED_USERS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return new Set(parsed.map((s) => String(s).toLowerCase().trim()));
-      }
-    }
-  } catch {}
-  return new Set();
-}
-
-function markIdentifierRemoved(id?: string | null, email?: string | null): void {
-  const set = getRemovedIdentifiers();
-  if (id) set.add(id.toLowerCase().trim());
-  if (email) set.add(email.toLowerCase().trim());
-  try {
-    localStorage.setItem(REMOVED_USERS_KEY, JSON.stringify(Array.from(set)));
-  } catch {}
-}
-
-function unmarkIdentifierRemoved(id?: string | null, email?: string | null): void {
-  const set = getRemovedIdentifiers();
-  if (id) set.delete(id.toLowerCase().trim());
-  if (email) set.delete(email.toLowerCase().trim());
-  try {
-    localStorage.setItem(REMOVED_USERS_KEY, JSON.stringify(Array.from(set)));
-  } catch {}
-}
-
-function isUserRemoved(u: { id?: string | null; email?: string | null }): boolean {
-  const removed = getRemovedIdentifiers();
-  if (u.id && removed.has(u.id.toLowerCase().trim())) return true;
-  if (u.email && removed.has(u.email.toLowerCase().trim())) return true;
-  return false;
-}
-
-function getStoredUsers(): User[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_USERS_KEY);
-    if (raw) {
-      let parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Discard any explicitly removed users
-        parsed = parsed.filter((u: User) => !isUserRemoved(u));
-
-        // Ensure root executive owner is never missing from stored list
-        const hasOwner = parsed.some(
-          (u: User) =>
-            u.id === "usr_owner_1" ||
-            u.email?.toLowerCase() === "clemonbalasuriyagroup@gmail.com" ||
-            u.role === "OWNER"
-        );
-        if (!hasOwner && INITIAL_DEMO_USERS[0]) {
-          parsed = [INITIAL_DEMO_USERS[0], ...parsed];
-        }
-        persistUsers(parsed);
-        return parsed;
-      }
-    }
-  } catch {}
-  return [];
-}
-
-function persistUsers(list: User[]): void {
-  try {
-    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(list));
-  } catch {}
-}
-
-function mergeUsers(remote: User[], local: User[]): User[] {
-  // Exclude any users marked as deleted in persistent storage
-  const safeRemote = (remote || []).filter((u) => !isUserRemoved(u));
-  const safeLocal = (local || []).filter((u) => !isUserRemoved(u));
-
-  if (!safeLocal || safeLocal.length === 0) return safeRemote;
-  if (!safeRemote || safeRemote.length === 0) return safeLocal;
-
-  const localMap = new Map<string, User>();
-  for (const u of safeLocal) {
-    if (u.id) localMap.set(u.id, u);
-    if (u.email) localMap.set(u.email.toLowerCase(), u);
-  }
-
-  const merged: User[] = [];
-  const added = new Set<string>();
-
-  for (const r of safeRemote) {
-    const localMatch = (r.id && localMap.get(r.id)) || (r.email && localMap.get(r.email.toLowerCase()));
-    if (localMatch) {
-      const localTime = localMatch.updatedAt || 0;
-      const remoteTime = (r as any).updatedAt || 0;
-      // If local version has equal or newer timestamp, local edits take absolute priority!
-      const combined = (localTime >= remoteTime) ? { ...r, ...localMatch } : { ...localMatch, ...r };
-      merged.push(combined);
-      if (combined.id) added.add(combined.id);
-      if (combined.email) added.add(combined.email.toLowerCase());
-    } else {
-      merged.push(r);
-      if (r.id) added.add(r.id);
-      if (r.email) added.add(r.email.toLowerCase());
-    }
-  }
-
-  for (const l of safeLocal) {
-    const already = (l.id && added.has(l.id)) || (l.email && added.has(l.email.toLowerCase()));
-    if (!already) {
-      merged.push(l);
-      if (l.id) added.add(l.id);
-      if (l.email) added.add(l.email.toLowerCase());
-    }
-  }
-
-  // Ensure root executive owner is always at the top of directory
-  const ownerIndex = merged.findIndex(
-    (u) =>
-      u.role === "OWNER" ||
-      u.email?.toLowerCase() === "clemonbalasuriyagroup@gmail.com" ||
-      u.id === "usr_owner_1"
-  );
-  if (ownerIndex > 0) {
-    const [owner] = merged.splice(ownerIndex, 1);
-    merged.unshift(owner);
-  } else if (ownerIndex === -1 && INITIAL_DEMO_USERS[0]) {
-    merged.unshift(INITIAL_DEMO_USERS[0]);
-  }
-
-  return merged;
-}
-
 function generateStrongTempPassword() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = new Uint32Array(10);
+  crypto.getRandomValues(bytes);
   let code = "BG-";
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
+  for (const b of bytes) code += chars.charAt(b % chars.length);
   return code + "!9";
 }
 
 export default function StaffUsers() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshUser } = useAuth();
   
   // Extract all roles caller holds (primary role + secondary cross-section roles + assigned division roles)
   const callerRoles: Role[] = getEffectiveUserRoles(currentUser);
@@ -601,11 +258,9 @@ export default function StaffUsers() {
   const isDivisionLeader = !isExecutive && callerLedDivisions.length > 0;
   const isMultiDivisionLeader = !isExecutive && callerLedDivisions.length > 1;
 
-  const [users, setUsers] = useState<User[]>(() => {
-    const stored = getStoredUsers();
-    if (stored.length > 0) return stored;
-    return INITIAL_DEMO_USERS.filter((u) => !isUserRemoved(u));
-  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("ALL");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
@@ -658,62 +313,24 @@ export default function StaffUsers() {
   const [editIsActive, setEditIsActive] = useState(true);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
+  // The database is the single source of truth — nothing is cached in the browser.
   function load() {
+    setLoadingUsers(true);
     api
       .get<{ users: User[] }>("/api/users")
       .then((res) => {
-        const stored = getStoredUsers();
-        const fallbackBase = stored.length > 0 ? stored : INITIAL_DEMO_USERS.filter((u) => !isUserRemoved(u));
-        if (res.data?.users && res.data.users.length > 0) {
-          const combined = mergeUsers(res.data.users, fallbackBase);
-          setUsers(combined);
-          persistUsers(combined);
-        } else {
-          const ensured = mergeUsers([], fallbackBase);
-          setUsers(ensured);
-          persistUsers(ensured);
-        }
+        setUsers(res.data?.users ?? []);
+        setLoadError(null);
       })
-      .catch(() => {
-        const stored = getStoredUsers();
-        const fallbackBase = stored.length > 0 ? stored : INITIAL_DEMO_USERS.filter((u) => !isUserRemoved(u));
-        const ensured = mergeUsers([], fallbackBase);
-        setUsers(ensured);
-        persistUsers(ensured);
-      });
+      .catch((err) => setLoadError(apiErrorMessage(err, "Could not load the staff directory.")))
+      .finally(() => setLoadingUsers(false));
   }
 
   useEffect(load, []);
 
-  // Defensive auto-recovery: If currentUser is logged in but missing from users list (e.g. accidentally removed), restore them immediately
-  useEffect(() => {
-    if (!currentUser?.email) return;
-    setUsers((prev) => {
-      const exists = prev.some(
-        (u) =>
-          (currentUser.id && u.id === currentUser.id) ||
-          u.email.toLowerCase() === currentUser.email.toLowerCase()
-      );
-      if (!exists) {
-        const restored: User = {
-          id: currentUser.id || `usr_${Date.now()}`,
-          name: currentUser.name || "Staff Member",
-          email: currentUser.email.toLowerCase(),
-          phone: currentUser.phone || "+94 76 7171 938",
-          role: currentUser.role,
-          department: currentUser.department || "Executive Board",
-          jobTitle: currentUser.jobTitle || (currentUser.role === "OWNER" ? "Group Chairman & CEO" : "Staff Member"),
-          assignedDivisions: currentUser.assignedDivisions || (currentUser.department ? [currentUser.department] : ["Executive Board"]),
-          secondaryRoles: currentUser.secondaryRoles || [],
-          isActive: true,
-        };
-        const next = [restored, ...prev];
-        persistUsers(next);
-        return next;
-      }
-      return prev;
-    });
-  }, [currentUser]);
+  function replaceUser(updated: User) {
+    setUsers((prev) => prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u)));
+  }
 
   // Check if current user can manage target user (supports cross-section leadership)
   function canManage(target: User): boolean {
@@ -761,71 +378,43 @@ export default function StaffUsers() {
     }
     const finalSecondaryRoles = Array.from(calculatedRoles).filter((r) => r !== role);
 
-    const newUserObj: User = {
-      id: `usr_${Date.now()}`,
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      phone: phone ? phone.trim() : null,
-      role,
-      department: assignedDept,
-      jobTitle: jobTitle ? jobTitle.trim() : null,
-      secondaryRoles: finalSecondaryRoles,
-      assignedDivisions: finalAssignedDivisions,
-      isActive: true,
-      updatedAt: Date.now(),
-    };
-
     try {
-      const res = await api.post("/api/users", {
-        name: newUserObj.name,
-        email: newUserObj.email,
-        phone: newUserObj.phone || undefined,
-        role: newUserObj.role,
-        department: newUserObj.department,
-        jobTitle: newUserObj.jobTitle || undefined,
-        secondaryRoles: newUserObj.secondaryRoles,
-        assignedDivisions: newUserObj.assignedDivisions,
+      const res = await api.post<{ user: User; emailDispatched: boolean }>("/api/users", {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        phone: phone.trim() || undefined,
+        role,
+        department: assignedDept,
+        jobTitle: jobTitle.trim() || undefined,
+        secondaryRoles: finalSecondaryRoles,
+        assignedDivisions: finalAssignedDivisions,
         temporaryPassword: tempPassword,
       });
+      const created = res.data.user;
+      const dispatched = Boolean(res.data.emailDispatched);
 
-      if (res.data?.user?.id) {
-        newUserObj.id = res.data.user.id;
-      }
-
-      try {
-        localStorage.setItem(`bg_pwd_${newUserObj.email.toLowerCase()}`, tempPassword);
-      } catch {}
-
-      const dispatched = res.data?.emailDispatched;
+      setUsers((prev) => [created, ...prev.filter((u) => u.id !== created.id)]);
       toast.success(
-        dispatched
-          ? `Staff account created & welcome email dispatched to ${email}!`
-          : `Staff account created for ${name}`
+        dispatched ? `Account created and welcome email sent to ${created.email}.` : `Account created for ${created.name}.`
       );
       setCredentialsModal({
-        name: newUserObj.name,
-        email: newUserObj.email,
-        role: newUserObj.role,
-        department: newUserObj.department,
-        jobTitle: newUserObj.jobTitle,
-        secondaryRoles: newUserObj.secondaryRoles,
-        assignedDivisions: newUserObj.assignedDivisions,
+        name: created.name,
+        email: created.email,
+        role: created.role,
+        department: created.department,
+        jobTitle: created.jobTitle,
+        secondaryRoles: created.secondaryRoles,
+        assignedDivisions: created.assignedDivisions,
         password: tempPassword,
-        emailDispatched: dispatched ?? true,
-      });
-      unmarkIdentifierRemoved(newUserObj.id, newUserObj.email);
-      setUsers((prev) => {
-        const next = [newUserObj, ...prev.filter((u) => u.email.toLowerCase() !== newUserObj.email.toLowerCase())];
-        persistUsers(next);
-        return next;
+        emailDispatched: dispatched,
       });
       logStaffActivity({
         division: "GOVERNANCE",
-        title: `Provisioned official staff credentials for ${newUserObj.name}`,
-        actor: currentUser?.name || "Corporate Admin",
+        title: `Created staff account for ${created.name}`,
+        actor: currentUser?.name || "Admin",
         actorRole: currentUser?.role.replace(/_/g, " ") || "Admin",
         badgeColor: "bg-brand-navy text-brand-gold",
-        details: `Role: ${newUserObj.role.replace(/_/g, " ")}, Department: ${newUserObj.department || "Corporate"}, Divisions: ${(newUserObj.assignedDivisions || []).join(", ")}. Welcome email dispatched.`,
+        details: `Role: ${created.role.replace(/_/g, " ")}, Department: ${created.department || "-"}.`,
       });
       setName("");
       setEmail("");
@@ -835,53 +424,8 @@ export default function StaffUsers() {
       setAssignedDivisions([initialDept]);
       setTempPassword(generateStrongTempPassword());
       setShowNew(false);
-    } catch (err: any) {
-      if (
-        err?.code === "ERR_NETWORK" ||
-        !err.response ||
-        err.response?.status === 404 ||
-        err.response?.status >= 500
-      ) {
-        try {
-          localStorage.setItem(`bg_pwd_${newUserObj.email.toLowerCase()}`, tempPassword);
-        } catch {}
-        unmarkIdentifierRemoved(newUserObj.id, newUserObj.email);
-        setUsers((prev) => {
-          const next = [newUserObj, ...prev.filter((u) => u.email.toLowerCase() !== newUserObj.email.toLowerCase())];
-          persistUsers(next);
-          return next;
-        });
-        setCredentialsModal({
-          name: newUserObj.name,
-          email: newUserObj.email,
-          role: newUserObj.role,
-          department: newUserObj.department,
-          jobTitle: newUserObj.jobTitle,
-          secondaryRoles: newUserObj.secondaryRoles,
-          assignedDivisions: newUserObj.assignedDivisions,
-          password: tempPassword,
-          emailDispatched: true,
-        });
-        logStaffActivity({
-          division: "GOVERNANCE",
-          title: `Provisioned official staff credentials for ${newUserObj.name}`,
-          actor: currentUser?.name || "Corporate Admin",
-          actorRole: currentUser?.role.replace(/_/g, " ") || "Admin",
-          badgeColor: "bg-brand-navy text-brand-gold",
-          details: `Role: ${newUserObj.role.replace(/_/g, " ")}, Department: ${newUserObj.department || "Corporate"}, Divisions: ${(newUserObj.assignedDivisions || []).join(", ")}.`,
-        });
-        setName("");
-        setEmail("");
-        setPhone("");
-        setJobTitle("");
-        setSecondaryRoles([]);
-        setAssignedDivisions([initialDept]);
-        setTempPassword(generateStrongTempPassword());
-        setShowNew(false);
-        toast.success(`Staff account created for ${name}`);
-      } else {
-        toast.error(apiErrorMessage(err, "Could not create the account."));
-      }
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Could not create the account."));
     } finally {
       setSubmitting(false);
     }
@@ -892,24 +436,13 @@ export default function StaffUsers() {
       toast.error("You are not authorized to modify this user's role.");
       return;
     }
-    const updated = { ...user, role: newRole, updatedAt: Date.now() };
-    setUsers((prev) => {
-      const next = prev.map((u) => (u.id === user.id ? updated : u));
-      persistUsers(next);
-      return next;
-    });
-    logStaffActivity({
-      division: "GOVERNANCE",
-      title: `Modified role for ${user.name} to ${newRole.replace(/_/g, " ")}`,
-      actor: currentUser?.name || "Corporate Admin",
-      actorRole: currentUser?.role.replace(/_/g, " ") || "Admin",
-      badgeColor: "bg-indigo-100 text-indigo-900",
-      details: `Role updated in system directory.`,
-    });
-    toast.success(`${user.name}'s role updated to ${newRole.replace(/_/g, " ")}`);
     try {
-      await api.patch(`/api/users/${user.id}`, { role: newRole });
-    } catch {}
+      const res = await api.patch<{ user: User }>(`/api/users/${user.id}`, { role: newRole });
+      replaceUser(res.data.user);
+      toast.success(`${user.name}'s role updated to ${newRole.replace(/_/g, " ")}`);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Could not change the role."));
+    }
   }
 
   async function handleToggleActive(user: User) {
@@ -917,25 +450,14 @@ export default function StaffUsers() {
       toast.error("You are not authorized to change this user's status.");
       return;
     }
-    const nextState = !user.isActive;
-    const updated = { ...user, isActive: nextState, updatedAt: Date.now() };
-    setUsers((prev) => {
-      const next = prev.map((u) => (u.id === user.id ? updated : u));
-      persistUsers(next);
-      return next;
-    });
-    logStaffActivity({
-      division: "GOVERNANCE",
-      title: `${nextState ? "Restored active access" : "Suspended account"} for ${user.name}`,
-      actor: currentUser?.name || "Division Leader",
-      actorRole: currentUser?.role.replace(/_/g, " ") || "Leader",
-      badgeColor: nextState ? "bg-emerald-100 text-emerald-900" : "bg-rose-100 text-rose-900",
-      details: `Account access status changed to ${nextState ? "ACTIVE" : "SUSPENDED"}.`,
-    });
-    toast.success(`${user.name} is now ${nextState ? "Active" : "Suspended"}`);
+    const nextState = user.isActive === false;
     try {
-      await api.patch(`/api/users/${user.id}`, { isActive: nextState });
-    } catch {}
+      const res = await api.patch<{ user: User }>(`/api/users/${user.id}`, { isActive: nextState });
+      replaceUser(res.data.user);
+      toast.success(`${user.name} is now ${nextState ? "active" : "suspended"}.`);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Could not change the account status."));
+    }
   }
 
   async function handleResetPassword(user: User) {
@@ -945,96 +467,53 @@ export default function StaffUsers() {
     }
     const newTempPassword = generateStrongTempPassword();
     try {
-      localStorage.setItem(`bg_pwd_${user.email.toLowerCase()}`, newTempPassword);
-    } catch {}
-    let emailDispatched = false;
-    try {
-      const res = await api.post(`/api/users/${user.id}/reset-password`, {
-        temporaryPassword: newTempPassword,
+      const res = await api.post(`/api/users/${user.id}/reset-password`, { temporaryPassword: newTempPassword });
+      const emailDispatched = Boolean(res.data?.emailDispatched);
+      toast.success(emailDispatched ? `Password reset and emailed to ${user.email}.` : "Password reset.");
+      setCredentialsModal({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        jobTitle: user.jobTitle,
+        secondaryRoles: user.secondaryRoles,
+        assignedDivisions: user.assignedDivisions,
+        password: newTempPassword,
+        isReset: true,
+        emailDispatched,
       });
-      emailDispatched = res.data?.emailDispatched ?? true;
-      toast.success(
-        emailDispatched
-          ? `Password reset & email sent to ${user.email}!`
-          : `Password reset successfully.`
-      );
-    } catch {
-      toast.success(`Password reset generated.`);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Could not reset the password."));
     }
-    logStaffActivity({
-      division: "GOVERNANCE",
-      title: `Generated secure password reset for ${user.name}`,
-      actor: currentUser?.name || "Division Leader",
-      actorRole: currentUser?.role.replace(/_/g, " ") || "Leader",
-      badgeColor: "bg-amber-100 text-amber-900",
-      details: `New temporary password generated for ${user.email}.`,
-    });
-    setCredentialsModal({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      department: user.department,
-      jobTitle: user.jobTitle,
-      secondaryRoles: user.secondaryRoles,
-      assignedDivisions: user.assignedDivisions,
-      password: newTempPassword,
-      isReset: true,
-      emailDispatched,
-    });
   }
 
   async function handleRemoveUser(user: User) {
-    const isSelf = Boolean(
-      (currentUser?.id && user.id === currentUser.id) ||
-      (currentUser?.email && user.email.toLowerCase() === currentUser.email.toLowerCase())
-    );
-    if (isSelf) {
-      toast.error("You cannot remove your own active staff account.");
+    if (currentUser?.id && user.id === currentUser.id) {
+      toast.error("You cannot remove your own account.");
       return;
     }
-
-    const isRootOwner =
-      user.role === "OWNER" ||
-      user.email.toLowerCase() === "clemonbalasuriyagroup@gmail.com" ||
-      user.id === "usr_owner_1";
-    if (isRootOwner) {
-      toast.error("The root Executive Owner account is protected and cannot be removed.");
+    if (user.role === "OWNER") {
+      toast.error("Owner accounts are protected and cannot be removed.");
       return;
     }
-
     if (!canManage(user)) {
       toast.error("You are not authorized to remove this staff member.");
       return;
     }
-    if (!window.confirm(`Are you sure you want to remove ${user.name} (${user.email})?`)) {
+    if (!window.confirm(`Remove ${user.name} (${user.email})? This can't be undone.`)) {
       return;
     }
-
-    // Permanently mark as removed so refresh or remote re-fetches cannot resurrect them
-    markIdentifierRemoved(user.id, user.email);
-
-    setUsers((prev) => {
-      const next = prev.filter(
-        (u) =>
-          u.id !== user.id &&
-          u.email.toLowerCase() !== user.email.toLowerCase()
-      );
-      persistUsers(next);
-      return next;
-    });
-    logStaffActivity({
-      division: "GOVERNANCE",
-      title: `Removed staff member account for ${user.name}`,
-      actor: currentUser?.name || "Corporate Admin",
-      actorRole: currentUser?.role.replace(/_/g, " ") || "Admin",
-      badgeColor: "bg-rose-100 text-rose-900",
-      details: `Account for ${user.email} permanently removed.`,
-    });
-    toast.success(`${user.name} has been removed.`);
     try {
-      const deleteTarget = user.id || encodeURIComponent(user.email);
-      await api.delete(`/api/users/${deleteTarget}?email=${encodeURIComponent(user.email)}`);
-    } catch {}
+      const res = await api.delete<{ removed: boolean; suspended?: boolean; message: string }>(`/api/users/${user.id}`);
+      if (res.data.removed) {
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      } else if (res.data.suspended) {
+        replaceUser({ ...user, isActive: false });
+      }
+      toast.success(res.data.message || `${user.name} has been removed.`);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Could not remove this account."));
+    }
   }
 
   function handleStartEdit(user: User) {
@@ -1179,35 +658,8 @@ export default function StaffUsers() {
       updatedAt: Date.now(),
     };
 
-    // 1. Immediately update UI state & persist to localStorage so it can never be lost
-    setUsers((prev) => {
-      const next = prev.map((u) => (u.id === editingUser.id ? updatedUser : u));
-      persistUsers(next);
-      return next;
-    });
-
-    // 2. Dispatch custom event so AuthContext updates the live logged-in user in real-time
     try {
-      window.dispatchEvent(
-        new CustomEvent("bg_staff_user_updated", { detail: updatedUser })
-      );
-    } catch {}
-
-    logStaffActivity({
-      division: "GOVERNANCE",
-      title: `Updated staff credentials & cross-section roles for ${updatedUser.name}`,
-      actor: currentUser?.name || "Division Leader",
-      actorRole: currentUser?.role.replace(/_/g, " ") || "Leader",
-      badgeColor: "bg-blue-100 text-blue-900",
-      details: `Designation: ${updatedUser.jobTitle || "Official Staff"}, Department: ${updatedUser.department || "Corporate"}, Divisions: ${(updatedUser.assignedDivisions || []).join(", ")}.`,
-    });
-
-    toast.success(`Staff details for ${updatedUser.name} saved successfully!`);
-    setEditingUser(null);
-
-    // 3. Persist to API / serverless in the background
-    try {
-      await api.patch(`/api/users/${editingUser.id}`, {
+      const res = await api.patch<{ user: User }>(`/api/users/${editingUser.id}`, {
         name: updatedUser.name,
         email: updatedUser.email,
         phone: updatedUser.phone,
@@ -1218,8 +670,14 @@ export default function StaffUsers() {
         assignedDivisions: updatedUser.assignedDivisions,
         isActive: updatedUser.isActive,
       });
-    } catch (err: any) {
-      console.warn("Async remote sync completed with local fallback:", err);
+      replaceUser(res.data.user);
+      if (currentUser?.id === res.data.user.id) {
+        await refreshUser();
+      }
+      toast.success(`Saved ${res.data.user.name}'s details.`);
+      setEditingUser(null);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Could not save these changes."));
     } finally {
       setEditSubmitting(false);
     }
@@ -1248,56 +706,6 @@ export default function StaffUsers() {
     } catch {
       toast.error("Failed to generate backup file.");
     }
-  }
-
-  function handleImportBackup(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const text = evt.target?.result as string;
-        const parsed = JSON.parse(text);
-        const importedUsers: User[] = Array.isArray(parsed)
-          ? parsed
-          : Array.isArray(parsed?.users)
-          ? parsed.users
-          : null;
-
-        if (!importedUsers || importedUsers.length === 0) {
-          toast.error("Invalid backup file: no staff user records found.");
-          return;
-        }
-
-        const validUsers = importedUsers
-          .filter((u) => u && u.email && u.name)
-          .map((u) => ({
-            ...u,
-            updatedAt: Date.now(),
-          }));
-
-        if (validUsers.length === 0) {
-          toast.error("No valid staff records found in the uploaded file.");
-          return;
-        }
-
-        const merged = mergeUsers(validUsers, users);
-        setUsers(merged);
-        persistUsers(merged);
-        toast.success(`Successfully restored ${validUsers.length} staff records from backup!`);
-
-        for (const u of validUsers) {
-          try {
-            await api.patch(`/api/users/${u.id || encodeURIComponent(u.email)}`, u);
-          } catch {}
-        }
-      } catch {
-        toast.error("Failed to read or parse the JSON backup file.");
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
   }
 
   function toggleSecondaryRole(r: Role, currentList: Role[], setter: (val: Role[]) => void) {
@@ -1385,6 +793,15 @@ Balasuriya Group`;
 
   return (
     <div className="space-y-8">
+      {loadError && (
+        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button type="button" onClick={load} className="font-semibold underline">Try again</button>
+        </div>
+      )}
+      {loadingUsers && !loadError && (
+        <div className="mb-4 rounded-xl border border-gray-200 bg-white px-4 py-3 text-xs text-gray-500">Loading staff directory…</div>
+      )}
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
         <div>
@@ -1399,22 +816,11 @@ Balasuriya Group`;
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          <label className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 cursor-pointer border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm" title="Restore staff directory from JSON backup file">
-            <Upload className="h-3.5 w-3.5 text-gray-500" />
-            Restore Backup
-            <input
-              type="file"
-              accept=".json"
-              className="hidden"
-              onChange={handleImportBackup}
-            />
-          </label>
-
           <button
             type="button"
             onClick={handleExportBackup}
             className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm"
-            title="Download JSON backup of current staff roster"
+            title="Download a JSON copy of the staff directory"
           >
             <Download className="h-3.5 w-3.5 text-gray-500" />
             Backup Roster

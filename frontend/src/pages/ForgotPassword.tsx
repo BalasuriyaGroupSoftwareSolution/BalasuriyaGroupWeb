@@ -112,7 +112,7 @@ export default function ForgotPassword() {
     }
     setSubmitting(true);
     try {
-      await resetPassword(email, "", newPassword, linkToken);
+      await resetPassword(email, newPassword, linkToken);
       toast.success("Password reset successful! Please sign in with your new password.");
       navigate("/login", { replace: true });
     } catch (err) {

@@ -22,27 +22,14 @@ export default function PackageDetail() {
   const [reference, setReference] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [paid, setPaid] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
     api
       .get<{ package: TourPackage }>(`/api/tourism/packages/${id}`)
       .then((res) => setPkg(res.data.package))
-      .catch(() => {
-        // Fallback demo package
-        setPkg({
-          id,
-          title: "Bespoke Sri Lanka Scenic & Cultural Tour",
-          description:
-            "A breathtaking tour through Sri Lanka’s lush tea country, historic kingdoms, and wildlife reserves with private chauffeur guide and 5-star heritage stays.",
-          category: "LOCAL",
-          priceLkr: "85000",
-          durationDays: 5,
-          availableSlots: 6,
-          isActive: true,
-          promotions: [],
-        });
-      });
+      .catch((err) => setLoadError(err?.response?.status === 404 ? "This tour package no longer exists." : apiErrorMessage(err, "Could not load this package.")));
   }, [id]);
 
   async function handleBook(e: FormEvent) {
@@ -57,16 +44,11 @@ export default function PackageDetail() {
       setBooking(res.data.booking);
       toast.success("Booking created! Now choose how you'd like to pay.");
     } catch (err) {
-      // Mock booking for preview
-      setBooking({
-        id: `BK-${Math.floor(1000 + Math.random() * 9000)}`,
-        type: "TOUR_PACKAGE",
-        status: "PENDING",
-        package: pkg,
-        payments: [],
-        createdAt: new Date().toISOString(),
-      });
-      toast.success("Booking created (Preview Mode). Proceed to payment.");
+      if ((err as any)?.response?.status === 401) {
+        toast.error("Please sign in to book this tour.");
+      } else {
+        toast.error(apiErrorMessage(err, "Could not create the booking."));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -101,6 +83,7 @@ export default function PackageDetail() {
     }
   }
 
+  if (loadError) return <p className="mx-auto max-w-3xl px-4 py-14 text-gray-600">{loadError}</p>;
   if (!pkg) return <p className="mx-auto max-w-3xl px-4 py-14 text-gray-500">Loading…</p>;
 
   const total = Number(pkg.priceLkr) * travelerCount;

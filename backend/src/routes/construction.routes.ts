@@ -6,7 +6,7 @@ import { asyncHandler, HttpError } from "../middleware/errorHandler.js";
 
 export const constructionRouter = Router();
 
-const STAFF_ROLES = ["CONSTRUCTION_MANAGER", "ADMIN"] as const;
+const STAFF_ROLES = ["CONSTRUCTION_MANAGER", "CONSTRUCTION_STAFF", "ADMIN"] as const;
 
 // --- Public: browse the project portfolio (no login required) ---
 

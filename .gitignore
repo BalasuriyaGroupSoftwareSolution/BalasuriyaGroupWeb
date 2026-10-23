@@ -1,30 +1,27 @@
-# --- Backend (.NET) ---
-backend/**/bin/
-backend/**/obj/
-backend/**/appsettings.Development.json
-backend/**/appsettings.Local.json
-backend/**/*.user
+# Dependencies
+node_modules/
 
-# --- Frontend (Node/Vite) ---
-frontend/node_modules/
+# Build output (rebuilt on every deploy — never commit)
+backend/dist/
 frontend/dist/
-frontend/dist-ssr/
-frontend/*.local
 
-# --- Env files (never commit real secrets) ---
+# Secrets — never commit real values
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 **/.env
+**/.env.*
 !**/.env.example
+*.local
 
-# --- Editors / OS ---
+# Editors / OS
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+*.log
+
+# Transfer files
+*.bundle
+_to_delete/

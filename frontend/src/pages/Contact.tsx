@@ -32,7 +32,7 @@ export default function Contact() {
 
       const ref = res.data?.referenceId || `BG-INQ-${Date.now().toString().slice(-6)}`;
       setSubmittedRef(ref);
-      toast.success("Message dispatched to balasuriyagroup.info@gmail.com!");
+      toast.success("Thank you — your message has been received.");
     } catch (err) {
       // Fallback: Even if offline or network error, open mailto directly
       const subject = encodeURIComponent(`Website enquiry from ${form.name || "a visitor"}`);

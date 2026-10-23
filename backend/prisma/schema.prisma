@@ -2,12 +2,19 @@
 // Run `npm run prisma:migrate` after setting DATABASE_URL in .env
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" for local dev, rhel-openssl-3.0.x for Vercel serverless functions.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
+// DATABASE_URL          = pooled connection (used by the running site)
+// DATABASE_URL_UNPOOLED = direct connection (used only by `prisma migrate deploy`)
+// The Neon <-> Vercel integration creates both variables automatically.
+// For local dev, set both to the same local Postgres URL.
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 enum Role {
@@ -19,6 +26,11 @@ enum Role {
   TICKET_AGENT
   SOFTWARE_ENGINEER
   CHARTERED_ACCOUNTANT
+  CONSTRUCTION_STAFF
+  TOURISM_STAFF
+  SOFTWARE_STAFF
+  TICKET_STAFF
+  FINANCE_STAFF
   CUSTOMER
 }
 
@@ -29,6 +41,11 @@ model User {
   passwordHash String?
   name         String
   role         Role     @default(CUSTOMER)
+  // Extra roles held alongside the primary one (e.g. ADMIN who is also TOURISM_AGENT)
+  secondaryRoles    Role[]   @default([])
+  department        String?
+  jobTitle          String?
+  assignedDivisions String[] @default([])
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -215,4 +232,53 @@ model VerificationCode {
   createdAt  DateTime @default(now())
 
   @@index([identifier])
+}
+
+enum VisaStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  DOCS_REQUIRED
+  EMBASSY_PROCESSING
+  APPROVED
+  REJECTED
+}
+
+// Online visa applications. Contains passport data, so it is only ever
+// readable by the applicant who owns it and by tourism/ticketing staff.
+model VisaApplication {
+  id                    String     @id @default(cuid())
+  referenceNo           String     @unique
+  userId                String?
+  userEmail             String
+  userName              String
+  phone                 String
+  country               String
+  countryFlag           String?
+  category              String
+  visaTypeLabel         String?
+  entryType             String     @default("SINGLE")
+  passportNumber        String
+  passportExpiry        String?
+  passportIssueDate     String?
+  nationality           String?
+  dateOfBirth           String?
+  gender                String?
+  occupation            String?
+  employerName          String?
+  intendedArrivalDate   String?
+  intendedDepartureDate String?
+  stayDurationDays      Int?
+  destinationAddress    String?
+  sponsorCompany        String?
+  sponsorContact        String?
+  meetingPurpose        String?
+  notes                 String?
+  documentSummary       String?
+  status                VisaStatus @default(SUBMITTED)
+  statusNotes           String?
+  submittedAt           DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  @@index([userEmail])
+  @@index([status])
 }

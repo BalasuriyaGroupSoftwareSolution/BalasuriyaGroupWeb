@@ -33,9 +33,10 @@ inquiriesRouter.post(
     const data = inquirySchema.parse(req.body);
 
     let customerId = req.user?.sub;
-    let referenceId = `BG-${data.division.slice(0, 4)}-${Date.now().toString().slice(-6)}`;
 
-    try {
+    let referenceId = "";
+    let booking;
+    {
       if (!customerId) {
         // Find or create customer
         const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
@@ -46,7 +47,8 @@ inquiriesRouter.post(
             data: {
               email: data.email.toLowerCase(),
               name: data.name,
-              phone: data.phone,
+              // phone is kept on the inquiry itself; it's unique on User and
+              // may already belong to someone else.
               role: "CUSTOMER",
             },
           });
@@ -61,7 +63,7 @@ inquiriesRouter.post(
       else if (data.division === "SOFTWARE") bookingType = "SOFTWARE_PROJECT";
       else if (data.division === "VISA") bookingType = "GENERAL_INQUIRY";
 
-      const booking = await prisma.booking.create({
+      booking = await prisma.booking.create({
         data: {
           customerId,
           type: bookingType,
@@ -79,8 +81,6 @@ inquiriesRouter.post(
         },
       });
       referenceId = booking.id;
-    } catch (err) {
-      console.warn("[INQUIRIES_ROUTE] Database save skipped or offline:", err);
     }
 
     // Notify balasuriyagroup.info@gmail.com asynchronously
@@ -92,7 +92,6 @@ inquiriesRouter.post(
       subject: data.subject,
       message: data.message,
       referenceId,
-      details: data.details,
     }).catch((err) => console.error("[INQUIRIES_ROUTE] Mail notification error:", err));
 
     res.status(201).json({
@@ -107,7 +106,17 @@ inquiriesRouter.post(
 inquiriesRouter.get(
   "/",
   authenticate,
-  requireRole("ADMIN", "OWNER", "CONSTRUCTION_MANAGER", "TOURISM_AGENT", "SOFTWARE_ENGINEER"),
+  requireRole(
+    "ADMIN",
+    "CONSTRUCTION_MANAGER",
+    "CONSTRUCTION_STAFF",
+    "TOURISM_AGENT",
+    "TOURISM_STAFF",
+    "SOFTWARE_ENGINEER",
+    "SOFTWARE_STAFF",
+    "TICKET_AGENT",
+    "TICKET_STAFF"
+  ),
   asyncHandler(async (req, res) => {
     const inquiries = await prisma.booking.findMany({
       orderBy: { createdAt: "desc" },

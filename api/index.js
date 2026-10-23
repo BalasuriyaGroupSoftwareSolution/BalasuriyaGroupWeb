@@ -1,24 +1,8 @@
-export default function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+// The ONLY serverless function on Vercel. Every /api/* request is routed here
+// (see vercel.json) and handled by the Express app in backend/, which stores
+// everything in the Postgres database — nothing is kept in temporary files.
+import { createApp } from "../backend/dist/app.js";
 
-  if (req.method === "OPTIONS") {
-    res.statusCode = 200;
-    return res.end();
-  }
+const app = createApp();
 
-  const data = {
-    status: "ok",
-    service: "Balasuriya Group Unified API",
-    version: "2026.1",
-    timestamp: new Date().toISOString(),
-  };
-
-  if (typeof res.status === "function" && typeof res.json === "function") {
-    return res.status(200).json(data);
-  }
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "application/json");
-  return res.end(JSON.stringify(data));
-}
+export default app;

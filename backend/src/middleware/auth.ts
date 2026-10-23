@@ -1,57 +1,90 @@
 import type { Request, Response, NextFunction } from "express";
-import { verifyAuthToken, type AuthTokenPayload } from "../utils/jwt.js";
 import type { Role } from "@prisma/client";
+import { verifyAuthToken } from "../utils/jwt.js";
+import { prisma } from "../lib/prisma.js";
+
+export interface AuthedUser {
+  sub: string;
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  secondaryRoles: Role[];
+}
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: AuthTokenPayload;
+      user?: AuthedUser;
     }
   }
-}
-
-/** Verifies the Bearer JWT and attaches the decoded payload to req.user. */
-export function authenticate(req: Request, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Authentication required." });
-  }
-
-  const token = header.slice("Bearer ".length);
-  try {
-    req.user = verifyAuthToken(token);
-    return next();
-  } catch {
-    return res.status(401).json({ message: "Invalid or expired session. Please log in again." });
-  }
-}
-
-/** Attaches req.user if a valid token is provided, but continues if not. */
-export function optionalAuthenticate(req: Request, _res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (header?.startsWith("Bearer ")) {
-    const token = header.slice("Bearer ".length);
-    try {
-      req.user = verifyAuthToken(token);
-    } catch {
-      // Continue unauthenticated
-    }
-  }
-  return next();
 }
 
 /**
- * Restricts a route to the given roles. OWNER always passes, since owners
- * oversee every division. Call `authenticate` first on the same route.
+ * Resolves the Bearer token to the CURRENT database user. Role and active
+ * status are always read from the database, never trusted from the token,
+ * so suspending someone or changing their role takes effect immediately.
  */
+async function resolveUser(req: Request): Promise<AuthedUser | null> {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) return null;
+  let payload;
+  try {
+    payload = verifyAuthToken(header.slice("Bearer ".length).trim());
+  } catch {
+    return null;
+  }
+  const user = await prisma.user.findUnique({
+    where: { id: payload.sub },
+    select: { id: true, email: true, name: true, role: true, secondaryRoles: true, isActive: true },
+  });
+  if (!user || !user.isActive) return null;
+  return {
+    sub: user.id,
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    secondaryRoles: user.secondaryRoles,
+  };
+}
+
+export function authenticate(req: Request, res: Response, next: NextFunction) {
+  resolveUser(req)
+    .then((user) => {
+      if (!user) {
+        return res.status(401).json({ message: "Please sign in again." });
+      }
+      req.user = user;
+      next();
+    })
+    .catch(next);
+}
+
+/** Attaches req.user when a valid token is present; continues anonymously otherwise. */
+export function optionalAuthenticate(req: Request, _res: Response, next: NextFunction) {
+  resolveUser(req)
+    .then((user) => {
+      if (user) req.user = user;
+      next();
+    })
+    .catch(next);
+}
+
+export function userRoles(user: { role: Role | string; secondaryRoles?: (Role | string)[] } | undefined): string[] {
+  if (!user) return [];
+  return [user.role, ...(user.secondaryRoles ?? [])].map(String);
+}
+
+/** OWNER always passes. Use after `authenticate`. */
 export function requireRole(...roles: Role[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      return res.status(401).json({ message: "Please sign in." });
     }
-    const userRoles = [req.user.role, ...(req.user.secondaryRoles || [])];
-    if (req.user.role === "OWNER" || roles.some((r) => userRoles.includes(r as any))) {
+    const held = userRoles(req.user);
+    if (held.includes("OWNER") || roles.some((r) => held.includes(r))) {
       return next();
     }
     return res.status(403).json({ message: "You don't have permission to do that." });

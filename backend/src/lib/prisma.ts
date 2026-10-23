@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
-// Reuse a single PrismaClient across hot reloads in dev, and across the app in prod.
+// One PrismaClient per process. On Vercel a warm function instance reuses it
+// across requests instead of opening a new database connection every time.
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 export const prisma =
@@ -9,6 +10,4 @@ export const prisma =
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.prisma = prisma;

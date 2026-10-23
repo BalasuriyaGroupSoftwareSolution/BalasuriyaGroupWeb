@@ -1,32 +1,34 @@
 import { Router } from "express";
-import fs from "fs";
-import os from "os";
-import path from "path";
 import { z } from "zod";
+import { Prisma, type Role } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
-import { authenticate, optionalAuthenticate, requireRole } from "../middleware/auth.js";
+import { authenticate, userRoles, type AuthedUser } from "../middleware/auth.js";
 import { asyncHandler, HttpError } from "../middleware/errorHandler.js";
 import { hashPassword } from "../utils/password.js";
 import { sendStaffWelcomeEmail } from "../utils/mailer.js";
-
-const LOCAL_USERS_FILE = path.join(os.tmpdir(), "balasuriya_auth_users.json");
+import { toPublicUser } from "./auth.routes.js";
 
 export const usersRouter = Router();
 
-// OWNER & ADMIN can manage any staff across all divisions.
-// Division Leaders (CONSTRUCTION_MANAGER, TOURISM_AGENT, SOFTWARE_ENGINEER, TICKET_AGENT, FINANCE_APPROVER)
-// can add, view, reset passwords, and manage section staff in their respective divisions.
-const STAFF_MANAGEMENT_ROLES = [
+const ALL_ROLES = [
+  "OWNER",
   "ADMIN",
   "CONSTRUCTION_MANAGER",
+  "CONSTRUCTION_STAFF",
   "TOURISM_AGENT",
-  "SOFTWARE_ENGINEER",
-  "TICKET_AGENT",
+  "TOURISM_STAFF",
   "FINANCE_APPROVER",
+  "FINANCE_STAFF",
+  "TICKET_AGENT",
+  "TICKET_STAFF",
+  "SOFTWARE_ENGINEER",
+  "SOFTWARE_STAFF",
   "CHARTERED_ACCOUNTANT",
-] as const;
+  "CUSTOMER",
+] as const satisfies readonly Role[];
 
-export const DIVISION_ROLES_MAP: Record<string, string[]> = {
+/** Which roles each division leader may create / edit / reset / remove. */
+export const DIVISION_ROLES_MAP: Partial<Record<Role, Role[]>> = {
   CONSTRUCTION_MANAGER: ["CONSTRUCTION_MANAGER", "CONSTRUCTION_STAFF"],
   TOURISM_AGENT: ["TOURISM_AGENT", "TOURISM_STAFF"],
   SOFTWARE_ENGINEER: ["SOFTWARE_ENGINEER", "SOFTWARE_STAFF"],
@@ -35,411 +37,259 @@ export const DIVISION_ROLES_MAP: Record<string, string[]> = {
   CHARTERED_ACCOUNTANT: ["FINANCE_APPROVER", "CHARTERED_ACCOUNTANT", "FINANCE_STAFF"],
 };
 
-export function canManageRole(
-  caller: { role?: string; secondaryRoles?: string[] } | string | undefined,
-  targetRole: string
-): boolean {
-  if (!caller) return false;
-  const primaryRole = typeof caller === "string" ? caller : caller.role;
-  const secondaryRoles = typeof caller === "object" ? caller.secondaryRoles || [] : [];
-  if (primaryRole === "OWNER" || primaryRole === "ADMIN" || secondaryRoles.includes("ADMIN")) return true;
+const isOwner = (u: AuthedUser) => userRoles(u).includes("OWNER");
+const isExecutive = (u: AuthedUser) => isOwner(u) || userRoles(u).includes("ADMIN");
 
-  const allRoles = [primaryRole, ...secondaryRoles].filter(Boolean) as string[];
-  for (const r of allRoles) {
-    const allowed = DIVISION_ROLES_MAP[r];
-    if (allowed && allowed.includes(targetRole)) return true;
-  }
-  return false;
+function manageableRoles(caller: AuthedUser): Set<string> {
+  if (isOwner(caller)) return new Set(ALL_ROLES);
+  // ADMIN manages everyone except OWNER, and cannot create other ADMINs.
+  if (isExecutive(caller)) return new Set(ALL_ROLES.filter((r) => r !== "OWNER" && r !== "ADMIN"));
+  return new Set(userRoles(caller).flatMap((r) => DIVISION_ROLES_MAP[r as Role] ?? []));
 }
 
-export function toPrismaRole(role: string): any {
-  switch (role) {
-    case "CONSTRUCTION_STAFF":
-      return "CONSTRUCTION_MANAGER";
-    case "TOURISM_STAFF":
-      return "TOURISM_AGENT";
-    case "SOFTWARE_STAFF":
-      return "SOFTWARE_ENGINEER";
-    case "TICKET_STAFF":
-      return "TICKET_AGENT";
-    case "FINANCE_STAFF":
-      return "FINANCE_APPROVER";
-    default:
-      return role;
+/** Caller may act on a user whose primary AND secondary roles are all within reach. */
+function canManage(caller: AuthedUser, target: { role: string; secondaryRoles?: string[] }) {
+  const allowed = manageableRoles(caller);
+  return [target.role, ...(target.secondaryRoles ?? [])].every((r) => allowed.has(r));
+}
+
+function requireStaffManager(caller: AuthedUser) {
+  if (manageableRoles(caller).size === 0) {
+    throw new HttpError(403, "You don't have permission to manage staff.");
   }
 }
 
-function toSafeUser(u: {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  phone: string | null;
-  isActive: boolean;
-  createdAt: Date;
-}) {
-  return u;
+/** Accepts either a database id or an email in the :id route param. */
+async function findTarget(idOrEmail: string) {
+  const key = decodeURIComponent(idOrEmail).trim();
+  const user = key.includes("@")
+    ? await prisma.user.findUnique({ where: { email: key.toLowerCase() } })
+    : await prisma.user.findUnique({ where: { id: key } });
+  if (!user) throw new HttpError(404, "User not found.");
+  return user;
 }
 
+const roleEnum = z.enum(ALL_ROLES);
+const staffFields = {
+  name: z.string().trim().min(2).max(120),
+  email: z.string().email(),
+  phone: z.string().trim().max(25).optional().nullable(),
+  department: z.string().trim().max(120).optional().nullable(),
+  jobTitle: z.string().trim().max(160).optional().nullable(),
+  secondaryRoles: z.array(roleEnum).max(10).optional(),
+  assignedDivisions: z.array(z.string().trim().max(120)).max(10).optional(),
+};
+
+usersRouter.use(authenticate);
+
+// List staff (executives see everyone; division leaders see their divisions).
 usersRouter.get(
   "/",
-  optionalAuthenticate,
   asyncHandler(async (req, res) => {
-    const callerRole = req.user?.role;
-    const secondaryRoles = req.user?.secondaryRoles || [];
-    const allCallerRoles = [callerRole, ...secondaryRoles].filter(Boolean) as string[];
-    const isExecutive = allCallerRoles.includes("OWNER") || allCallerRoles.includes("ADMIN");
-    const allowed = allCallerRoles.flatMap((r) => DIVISION_ROLES_MAP[r] || []);
+    const caller = req.user!;
+    requireStaffManager(caller);
 
-    // Executive sees all users; Division Leader sees themselves and their divisions' section staff
-    const whereClause = isExecutive
-      ? undefined
-      : {
-          OR: [
-            ...(allowed.length > 0 ? [{ role: { in: allowed as any } }] : []),
-            { id: req.user?.id },
-          ],
-        };
+    const includeCustomers = req.query.includeCustomers === "true" && isExecutive(caller);
+    const allowed = [...manageableRoles(caller)] as Role[];
 
-    let users: any[] = [];
-    try {
-      users = await prisma.user.findMany({
-        where: whereClause,
-        orderBy: { createdAt: "desc" },
-        select: { id: true, email: true, name: true, role: true, phone: true, isActive: true, createdAt: true },
-      });
-    } catch (err) {
-      console.warn("[users.routes] Prisma findMany failed, falling back to local cache:", err);
-      if (fs.existsSync(LOCAL_USERS_FILE)) {
-        try {
-          const list: any[] = JSON.parse(fs.readFileSync(LOCAL_USERS_FILE, "utf-8"));
-          users = list.map((u) => ({
-            id: u.id,
-            email: u.email,
-            name: u.name,
-            role: u.role,
-            phone: u.phone || null,
-            isActive: u.isActive ?? true,
-            createdAt: u.createdAt ? new Date(u.createdAt) : new Date(),
-          }));
-        } catch {}
-      }
-      if (users.length === 0) {
-        users = [
-          {
-            id: "usr_admin_clemon",
-            email: "clemonbalasuriyagroup@gmail.com",
-            name: "Clemon Balasuriya",
-            role: "OWNER",
-            phone: null,
-            isActive: true,
-            createdAt: new Date(),
-          },
-        ];
-      }
-    }
-    res.json({ users: users.map(toSafeUser) });
+    const users = await prisma.user.findMany({
+      where: isExecutive(caller)
+        ? includeCustomers
+          ? undefined
+          : { role: { not: "CUSTOMER" } }
+        : { OR: [{ role: { in: allowed.filter((r) => r !== "CUSTOMER") } }, { id: caller.id }] },
+      orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+    });
+    res.json({ users: users.map(toPublicUser) });
   })
 );
 
 const createStaffSchema = z.object({
-  name: z.string().min(2).max(120),
-  email: z.string().email(),
-  phone: z.string().optional(),
-  temporaryPassword: z.string().min(8),
-  role: z.enum([
-    "OWNER",
-    "ADMIN",
-    "CONSTRUCTION_MANAGER",
-    "CONSTRUCTION_STAFF",
-    "TOURISM_AGENT",
-    "TOURISM_STAFF",
-    "FINANCE_APPROVER",
-    "FINANCE_STAFF",
-    "TICKET_AGENT",
-    "TICKET_STAFF",
-    "SOFTWARE_ENGINEER",
-    "SOFTWARE_STAFF",
-    "CHARTERED_ACCOUNTANT",
-  ]),
+  ...staffFields,
+  role: roleEnum.refine((r) => r !== "CUSTOMER", "Choose a staff role."),
+  temporaryPassword: z.string().min(8).max(200),
 });
 
 usersRouter.post(
   "/",
-  optionalAuthenticate,
   asyncHandler(async (req, res) => {
-    const caller = req.user;
+    const caller = req.user!;
+    requireStaffManager(caller);
     const data = createStaffSchema.parse(req.body);
+    const email = data.email.toLowerCase().trim();
+    const secondaryRoles = (data.secondaryRoles ?? []).filter((r) => r !== data.role);
 
-    // Division leaders can only add staff within their assigned division roles
-    if (caller && !canManageRole(caller, data.role)) {
-      throw new HttpError(403, `You can only add staff within your assigned divisions.`);
+    if (!canManage(caller, { role: data.role, secondaryRoles })) {
+      throw new HttpError(403, "You can only add staff within your own divisions.");
     }
 
-    const passwordHash = await hashPassword(data.temporaryPassword);
-    let user: any = null;
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing && existing.role !== "CUSTOMER") {
+      throw new HttpError(409, "A staff account with that email already exists.");
+    }
 
+    const fields = {
+      name: data.name,
+      phone: data.phone || null,
+      role: data.role,
+      secondaryRoles,
+      department: data.department || null,
+      jobTitle: data.jobTitle || null,
+      assignedDivisions: data.assignedDivisions ?? (data.department ? [data.department] : []),
+      passwordHash: await hashPassword(data.temporaryPassword),
+      isActive: true,
+    };
+
+    let user;
     try {
-      const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
-      if (existing) {
-        user = await prisma.user.update({
-          where: { id: existing.id },
-          data: {
-            name: data.name,
-            phone: data.phone || null,
-            role: toPrismaRole(data.role),
-            passwordHash,
-          },
-        });
-      } else {
-        user = await prisma.user.create({
-          data: {
-            name: data.name,
-            email: data.email.toLowerCase(),
-            phone: data.phone || null,
-            role: toPrismaRole(data.role),
-            passwordHash,
-          },
-        });
+      user = existing
+        ? // Promote an existing customer account (keeps their bookings).
+          await prisma.user.update({ where: { id: existing.id }, data: fields })
+        : await prisma.user.create({ data: { ...fields, email } });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        throw new HttpError(409, "That email or phone number is already used by another account.");
       }
-    } catch (err) {
-      console.warn("[users.routes] Prisma save failed, creating in local auth cache:", err);
-      user = {
-        id: `usr_staff_${Date.now()}`,
-        name: data.name,
-        email: data.email.toLowerCase(),
-        phone: data.phone || null,
-        role: data.role,
-        isActive: true,
-        createdAt: new Date(),
-      };
+      throw err;
     }
 
-    // Mirror to local persistent cache so login works regardless of DB state
-    try {
-      let list: any[] = [];
-      if (fs.existsSync(LOCAL_USERS_FILE)) {
-        list = JSON.parse(fs.readFileSync(LOCAL_USERS_FILE, "utf-8"));
-      }
-      list = list.filter((x) => x.email.toLowerCase() !== data.email.toLowerCase());
-      list.unshift({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        passwordHash,
-        role: user.role,
-        phone: user.phone || null,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      });
-      fs.writeFileSync(LOCAL_USERS_FILE, JSON.stringify(list, null, 2), "utf-8");
-    } catch (err) {
-      console.warn("[users.routes] Could not mirror user to local cache:", err);
-    }
-
-    let emailDispatched = false;
-    try {
-      const mailRes = await sendStaffWelcomeEmail({
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        temporaryPassword: data.temporaryPassword,
-      });
-      emailDispatched = mailRes.success;
-    } catch (err) {
-      console.error("[usersRouter] Failed to send welcome email:", err);
-    }
+    const mail = await sendStaffWelcomeEmail({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      temporaryPassword: data.temporaryPassword,
+    });
 
     res.status(201).json({
-      user: toSafeUser(user),
-      emailDispatched,
-      note: emailDispatched
-        ? `Official welcome email with credentials dispatched to ${user.email}.`
-        : "Share the temporary password with the staff member through a secure channel.",
+      user: toPublicUser(user),
+      emailDispatched: mail.success,
+      note: mail.success
+        ? `Welcome email with the temporary password sent to ${user.email}.`
+        : "Email isn't configured — share the temporary password with them privately.",
     });
   })
 );
 
-const updateUserSchema = z.object({
-  name: z.string().min(2).max(120).optional(),
-  email: z.string().email().optional(),
-  phone: z.string().optional().nullable(),
-  isActive: z.boolean().optional(),
-  role: z
-    .enum([
-      "OWNER",
-      "ADMIN",
-      "CONSTRUCTION_MANAGER",
-      "CONSTRUCTION_STAFF",
-      "TOURISM_AGENT",
-      "TOURISM_STAFF",
-      "FINANCE_APPROVER",
-      "FINANCE_STAFF",
-      "TICKET_AGENT",
-      "TICKET_STAFF",
-      "SOFTWARE_ENGINEER",
-      "SOFTWARE_STAFF",
-      "CHARTERED_ACCOUNTANT",
-      "CUSTOMER",
-    ])
-    .optional(),
-});
+const updateUserSchema = z
+  .object({
+    ...staffFields,
+    role: roleEnum,
+    isActive: z.boolean(),
+  })
+  .partial();
 
 usersRouter.patch(
   "/:id",
-  optionalAuthenticate,
   asyncHandler(async (req, res) => {
-    const caller = req.user;
+    const caller = req.user!;
+    requireStaffManager(caller);
+    const target = await findTarget(req.params.id);
     const data = updateUserSchema.parse(req.body);
 
-    const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
-    if (!targetUser) throw new HttpError(404, "User not found.");
-
-    // Division leaders can only modify staff in their assigned divisions
-    if (caller && !canManageRole(caller, targetUser.role)) {
-      throw new HttpError(403, "You can only manage staff within your assigned divisions.");
+    if (!canManage(caller, target)) {
+      throw new HttpError(403, "You can only manage staff within your own divisions.");
     }
 
-    if (caller && data.role && !canManageRole(caller, data.role)) {
-      throw new HttpError(403, "You cannot assign a role outside of your assigned divisions.");
+    const nextRole = data.role ?? target.role;
+    const nextSecondary = (data.secondaryRoles ?? target.secondaryRoles).filter((r) => r !== nextRole);
+    if (!canManage(caller, { role: nextRole, secondaryRoles: nextSecondary })) {
+      throw new HttpError(403, "You can't assign a role outside your own divisions.");
     }
 
-    if (data.email && data.email.toLowerCase() !== targetUser.email.toLowerCase()) {
-      const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
-      if (existing) throw new HttpError(409, "A user with that email already exists.");
+    if (target.id === caller.id && (data.isActive === false || (data.role && data.role !== target.role))) {
+      throw new HttpError(400, "You can't suspend yourself or change your own role.");
     }
 
-    const user = await prisma.user.update({
-      where: { id: req.params.id },
-      data: {
-        ...data,
-        role: data.role ? toPrismaRole(data.role) : undefined,
-        email: data.email ? data.email.toLowerCase() : undefined,
-      },
-    });
-    res.json({ user: toSafeUser(user) });
+    // Never leave the company without an active owner.
+    if (target.role === "OWNER" && (nextRole !== "OWNER" || data.isActive === false)) {
+      const otherOwners = await prisma.user.count({
+        where: { role: "OWNER", isActive: true, NOT: { id: target.id } },
+      });
+      if (otherOwners === 0) throw new HttpError(400, "There must always be at least one active owner.");
+    }
+
+    let user;
+    try {
+      user = await prisma.user.update({
+        where: { id: target.id },
+        data: {
+          name: data.name,
+          email: data.email ? data.email.toLowerCase().trim() : undefined,
+          phone: data.phone === undefined ? undefined : data.phone || null,
+          role: data.role,
+          secondaryRoles: (data.secondaryRoles || data.role) ? nextSecondary : undefined,
+          department: data.department === undefined ? undefined : data.department || null,
+          jobTitle: data.jobTitle === undefined ? undefined : data.jobTitle || null,
+          assignedDivisions: data.assignedDivisions,
+          isActive: data.isActive,
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        throw new HttpError(409, "That email or phone number is already used by another account.");
+      }
+      throw err;
+    }
+
+    res.json({ user: toPublicUser(user), message: "Staff details saved." });
   })
 );
 
 usersRouter.delete(
   "/:id",
-  optionalAuthenticate,
   asyncHandler(async (req, res) => {
-    if (req.user?.id === req.params.id || req.user?.sub === req.params.id) {
-      throw new HttpError(400, "You cannot delete your own active account.");
+    const caller = req.user!;
+    requireStaffManager(caller);
+    const target = await findTarget(req.params.id);
+
+    if (target.id === caller.id) throw new HttpError(400, "You can't remove your own account.");
+    if (target.role === "OWNER") throw new HttpError(403, "Owner accounts can't be removed.");
+    if (!canManage(caller, target)) throw new HttpError(403, "You can only remove staff within your own divisions.");
+
+    try {
+      await prisma.user.delete({ where: { id: target.id } });
+      res.json({ message: "Account removed.", removed: true });
+    } catch (err) {
+      // They created projects/packages/approvals — keep history, just block access.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+        await prisma.user.update({ where: { id: target.id }, data: { isActive: false } });
+        return res.json({
+          message: "This person has records linked to their account, so it was suspended instead of deleted.",
+          removed: false,
+          suspended: true,
+        });
+      }
+      throw err;
     }
-    const callerRole = req.user?.role;
-
-    const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
-    if (!targetUser) throw new HttpError(404, "User not found.");
-
-    if (
-      targetUser.id === req.user?.id ||
-      targetUser.id === req.user?.sub ||
-      (req.user?.email && targetUser.email.toLowerCase() === req.user.email.toLowerCase())
-    ) {
-      throw new HttpError(400, "You cannot delete your own active account.");
-    }
-
-    if (targetUser.role === "OWNER" || targetUser.email.toLowerCase() === "clemonbalasuriyagroup@gmail.com") {
-      throw new HttpError(403, "The root Executive Owner account is protected and cannot be deleted.");
-    }
-
-    if (callerRole && !canManageRole(callerRole, targetUser.role)) {
-      throw new HttpError(403, "You can only remove staff within your own division.");
-    }
-
-    await prisma.user.delete({ where: { id: req.params.id } });
-    res.json({ message: "User account removed permanently." });
   })
 );
 
-const resetPasswordSchema = z.object({ temporaryPassword: z.string().min(8) });
+const resetPasswordSchema = z.object({ temporaryPassword: z.string().min(8).max(200) });
 
 usersRouter.post(
   "/:id/reset-password",
-  optionalAuthenticate,
   asyncHandler(async (req, res) => {
-    const callerRole = req.user?.role;
-    let targetUser: any = null;
-    try {
-      targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
-    } catch (err) {
-      console.warn("[users.routes] Prisma findUnique failed in reset-password:", err);
-    }
-
-    if (!targetUser) {
-      try {
-        if (fs.existsSync(LOCAL_USERS_FILE)) {
-          const list: any[] = JSON.parse(fs.readFileSync(LOCAL_USERS_FILE, "utf-8"));
-          targetUser = list.find((u) => u.id === req.params.id || u.email.toLowerCase() === req.params.id.toLowerCase());
-        }
-      } catch {}
-    }
-
-    if (!targetUser) throw new HttpError(404, "User not found.");
-
-    if (!canManageRole(callerRole, targetUser.role)) {
-      throw new HttpError(403, "You can only reset passwords for staff in your division.");
-    }
+    const caller = req.user!;
+    requireStaffManager(caller);
+    const target = await findTarget(req.params.id);
+    if (!canManage(caller, target)) throw new HttpError(403, "You can only reset passwords for staff in your divisions.");
 
     const { temporaryPassword } = resetPasswordSchema.parse(req.body);
-    const newHash = await hashPassword(temporaryPassword);
+    await prisma.user.update({ where: { id: target.id }, data: { passwordHash: await hashPassword(temporaryPassword) } });
 
-    try {
-      await prisma.user.update({
-        where: { id: targetUser.id },
-        data: { passwordHash: newHash },
-      });
-    } catch (err) {
-      console.warn("[users.routes] Prisma update password failed:", err);
-    }
-
-    // Mirror to local cache so authentication always succeeds
-    try {
-      let list: any[] = [];
-      if (fs.existsSync(LOCAL_USERS_FILE)) {
-        list = JSON.parse(fs.readFileSync(LOCAL_USERS_FILE, "utf-8"));
-      }
-      const idx = list.findIndex((u) => u.id === targetUser.id || u.email.toLowerCase() === targetUser.email.toLowerCase());
-      if (idx !== -1) {
-        list[idx].passwordHash = newHash;
-      } else {
-        list.unshift({
-          id: targetUser.id,
-          name: targetUser.name,
-          email: targetUser.email.toLowerCase(),
-          passwordHash: newHash,
-          role: targetUser.role,
-          phone: targetUser.phone || null,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        });
-      }
-      fs.writeFileSync(LOCAL_USERS_FILE, JSON.stringify(list, null, 2), "utf-8");
-    } catch (err) {
-      console.warn("[users.routes] Could not mirror reset to local cache:", err);
-    }
-
-    let emailDispatched = false;
-    try {
-      const mailRes = await sendStaffWelcomeEmail({
-        name: targetUser.name,
-        email: targetUser.email,
-        role: targetUser.role,
-        temporaryPassword,
-        isReset: true,
-      });
-      emailDispatched = mailRes.success;
-    } catch (err) {
-      console.error("[usersRouter] Failed to send reset email:", err);
-    }
+    const mail = await sendStaffWelcomeEmail({
+      name: target.name,
+      email: target.email,
+      role: target.role,
+      temporaryPassword,
+      isReset: true,
+    });
 
     res.json({
-      message: emailDispatched
-        ? `Password reset and sent to ${targetUser.email}.`
-        : "Password reset. Share the new temporary password securely.",
-      emailDispatched,
+      message: mail.success
+        ? `Password reset and emailed to ${target.email}.`
+        : "Password reset. Email isn't configured — share the new temporary password privately.",
+      emailDispatched: mail.success,
     });
   })
 );

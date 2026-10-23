@@ -26,13 +26,12 @@ import {
   XCircle,
 } from "lucide-react";
 import type { User as AuthUser, VisaApplication, VisaCategory, VisaStatus } from "../types";
-import { api } from "../lib/api";
-import { logStaffActivity } from "../lib/activityLogger";
+import { api, apiErrorMessage } from "../lib/api";
 import { contactInfo } from "../data/companyProfile";
 import QuickVisaInquiry from "./QuickVisaInquiry";
 import toast from "react-hot-toast";
 
-const LOCAL_VISAS_KEY = "bg_client_visa_applications";
+
 
 export const VISA_DESTINATIONS = [
   {
@@ -235,99 +234,14 @@ export const VISA_DESTINATIONS = [
   },
 ];
 
-const INITIAL_DEMO_VISAS: VisaApplication[] = [
-  {
-    id: "visa_demo_1",
-    referenceNo: "BG-VISA-2026-8812",
-    userEmail: "client@balasuriyagroup.tech",
-    userName: "Deshamanya Rohan De Silva",
-    phone: "+94 77 123 4567",
-    country: "United Arab Emirates (Dubai & Abu Dhabi)",
-    countryFlag: "🇦🇪",
-    category: "TOURIST",
-    visaTypeLabel: "30-Day Express Tourist eVisa",
-    entryType: "SINGLE",
-    passportNumber: "N8921456",
-    passportExpiry: "2029-11-20",
-    passportIssueDate: "2019-11-21",
-    nationality: "Sri Lankan",
-    dateOfBirth: "1984-06-14",
-    gender: "MALE",
-    occupation: "Managing Director",
-    employerName: "De Silva Logistics Ltd",
-    intendedArrivalDate: "2026-11-10",
-    intendedDepartureDate: "2026-11-24",
-    stayDurationDays: 14,
-    destinationAddress: "Grand Hyatt Hotel, Dubai Creek, UAE",
-    notes: "Family holiday visit & Dubai Expo tour. White background photo and confirmed return flight ticket confirmed.",
-    documentSummary: "Passport Bio-page + White BG Photo + CMB-DXB Confirmed Ticket",
-    status: "UNDER_REVIEW",
-    statusNotes: "Documents verified by Balasuriya Visa Desk. Ready for General Directorate of Residency (GDRFA) submission.",
-    submittedAt: "2026-10-12T09:30:00.000Z",
-    updatedAt: "2026-10-14T11:20:00.000Z",
-    canEdit: true,
-  },
-  {
-    id: "visa_demo_2",
-    referenceNo: "BG-VISA-2026-9403",
-    userEmail: "client@balasuriyagroup.tech",
-    userName: "Deshamanya Rohan De Silva",
-    phone: "+94 77 123 4567",
-    country: "United Kingdom (UK)",
-    countryFlag: "🇬🇧",
-    category: "BUSINESS",
-    visaTypeLabel: "Corporate & Business Visitor Visa (6 Months)",
-    entryType: "MULTIPLE",
-    passportNumber: "N8921456",
-    passportExpiry: "2029-11-20",
-    nationality: "Sri Lankan",
-    dateOfBirth: "1984-06-14",
-    occupation: "Managing Director",
-    employerName: "De Silva Logistics Ltd",
-    intendedArrivalDate: "2026-12-05",
-    intendedDepartureDate: "2026-12-18",
-    stayDurationDays: 13,
-    destinationAddress: "Hilton London Bankside, 2-8 Great Suffolk St, London SE1",
-    sponsorCompany: "Global Maritime Logistics UK PLC",
-    sponsorContact: "Mr. James Wright (+44 20 7946 0912)",
-    meetingPurpose: "Annual shipping conference & commercial contract renewal talks with UK partners.",
-    notes: "Formal corporate sponsorship invitation letter & audited bank statements uploaded.",
-    documentSummary: "UK Sponsor Invitation + 6-Month Bank Statements + Tax Certification",
-    status: "SUBMITTED",
-    statusNotes: "Application lodged online. Initial compliance check scheduled by Head of Visa Services.",
-    submittedAt: "2026-10-15T08:00:00.000Z",
-    updatedAt: "2026-10-15T08:00:00.000Z",
-    canEdit: true,
-  },
-];
-
-function getStoredVisas(): VisaApplication[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_VISAS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {}
-  return [];
-}
-
-function persistVisas(list: VisaApplication[]): void {
-  try {
-    localStorage.setItem(LOCAL_VISAS_KEY, JSON.stringify(list));
-  } catch {}
-}
-
 interface Props {
   user: AuthUser | null;
   onOpenNewModalDirectly?: boolean;
 }
 
 export default function CustomerVisaPortal({ user }: Props) {
-  const [visas, setVisas] = useState<VisaApplication[]>(() => {
-    const stored = getStoredVisas();
-    return stored.length > 0 ? stored : INITIAL_DEMO_VISAS;
-  });
+  const [visas, setVisas] = useState<VisaApplication[]>([]);
+  const [visasLoading, setVisasLoading] = useState(true);
 
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [search, setSearch] = useState("");
@@ -427,31 +341,21 @@ export default function CustomerVisaPortal({ user }: Props) {
     }
   }
 
-  // Fetch visas from API or sync
-  useEffect(() => {
+  // Applications live in the database; the server only returns this user's own.
+  function loadVisas() {
+    setVisasLoading(true);
     api
       .get<{ applications: VisaApplication[] }>("/api/visas")
-      .then((res) => {
-        if (res.data.applications && res.data.applications.length > 0) {
-          const stored = getStoredVisas();
-          const combinedMap = new Map<string, VisaApplication>();
-          for (const s of stored) combinedMap.set(s.id, s);
-          for (const a of res.data.applications) {
-            if (!combinedMap.has(a.id)) combinedMap.set(a.id, a);
-          }
-          const merged = Array.from(combinedMap.values());
-          setVisas(merged);
-          persistVisas(merged);
-        }
-      })
-      .catch(() => {
-        const stored = getStoredVisas();
-        if (stored.length === 0) {
-          setVisas(INITIAL_DEMO_VISAS);
-          persistVisas(INITIAL_DEMO_VISAS);
-        }
-      });
-  }, []);
+      .then((res) => setVisas(res.data.applications ?? []))
+      .catch((err) => toast.error(apiErrorMessage(err, "Could not load your visa applications.")))
+      .finally(() => setVisasLoading(false));
+  }
+
+  useEffect(() => {
+    if (user) loadVisas();
+    else setVisasLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Handle New Visa Application Submission
   async function handleCreateVisaApplication(e: FormEvent) {
@@ -463,70 +367,45 @@ export default function CustomerVisaPortal({ user }: Props) {
     setSubmitting(true);
 
     const destObj = VISA_DESTINATIONS.find((d) => d.country === destCountry);
-    const countryFlag = destObj?.flag || "🌐";
-    const refNo = `BG-VISA-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const newApp: VisaApplication = {
-      id: `visa_${Date.now()}`,
-      referenceNo: refNo,
-      userEmail: applicantEmail.toLowerCase().trim() || user?.email || "client@balasuriyagroup.tech",
-      userName: applicantName.trim() || user?.name || "Client Applicant",
-      phone: applicantPhone.trim() || user?.phone || "+94 77 000 0000",
-      country: destCountry,
-      countryFlag,
-      category,
-      visaTypeLabel,
-      entryType,
-      passportNumber: passportNumber.toUpperCase().trim(),
-      passportExpiry,
-      passportIssueDate,
-      nationality,
-      dateOfBirth,
-      gender,
-      occupation,
-      employerName,
-      intendedArrivalDate,
-      intendedDepartureDate,
-      stayDurationDays: Number(stayDurationDays) || 15,
-      destinationAddress,
-      sponsorCompany: category === "BUSINESS" ? sponsorCompany : undefined,
-      sponsorContact: category === "BUSINESS" ? sponsorContact : undefined,
-      meetingPurpose: category === "BUSINESS" ? meetingPurpose : undefined,
-      notes,
-      documentSummary,
-      status: "SUBMITTED",
-      statusNotes: "Application submitted online. Preliminary document check underway by Balasuriya Visa Desk.",
-      submittedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      canEdit: true,
-    };
 
     try {
-      await api.post("/api/visas", newApp);
-    } catch {
-      // Offline / fallback storage continues
+      const res = await api.post<{ application: VisaApplication }>("/api/visas", {
+        userName: applicantName.trim() || user?.name || "",
+        phone: applicantPhone.trim() || user?.phone || "",
+        country: destCountry,
+        countryFlag: destObj?.flag || "🌐",
+        category,
+        visaTypeLabel,
+        entryType,
+        passportNumber: passportNumber.toUpperCase().trim(),
+        passportExpiry,
+        passportIssueDate,
+        nationality,
+        dateOfBirth,
+        gender,
+        occupation,
+        employerName,
+        intendedArrivalDate,
+        intendedDepartureDate,
+        stayDurationDays: Number(stayDurationDays) || undefined,
+        destinationAddress,
+        sponsorCompany: category === "BUSINESS" ? sponsorCompany : undefined,
+        sponsorContact: category === "BUSINESS" ? sponsorContact : undefined,
+        meetingPurpose: category === "BUSINESS" ? meetingPurpose : undefined,
+        notes,
+        documentSummary,
+      });
+      const created = res.data.application;
+      setVisas((prev) => [created, ...prev]);
+      toast.success(`Visa application submitted. Reference: ${created.referenceNo}`);
+      setIsNewModalOpen(false);
+      setPassportNumber("");
+      setNotes("");
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Could not submit the application. Please check the details and try again."));
+    } finally {
+      setSubmitting(false);
     }
-
-    setVisas((prev) => {
-      const next = [newApp, ...prev];
-      persistVisas(next);
-      return next;
-    });
-
-    logStaffActivity({
-      division: "TICKETING",
-      title: `Submitted Online Visa Application for ${destCountry} (${refNo})`,
-      actor: user?.name || applicantName,
-      actorRole: "Client Applicant",
-      badgeColor: "bg-sky-100 text-sky-900",
-      details: `Category: ${category} eVisa, Passport: ${newApp.passportNumber}, Travel Date: ${intendedArrivalDate}.`,
-    });
-
-    toast.success(`Online visa application submitted! Reference: ${refNo}`);
-    setIsNewModalOpen(false);
-    setPassportNumber("");
-    setNotes("");
-    setSubmitting(false);
   }
 
   // Handle Opening Edit Modal
@@ -557,51 +436,35 @@ export default function CustomerVisaPortal({ user }: Props) {
     if (!editingVisa) return;
     setEditSubmitting(true);
 
-    const updatedApp: VisaApplication = {
-      ...editingVisa,
-      userName: editName.trim(),
-      phone: editPhone.trim(),
-      passportNumber: editPassportNumber.toUpperCase().trim(),
-      passportExpiry: editPassportExpiry,
-      passportIssueDate: editPassportIssueDate,
-      nationality: editNationality,
-      dateOfBirth: editDateOfBirth,
-      occupation: editOccupation,
-      employerName: editEmployerName,
-      intendedArrivalDate: editArrivalDate,
-      intendedDepartureDate: editDepartureDate,
-      stayDurationDays: Number(editStayDuration),
-      destinationAddress: editAddress,
-      sponsorCompany: editingVisa.category === "BUSINESS" ? editSponsorCompany : undefined,
-      sponsorContact: editingVisa.category === "BUSINESS" ? editSponsorContact : undefined,
-      meetingPurpose: editingVisa.category === "BUSINESS" ? editMeetingPurpose : undefined,
-      notes: editNotes,
-      updatedAt: new Date().toISOString(),
-      statusNotes: `Updated by applicant on ${new Date().toLocaleDateString()}. Preliminary review refreshed.`,
-    };
-
     try {
-      await api.patch(`/api/visas/${editingVisa.id}`, updatedApp);
-    } catch {}
-
-    setVisas((prev) => {
-      const next = prev.map((v) => (v.id === editingVisa.id ? updatedApp : v));
-      persistVisas(next);
-      return next;
-    });
-
-    logStaffActivity({
-      division: "TICKETING",
-      title: `Updated Visa Application Details for ${editingVisa.country} (${editingVisa.referenceNo})`,
-      actor: user?.name || editName,
-      actorRole: "Client Applicant",
-      badgeColor: "bg-indigo-100 text-indigo-900",
-      details: `Applicant revised travel dates (${editArrivalDate}) and passport info.`,
-    });
-
-    toast.success(`Visa details for ${editingVisa.country} updated successfully!`);
-    setEditSubmitting(false);
-    setEditingVisa(null);
+      const res = await api.patch<{ application: VisaApplication }>(`/api/visas/${editingVisa.id}`, {
+        userName: editName.trim(),
+        phone: editPhone.trim(),
+        passportNumber: editPassportNumber.toUpperCase().trim(),
+        passportExpiry: editPassportExpiry,
+        passportIssueDate: editPassportIssueDate,
+        nationality: editNationality,
+        dateOfBirth: editDateOfBirth,
+        occupation: editOccupation,
+        employerName: editEmployerName,
+        intendedArrivalDate: editArrivalDate,
+        intendedDepartureDate: editDepartureDate,
+        stayDurationDays: Number(editStayDuration) || undefined,
+        destinationAddress: editAddress,
+        sponsorCompany: editingVisa.category === "BUSINESS" ? editSponsorCompany : undefined,
+        sponsorContact: editingVisa.category === "BUSINESS" ? editSponsorContact : undefined,
+        meetingPurpose: editingVisa.category === "BUSINESS" ? editMeetingPurpose : undefined,
+        notes: editNotes,
+      });
+      const updated = res.data.application;
+      setVisas((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+      toast.success(`Visa details for ${updated.country} updated.`);
+      setEditingVisa(null);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Could not save your changes."));
+    } finally {
+      setEditSubmitting(false);
+    }
   }
 
   // Filter visas
@@ -721,7 +584,9 @@ export default function CustomerVisaPortal({ user }: Props) {
 
       {/* Applications List */}
       <div className="space-y-4">
-        {filteredVisas.length === 0 ? (
+        {visasLoading ? (
+          <div className="card text-center py-10 text-xs text-gray-500">Loading your applications…</div>
+        ) : filteredVisas.length === 0 ? (
           <div className="card text-center py-12">
             <Globe className="h-10 w-10 text-gray-300 mx-auto mb-3" />
             <h3 className="font-bold text-brand-navy text-base">No Visa Applications Found</h3>

@@ -29,41 +29,10 @@ import toast from "react-hot-toast";
 
 type PortalTab = "overview" | "visas" | "quotes" | "bookings" | "construction" | "payments" | "settings";
 
-// Curated demo construction client projects so customers immediately see live progress
-const DEMO_CLIENT_PROJECTS: ConstructionProject[] = [
-  {
-    id: "proj_client_1",
-    name: "Balasuriya Private Villa & Residence",
-    description: "Architectural custom villa featuring 4 bedrooms, solar roof integration, and swimming pool.",
-    location: "Negombo, Western Province, Sri Lanka",
-    status: "IN_PROGRESS",
-    projectType: "Residential",
-    coverImageUrl: "/images/projects/residential.svg",
-    featured: true,
-    startDate: "2026-02-15",
-    targetEndDate: "2026-12-20",
-    progressUpdates: [
-      {
-        id: "up_1",
-        projectId: "proj_client_1",
-        currentStatus: "Second floor ceiling slab cured. Plumbing and electrical conduits 90% installed.",
-        nextPeriodPlan: "Door frame fixing, internal plastering, and waterproofing of roof terrace.",
-        percentComplete: 68,
-        photoUrls: [],
-        createdAt: "2026-10-05T08:00:00Z",
-      },
-      {
-        id: "up_0",
-        projectId: "proj_client_1",
-        currentStatus: "Ground and 1st floor brickwork completed.",
-        nextPeriodPlan: "Begin 2nd floor concrete column pours.",
-        percentComplete: 45,
-        photoUrls: [],
-        createdAt: "2026-08-12T08:00:00Z",
-      },
-    ],
-  },
-];
+// Construction projects aren't linked to customer accounts in the database yet,
+// so customers see none here (previously every customer saw the same made-up
+// project). Linking a project to its client is a planned feature.
+const CLIENT_PROJECTS: ConstructionProject[] = [];
 
 export default function CustomerPortal() {
   const { user, updateProfile, changePassword, logout } = useAuth();
@@ -110,54 +79,9 @@ export default function CustomerPortal() {
     api
       .get<{ bookings: Booking[] }>("/api/tourism/bookings/mine")
       .then((res) => setBookings(res.data.bookings || []))
-      .catch(() => {
-        // Fallback demo bookings for previewing
-        setBookings([
-          {
-            id: "BK-8902",
-            type: "CONSTRUCTION_QUOTE",
-            status: "CONFIRMED",
-            payments: [],
-            details: {
-              division: "CONSTRUCTION",
-              subject: "Residential Villa Structural Engineering",
-              message: "Architectural consultation for a 3,200 sq.ft two-story residence in Negombo.",
-              submittedAt: "2026-09-18T10:30:00Z",
-            },
-            createdAt: "2026-09-18T10:30:00Z",
-          },
-          {
-            id: "BK-4421",
-            type: "TOUR_PACKAGE",
-            status: "PENDING",
-            package: {
-              id: "pkg_ella",
-              title: "Hill Country & Ella Scenic Heritage Tour",
-              description: "5-day bespoke luxury tour across Nuwara Eliya, Horton Plains, and Ella.",
-              category: "LOCAL",
-              priceLkr: "85000",
-              durationDays: 5,
-              availableSlots: 4,
-              isActive: true,
-              promotions: [],
-            },
-            payments: [],
-            createdAt: "2026-10-02T14:15:00Z",
-          },
-          {
-            id: "BK-1108",
-            type: "SOFTWARE_PROJECT",
-            status: "CONFIRMED",
-            payments: [],
-            details: {
-              division: "SOFTWARE",
-              subject: "Enterprise Cloud ERP & Logistics Tracking",
-              message: "Multi-tenant inventory and customer portal architecture blueprint.",
-              submittedAt: "2026-10-08T09:00:00Z",
-            },
-            createdAt: "2026-10-08T09:00:00Z",
-          },
-        ]);
+      .catch((err) => {
+        if (err?.response?.status !== 401) toast.error("Could not load your bookings. Please refresh to try again.");
+        setBookings([]);
       })
       .finally(() => setLoadingBookings(false));
   }, []);
@@ -204,11 +128,15 @@ export default function CustomerPortal() {
       toast.error("Please provide the transaction reference or deposit slip number.");
       return;
     }
+    if (!(Number(payAmount) > 0)) {
+      toast.error("Please enter the amount you paid (LKR).");
+      return;
+    }
     setSubmittingPay(true);
     try {
       await api.post("/api/payments", {
         bookingId: selectedBookingId,
-        amountLkr: Number(payAmount) || 50000,
+        amountLkr: Number(payAmount),
         method: payMethod,
         reference: payRef,
       });
@@ -216,9 +144,7 @@ export default function CustomerPortal() {
       setPayRef("");
       setPayAmount("");
     } catch (err) {
-      toast.success("Payment reference logged for Finance approval (Demo mode).");
-      setPayRef("");
-      setPayAmount("");
+      toast.error(apiErrorMessage(err, "Your payment reference couldn't be submitted. Please try again."));
     } finally {
       setSubmittingPay(false);
     }
@@ -461,7 +387,12 @@ export default function CustomerPortal() {
                     Full Tracker →
                   </button>
                 </div>
-                {DEMO_CLIENT_PROJECTS.map((p) => {
+                {CLIENT_PROJECTS.length === 0 && (
+                  <p className="mt-4 text-xs text-gray-500">
+                    No construction project is linked to your account yet. Your project manager will share progress updates with you directly.
+                  </p>
+                )}
+                {CLIENT_PROJECTS.map((p) => {
                   const update = p.progressUpdates[0];
                   return (
                     <div key={p.id} className="mt-4 space-y-4">
@@ -654,7 +585,12 @@ export default function CustomerPortal() {
               </p>
             </div>
 
-            {DEMO_CLIENT_PROJECTS.map((proj) => (
+            {CLIENT_PROJECTS.length === 0 && (
+              <div className="card text-center py-10 text-xs text-gray-500">
+                No construction project is linked to your account yet. Ask your project manager for site updates.
+              </div>
+            )}
+            {CLIENT_PROJECTS.map((proj) => (
               <div key={proj.id} className="card space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-100 pb-4">
                   <div>

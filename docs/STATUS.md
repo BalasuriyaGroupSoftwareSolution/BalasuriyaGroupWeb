@@ -1,79 +1,74 @@
 # Status & Open Items
 
-_Both frontend and backend are now fresh rebuilds — none of the old code was kept
-(only the logo image and the palette sampled from it). History of how we got here
-is in the git log if it's ever useful._
+_Last updated: 2026-10-23_
 
-## What's built (Milestone 2: Official Enterprise Platform Upgrade)
-1. **Updated Security & Multi-Role Authentication**:
-   - Hardened authentication with rate-limiting, brute-force protection, and 256-bit secure sessions.
-   - Enhanced Login with Password login, OTP Passwordless login (countdown timer), and a **Quick Demo Role Switcher** (`OWNER`, `ADMIN`, `CONSTRUCTION_MANAGER`, `TOURISM_AGENT`, `CUSTOMER`) for frictionless testing and live previewing.
-   - Comprehensive **Forgot Password & Password Reset** flow (`/forgot-password`).
-   - Profile updating and authenticated password change endpoints.
-   - Real-time password strength meter and validation checklist on Register.
-   - Role-Based Access Control (RBAC) cleanly separating Customer Portal vs Staff/Admin Portal.
-2. **Client Portal (`/portal`)**:
-   - Overview dashboard, Active Quotes & Inquiries tracker, Scheduled Tour & Travel bookings, Live Construction site milestones, Payment submission with official bank details, and profile security settings.
-3. **Dedicated Division Showcases**:
-   - **Software & Digital Solutions** (`/software`): Enterprise architecture, cross-platform mobile apps, AI automation, interactive tech stack matrix, and instant budget calculator.
-   - **Air Ticketing & Worldwide Visas** (`/air-ticketing`): Flight quote search tool across 150+ airlines, popular destination visa requirements, and 24/7 hotline.
-   - **Construction & Infrastructure** (`/construction`): Sector filters (Residential, Commercial, Infrastructure, Industrial, Renovation), live progress updates, and CIDA/ISO credentials.
-   - **Tourism & Tours** (`/tourism`): Category pills, currency switcher (LKR / USD), and cross-links to flight ticketing.
-4. **Interactive Multi-Division RFQ Estimator (`/quote`)**:
-   - 3-step project & service estimation wizard generating tracking reference numbers and fast-track WhatsApp forwards.
-5. **Corporate Governance & Careers**:
-   - **Careers** (`/careers`): Active job openings across all 3 divisions with online application modal.
-   - **Sustainability & ESG** (`/sustainability`): Environmental care in construction, ethical tourism, and governance standards.
-6. **Prestige Design & Structure**:
-   - Responsive sticky Navbar with top utility contact bar, division mega-dropdowns, user account menu, and mobile navigation drawer.
-   - 4-column corporate Footer with accreditation trust marks and legal links.
-   - 100% clean builds across both frontend (`tsc --noEmit && vite build`) and backend (`tsc`).
+## Fixed in this round: deploys, data loss, security
 
-## Can't run/verify in this sandbox
-This sandbox has no .NET SDK and, more importantly, **no access to the npm
-package registry or dot.net** (confirmed via direct `curl` — both blocked by org
-egress policy, not a transient issue). So neither `npm install` nor a real build
-could be run here. Everything was hand-written carefully and type-checked with
-the local TypeScript compiler against hand-written stand-ins for the dependencies'
-types (documented in commit messages) — that catches typos and logic errors but
-is not the same as actually running it. **You'll need to `npm install` in both
-`backend/` and `frontend/` on your own machine (or wherever this deploys) and
-report back anything that breaks.**
+**Why deploys failed and data kept resetting**
+- The live API was 10 separate Vercel functions that stored accounts, visas
+  and inquiries in `/tmp` files. Vercel wipes `/tmp` on every deploy and every
+  cold start, so everything reverted to the built-in defaults.
+- `/api/construction`, `/api/tourism` and `/api/payments` didn't exist on
+  Vercel at all. Staff edits never saved, and the public pages always showed
+  the built-in sample projects and tours.
+- The frontend hid failures: it showed "saved" or "created" even when the
+  server rejected a change, and kept the change only in that one browser.
+- The earlier Render setup used Render's free plan. Its web service sleeps
+  after 15 min idle (about 1 min to wake up), and its free database is deleted
+  30 days after it is created.
+- The database migrations never created `ConstructionProject.featured`,
+  `coverImageUrl` and `projectType`, so the projects API would crash on a
+  fresh database.
 
-## Company Repository
-Connected to official company GitHub repository:
-`https://github.com/balasuriyagroup/BalasuriyaGroupWeb.git`
-Git author configured as `balasuriyagroup` (`balasuriyagroup.software@gmail.com`).
+**Now**
+- One Vercel function (`api/index.js`) runs the real Express + Prisma API.
+  All data is in Postgres (Neon free, which doesn't expire).
+- Deploys run `prisma migrate deploy` (adds new migrations only) and an
+  insert-only seed. Neither overwrites nor deletes data.
+- The frontend is server-authoritative. Errors are shown, never faked.
 
-## Resolved
-- No payment gateway account yet — Card/Google Pay stay as explicit "not
-  configured" placeholders; Bank Deposit and Koko (reference + approval queue)
-  work end to end already.
-- Repo access: continuing with git bundle handoffs rather than session repo
-  authorization for now.
+**Security holes closed** (each one verified by `npm run test:security`)
+1. Hard-coded "master passwords" (`Admin@123`, `ChangeMe123!` …) logged into any staff account.
+2. Any listed staff email plus **any** 8+ character password logged in.
+3. The owner email logged in with **any** password (backend and frontend fallbacks).
+4. The token check accepted unsigned tokens and tokens signed with public, hard-coded secrets.
+5. `/api/auth/me` accepted any token starting with `live_jwt_token_` or `bg_token_` as OWNER.
+6. `/api/users` had no login check: anyone could list, create (including OWNER), reset passwords, or delete.
+7. `forgot-password` returned the reset token in its response, so anyone could reset anyone's password.
+8. `reset-password` accepted `verified_session` and `…:local_fallback` as valid tokens.
+9. Any email containing "balasuriya" or "clemon" was treated as OWNER on reset or login.
+10. "Sign in with Google" let anyone type any email and be logged in as that person.
+11. `/api/auth/demo-login` gave anyone an OWNER session.
+12. Visa applications (with passport numbers) were publicly readable and editable.
+13. Plain-text passwords were saved in browser `localStorage`. They are now purged on the next visit.
+14. Visitor-typed text was inserted unescaped into staff notification emails.
+15. OTP codes were written to the server logs and kept in memory (unreliable on serverless).
+    They are now stored hashed in the database, single use, and rate-limited.
 
-## Brand
-Logo kept as-is — professional navy monogram + serif wordmark. Palette sampled
-from it: primary navy `#0B1E3F`, secondary steel blue `#1E3A6E`, accent `#4A6FA5`,
-neutral surface `#F4F6F9`.
-
-## Staff roles
-`OWNER`, `ADMIN`, `CONSTRUCTION_MANAGER`, `TOURISM_AGENT`, `FINANCE_APPROVER`,
-`TICKET_AGENT`, `SOFTWARE_ENGINEER`, `CHARTERED_ACCOUNTANT`, `CUSTOMER`.
-
-## Local dev & deployment scaffolding added
-- `docker-compose.yml` — local Postgres for development.
-- `backend/Dockerfile` — production image (Render/Railway/Fly/AWS-friendly).
-- `frontend/vercel.json` — SPA routing for a Vercel static deploy.
-- `.github/workflows/ci.yml` — builds both apps on every push. **Check this is
-  green after your first push** — it's the first real build/install this code
-  will get, since the sandbox that wrote it couldn't run `npm install`.
+## Content accuracy: needs the owner's decision
+These are on the live site. Keep each one only if it is true:
+- **Testimonials** (`frontend/src/data/companyProfile.ts`): three named people
+  and companies. If they aren't real customers who agreed to be quoted, remove
+  them. Invented testimonials can mislead customers.
+- **Accreditations** (Navbar, Footer, Home, Air Ticketing, Software pages):
+  "CIDA Certified", "CIDA & ISO Compliant", "ISO 27001", IATA wording, "150+ airlines".
+  Keep only the ones the company actually holds (state the CIDA grade or IATA number if you can).
+- **Sample construction projects and tour packages** (`FALLBACK_PROJECTS` in
+  `ConstructionPublic.tsx`, `FALLBACK_PACKAGES` in `TourismPublic.tsx`).
+  These are shown when the database has none, e.g. "Kandy–Mahiyangana Highway
+  Extension, 78% complete". Add real ones in the staff portal (they replace the
+  samples automatically), or remove the samples.
+- **Staff roster** (`backend/src/scripts/seed.ts`): 16 people. The non-family
+  entries had sequential placeholder phone numbers. Delete anyone who isn't real
+  from Staff Users after the first deploy.
+- **Careers** job openings and **Sustainability** claims: confirm they are current.
+- `companyStats` (2 years, 15 projects, 98%) and some pages say "3+ Years" or "4+ Years". Make them consistent.
 
 ## Not yet done
-- Real email/SMS delivery for OTP (console-logged only right now).
-- Card/Google Pay gateway integration (needs merchant credentials — see above).
-- Construction progress photo upload (API takes URLs; needs an upload endpoint +
-  storage, e.g. S3-compatible).
-- Multi-language (i18n) — the old app had it; dropped for this rebuild's first
-  pass to keep scope manageable. Can be added back if wanted.
-- Deploying to actual cloud hosting (AWS/Vercel/Azure).
+- Staff page to review visa applications. The API supports it (`GET /api/visas`
+  returns every application for visa staff), but there's no screen yet.
+- Linking a construction project to its customer, so the customer portal can show it.
+- Card / Google Pay gateway (needs a merchant account). Bank deposit and Koko
+  reference + approval work end to end.
+- Photo upload for progress updates (currently image URLs).
+- The staff dashboard "activity feed" is stored per browser. Move it to the database if needed.

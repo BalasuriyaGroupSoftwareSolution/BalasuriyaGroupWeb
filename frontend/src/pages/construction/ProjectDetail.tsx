@@ -14,44 +14,12 @@ export default function ProjectDetail() {
     api
       .get<{ project: ConstructionProject }>(`/api/construction/projects/${id}`)
       .then((res) => setProject(res.data.project))
-      .catch(() => {
-        // Fallback demo project
-        setProject({
-          id,
-          name: "Cinnamon Heights Residences",
-          description:
-            "A 12-storey luxury residential apartment complex featuring 64 luxury apartments, underground parking, integrated solar generation, and rooftop infinity sky-lounge.",
-          location: "Colombo 05, Sri Lanka",
-          status: "IN_PROGRESS",
-          projectType: "Residential",
-          coverImageUrl: "/images/projects/residential.svg",
-          featured: true,
-          startDate: "2025-06-01",
-          targetEndDate: "2027-01-30",
-          progressUpdates: [
-            {
-              id: "up_1",
-              projectId: id,
-              currentStatus: "Structural framing complete up to the 9th floor; interior partitioning underway from floor 3.",
-              nextPeriodPlan: "Complete framing to the roof slab and begin façade glazing on the lower floors.",
-              percentComplete: 62,
-              photoUrls: [],
-              createdAt: "2026-10-01",
-            },
-            {
-              id: "up_0",
-              projectId: id,
-              currentStatus: "Foundation and diaphragm slurry walls finished and certified by structural auditors.",
-              nextPeriodPlan: "Erect tower crane and begin lower podium column pours.",
-              percentComplete: 30,
-              photoUrls: [],
-              createdAt: "2025-11-15",
-            },
-          ],
-        });
-      });
+      .catch((err) =>
+        setError(err?.response?.status === 404 ? "This project could not be found." : "Could not load this project. Please try again.")
+      );
   }, [id]);
 
+  if (error) return <p className="mx-auto max-w-3xl px-4 py-14 text-gray-600">{error}</p>;
   if (!project) return <p className="mx-auto max-w-3xl px-4 py-14 text-gray-500">Loading…</p>;
 
   return (
